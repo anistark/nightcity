@@ -30,7 +30,8 @@ const SEA={y:rr(1.02,1.16),energy:rr(.8,1.2),tide:rr(-1,1),tideO:rr(0,500),moonX
 // Metres on the beach: x across, y toward the sea, z up. The toes sit at TOE_Y, the ankles at ANKLE_Y.
 const TOE_Y=.56,ANKLE_Y=.33;
 function person(){const[name,skin]=pick(SKINS);return{name,skin,size:rr(.93,1.07),nails:chance(.3)?pick(POLISH):null,hair:chance(.5)?rr(.3,1):0};}
-const people=[person()];if(chance(.3))people.push(person());
+// Almost always one pair of feet. A second pair is a rare night.
+const people=[person()];if(chance(.04))people.push(person());
 const feet=[];
 people.forEach((p,i)=>{const cx=people.length>1?(i?.27:-.27):0,dy=people.length>1&&i?rr(-.06,.04):0;
   for(const s of[-1,1])feet.push({p,s,x:cx+s*.1*p.size,y:TOE_Y-.135*p.size+dy,rot:s*rr(.1,.22),hipX:cx+s*.1,wet:0,sink:rr(0,.004),cover:0,dunk:false});});
@@ -42,15 +43,24 @@ in vec2 a;out vec2 v;void main(){v=a*.5+.5;gl_Position=vec4(a,0,1);}`;
 const COMMON=`#version 300 es
 precision highp float;
 uniform sampler2D uFront;
-const float X0=-1.8,X1=1.8,NX=128.;
+const float X0=-1.8,X1=1.8,NX=256.;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 vec2 hash2(vec2 p){return vec2(hash(p),hash(p+19.19));}
+// Fades out detail at a given frequency (cycles per metre) once it gets finer than a couple of pixels (fw metres each).
+float lod(float freq,float fw){return 1.-smoothstep(.2,.55,fw*freq);}
+float FW=.002;
 float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);}
 float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vnoise(p);p=p*2.03+17.1;a*=.5;}return s;}
+// Gradient noise, smooth through its curvature, with each octave turned so no grid lines up. For the water.
+vec2 grad2(vec2 i){float a=hash(i)*6.2831853;return vec2(cos(a),sin(a));}
+float gnoise(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*f*(f*(f*6.-15.)+10.);
+  return .5+.7*mix(mix(dot(grad2(i),f),dot(grad2(i+vec2(1,0)),f-vec2(1,0)),u.x),mix(dot(grad2(i+vec2(0,1)),f-vec2(0,1)),dot(grad2(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);}
+// f is the frequency of the first octave in cycles per metre, so each octave can fade out before it aliases.
+float gfbm(vec2 p,float f){float a=.5,s=0.;mat2 m=mat2(.8,-.6,.6,.8);p=mat2(.866,-.5,.5,.866)*p;p+=vec2(gnoise(p*.31+5.),gnoise(p*.31+9.))*1.2;for(int i=0;i<3;i++){s+=a*((gnoise(p)-.5)*lod(f,FW)+.5);p=m*p*2.03+3.7;a*=.5;f*=2.03;}return s;}
 // The y of a wave front at x. Row 0 is the water's edge now, rows 1 to 3 each wave's front, 4 to 6 the furthest each reached.
 float front(int row,float x){float u=clamp((x-X0)/(X1-X0),0.,1.)*(NX-1.);int i=int(floor(u));
-  float a=texelFetch(uFront,ivec2(i,row),0).r,b=texelFetch(uFront,ivec2(min(i+1,127),row),0).r;return mix(a,b,fract(u));}
+  float a=texelFetch(uFront,ivec2(i,row),0).r,b=texelFetch(uFront,ivec2(min(i+1,255),row),0).r;return mix(a,b,fract(u));}
 `;
 // The wet sand map, in beach coordinates: covered by water now means wet, otherwise it slowly dries.
 const STATE_FS=COMMON+`
@@ -60,7 +70,7 @@ void main(){vec2 p=vec2(mix(-1.8,1.8,v.x),mix(-.3,2.2,v.y));float w=texture(uPre
 const MAIN_FS=COMMON+`
 in vec2 v;out vec4 o;
 uniform vec2 uRes;uniform float uT;uniform vec3 uCam,uFwd,uRight,uUp;uniform vec2 uTan;
-uniform sampler2D uWet;uniform vec4 uWave[3];uniform vec2 uStrand[3];uniform vec2 uFoamOff;
+uniform sampler2D uWet;uniform vec4 uWave[3];uniform vec2 uStrand[3];uniform vec2 uFoamOff;uniform vec4 uSeed[3];uniform float uRip;
 uniform vec3 uMoonDir,uMoonCol,uSand;uniform float uBright,uSeaY,uMoonX;
 uniform vec4 uBox;uniform int uFeet;uniform vec4 uF[4];uniform vec4 uFP[4];uniform vec4 uSkin[4];uniform vec4 uNail[4];
 const float PI=3.14159265;
@@ -106,50 +116,67 @@ vec3 feetNormal(vec3 p){vec2 e=vec2(.0006,-.0006);return normalize(e.xyy*feetSDF
 float feetShadow(vec3 ro,vec3 rd){float res=1.,t=.004;for(int i=0;i<22;i++){float h=feetSDF(ro+rd*t).x;res=min(res,10.*h/t);t+=clamp(h,.004,.08);if(res<.02||t>1.2)break;}return clamp(res,0.,1.);}
 
 /* ---- the beach: sand, water, foam ---- */
-float sandH(vec2 p){return vnoise(p*90.)*.25+vnoise(p*260.)*.12+fbm(p*14.)*.6+sin(p.y*55.+vnoise(p*6.)*6.)*.06;}
+float sandH(vec2 p){return vnoise(p*90.)*.25*lod(90.,FW)+vnoise(p*260.)*.12*lod(260.,FW)+fbm(p*14.)*.6+sin(p.y*55.+vnoise(p*6.)*6.)*.06;}
 // A scatter of round bits in jittered cells: each cell may hold one, with its own size and colour.
 vec4 bits(vec2 p,float cell,float seed){vec2 g=p/cell,i=floor(g),f=fract(g);vec4 r=vec4(0);
   for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),h=hash2(i+o+seed);float k=hash(i+o+seed+4.);
     float rad=(.08+.26*pow(hash(i+o+seed+8.),3.))*step(.86,k);float d=length(o+h-f);
     float a=1.-smoothstep(rad*.75,rad,d);if(a>r.w)r=vec4(hash(i+o+seed+2.),d/max(rad,.001),k,a);}
   return r;}
-vec3 sandAlbedo(vec2 p){float n=fbm(p*7.),g=vnoise(p*900.),g2=vnoise(p*2600.);
-  vec3 c=uSand*(.84+.32*n)*(.88+.18*g+.1*g2);
-  vec4 b=bits(p,.012,3.);if(b.w>0.){vec3 bc=b.x<.4?uSand*.4:b.x<.75?mix(uSand,vec3(.9,.87,.82),.6):b.x<.9?vec3(.08,.07,.07):vec3(.32,.16,.11);
+vec3 sandAlbedo(vec2 p){float n=fbm(p*7.),g=(vnoise(p*900.)-.5)*lod(900.,FW),g2=(vnoise(p*2600.)-.5)*lod(2600.,FW);
+  vec3 c=uSand*(.84+.32*n)*(1.02+.18*g+.1*g2);
+  vec4 b=bits(p,.012,3.);b.w*=lod(1./.012,FW*.5);if(b.w>0.){vec3 bc=b.x<.4?uSand*.4:b.x<.75?mix(uSand,vec3(.9,.87,.82),.6):b.x<.9?vec3(.08,.07,.07):vec3(.32,.16,.11);
     bc*=1.-.35*b.y;c=mix(c,bc,b.w*.9);}
-  vec4 s=bits(p,.003,11.);if(s.w>0.)c=mix(c,s.x<.5?c*.6:c*1.3,s.w*.45);
+  vec4 s=bits(p,.003,11.);s.w*=lod(1./.003,FW*.5);if(s.w>0.)c=mix(c,s.x<.5?c*.6:c*1.3,s.w*.45);
   return c;}
 // How deep the water is at a point on the beach, in metres: a film at the edge, deepening toward the sea.
 float waterDepth(vec2 p){float f=front(0,p.x),s=p.y-f;if(s<0.)return 0.;return .003+min(s,.6)*.05+max(0.,p.y-uSeaY)*.2;}
-vec2 ripple(vec2 p){float t=uT;vec2 q=p*vec2(9.,14.)+vec2(0,t*1.6);
-  float h0=fbm(q),hx=fbm(q+vec2(.02,0)),hy=fbm(q+vec2(0,.02));vec2 g=vec2(hx-h0,hy-h0)/.02;
-  q=p*vec2(28.,40.)+vec2(t*.3,t*2.5);float k0=vnoise(q),kx=vnoise(q+vec2(.05,0)),ky=vnoise(q+vec2(0,.05));g+=vec2(kx-k0,ky-k0)/.05*.25;
-  return g;}
-// Foam: holes punched in a sheet of bubbles. c is how much foam there is, from none to a solid sheet;
-// as it drops the same holes grow and join up. Two sizes of holes, warped so none is a clean circle.
-float holes(vec2 p,float cell,float seed,out float rim){vec2 g=p/cell+vec2(fbm(p*7.+seed),fbm(p*7.+seed+5.))*1.6+vec2(vnoise(p*40.+seed),vnoise(p*40.+seed+2.))*.35;vec2 i=floor(g),f=fract(g);float best=9.,rad=0.;
-  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y);vec2 h=hash2(i+o+seed);float d=length(o+.1+.8*h-f)-hash(i+o+seed+7.)*.4;if(d<best){best=d;rad=hash(i+o+seed+3.);}}
-  rim=best;return best+.25*rad;}
-float foam(vec2 p,float c,out float shade){
-  if(c<.01){shade=0.;return 0.;}
-  p+=uFoamOff;float r1,r2;float a=holes(p,.045,1.,r1),b=holes(p,.014,9.,r2);
-  float t1=mix(.85,-.1,c),t2=mix(.62,-.25,c);
-  float bub=vnoise(p*1400.)*.18+vnoise(p*420.)*.14;
-  float f=smoothstep(t1-.04,t1+.08,a+bub-.12)*smoothstep(t2-.05,t2+.1,b+bub*.6-.06);
-  f*=smoothstep(.1,.35,fbm(p*6.)+c*.5);
-  shade=.85+.15*hash(floor(p*900.))-.2*(1.-smoothstep(t1,t1+.2,a));
-  return f;}
-float foamCover(vec2 p,out float edge){
-  float c=0.;edge=0.;
-  for(int i=0;i<3;i++){vec4 W=uWave[i];if(W.y>2.5)continue;float f=front(1+i,p.x),s=p.y-f;
-    float up=W.y<.5?1.:0.,k=up>0.?1.:pow(max(W.x,0.),1.4);
-    float dense=W.w*(up>0.?1.:.85*k)*(1.-smoothstep(.0,.05+.07*(1.-W.x)*up,s))*step(-.002,s);
+// Small ripples on the surface. uRip moves them up the beach with the uprush and back down with the drain.
+float rippleH(vec2 p,float drain){
+  float h=gfbm(p*vec2(10.,16.)+vec2(0,uRip),16.)*.0011+(gnoise(p*vec2(38.,55.)+vec2(uT*.3,uRip*2.3))-.5)*.00035*lod(55.,FW);
+  // Draining water runs in fine grooves straight down the slope.
+  h+=(gnoise(vec2(p.x*45.,p.y*4.+uRip*1.5))-.5)*.00018*drain*lod(45.,FW)*smoothstep(.35,.7,gnoise(p*6.+3.));
+  return h;}
+// Which wave owns this spot, how much foam it carries there, and where that foam has travelled to.
+// Running up, the foam rides with the front. From the moment a wave stops, its foam stays put where it reached,
+// and stretches into streaks down the slope as the water drains.
+float foamCover(vec2 p,out float edge,out vec2 q,out float bore,out float drain){
+  float c=0.,best=-1.;edge=0.;bore=0.;drain=0.;q=p;
+  for(int i=0;i<3;i++){vec4 W=uWave[i];if(W.y>2.5)continue;float f=front(1+i,p.x),m=front(4+i,p.x),s=p.y-f;
+    float up=W.y<.5?1.:0.,b=up>0.?0.:clamp(1.-W.x,0.,1.),k=up>0.?1.:pow(max(W.x,0.),1.4);
+    float dense=W.w*(up>0.?1.:.85*k)*(1.-smoothstep(.0,.04+.08*(1.-W.x)*up,s))*step(-.002,s);
     float lace=W.z*(up>0.?1.:.8*k)*(1.-smoothstep(.1,.35+.3*W.x,s))*step(0.,s);
-    c=max(c,max(dense,lace*.62));
-    if(W.y<1.5)edge=max(edge,(1.-smoothstep(0.,.008,abs(s-.002)))*(up>0.?1.:.5));}
-  for(int i=0;i<3;i++){vec2 S=uStrand[i];if(S.y<=0.)continue;float m=front(4+i,p.x),s=abs(p.y-m+.006);c=max(c,S.y*(1.-smoothstep(.0,.03,s))*.75);}
-  float sea=smoothstep(uSeaY-.1,uSeaY+.15,p.y);c=max(c,sea*.35*smoothstep(.3,.7,fbm(p*3.+vec2(0,uT*.1))));
+    float ci=max(dense,lace*.8);
+    if(W.y<1.5)edge=max(edge,(1.-smoothstep(0.,.006,abs(s-.0015)))*(up>0.?1.:.5));
+    if(up>0.)bore=max(bore,.007*exp(-max(s,0.)/.03)*step(0.,s)*(1.-W.x*.7));
+    vec2 sd=uSeed[i].xy;
+    if(ci>best){best=ci;drain=b*step(0.,s);q=up>0.?vec2(p.x+sd.x,s+sd.y):vec2(p.x+sd.x,(p.y-m)*mix(1.,.42,b)+sd.y);}
+    c=max(c,ci);}
+  for(int i=0;i<3;i++){vec2 S=uStrand[i];if(S.y<=0.)continue;float m=front(4+i,p.x),wid=.003+.011*fbm(vec2(p.x*18.,float(i)*7.)),d=abs(p.y-m+.004),ci=S.y*(1.-smoothstep(wid*.5,wid,d))*.95*smoothstep(.25,.5,fbm(vec2(p.x*30.,float(i)*3.)));
+    if(ci>best){best=ci;q=vec2(p.x+uSeed[i].x,(p.y-m)*.5+uSeed[i].y);}c=max(c,ci);}
+  float sea=smoothstep(uSeaY-.1,uSeaY+.15,p.y);float cs=sea*.35*smoothstep(.3,.7,fbm(p*3.+vec2(0,uT*.1)));if(cs>best)q=p+vec2(0,uT*.01);c=max(c,cs);
   return c;}
+// One layer of holes: how far a point is inside the nearest hole's rim. Each hole has its own size.
+float holeField(vec2 g,float seed){vec2 i=floor(g),f=fract(g);float best=9.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),h=hash2(i+o+seed);best=min(best,length(o+.1+.8*h-f)-(.12+.38*hash(i+o+seed+3.)));}
+  return best;}
+// Foam at foam-space point q, given how much there is (c) and how many metres a pixel covers (fw).
+// Three sizes of holes, warped so none is a clean circle, cut a sheet whose thickness peaks along the strands.
+// Finer layers fade out once they get smaller than a pixel, so the foam doesn't shimmer.
+vec3 foamAt(vec2 q,float c,float fw,out vec2 bub){
+  vec2 w=vec2(fbm(q*6.),fbm(q*6.+5.2))-.5;w+=(vec2(vnoise(q*35.),vnoise(q*35.+3.))-.5)*.35;
+  float h1=holeField(q/.055+w*1.6,1.),h2=holeField(q/.019+w*2.4,7.),h3=holeField(q/.007+w*3.,13.);
+  float d2=1.-smoothstep(.15,.45,fw/.019),d3=1.-smoothstep(.15,.45,fw/.007);
+  float clump=(fbm(q*4.5+11.)-.5)*(1.2-c);
+  float t1=h1-mix(.45,-.3,c)-clump,t2=(h2-mix(.4,-.3,c))*d2+1.*(1.-d2),t3=(h3-mix(.3,-.35,c))*d3+1.*(1.-d3);
+  float thick=min(t1*1.,min(t2*.55,t3*.3));
+  float aa=max(fw/.055*1.5,.02);
+  float f=smoothstep(0.,aa,thick);
+  // Bubbles about six millimetres across, each a little dome that catches the moon.
+  vec2 g=q/.006,ci=floor(g),cf=fract(g);float bd=9.;bub=vec2(0);
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),h=hash2(ci+o+21.);float r=.35+.3*hash(ci+o+29.);vec2 dv=(cf-(o+.2+.6*h))/r;float dd=dot(dv,dv);if(dd<bd){bd=dd;bub=dv;}}
+  bub*=(1.-smoothstep(.2,.6,fw/.006))*step(bd,1.);
+  return vec3(f,clamp(thick*3.,0.,1.),smoothstep(-.25,0.,thick));}
 
 /* ---- light ---- */
 float ggx(vec3 n,vec3 h,float r){float a=r*r,a2=a*a,d=max(dot(n,h),0.);float k=d*d*(a2-1.)+1.;return a2/(PI*k*k);}
@@ -166,15 +193,18 @@ void main(){
   vec3 rd=normalize(uFwd+uv.x*uTan.x*uRight+uv.y*uTan.y*uUp),ro=uCam;
   vec3 vdir=-rd;vec3 col;
   // The beach: where the ray meets the ground.
-  float tg=-ro.z/rd.z;vec3 P=ro+rd*tg;vec2 p=P.xy;
+  float tg=-ro.z/rd.z;vec3 P=ro+rd*tg;vec2 p=P.xy;FW=length(fwidth(p));
   // The feet, if the ray meets one before the ground.
   float tf=1e9;vec4 hit=vec4(0);
   {vec3 bmin=vec3(-.8,-.2,-.01),bmax=vec3(.8,.75,.6);vec3 i0=(bmin-ro)/rd,i1=(bmax-ro)/rd;vec3 lo=min(i0,i1),hi=max(i0,i1);
    float t0=max(max(lo.x,lo.y),lo.z),t1=min(min(hi.x,hi.y),hi.z);
    if(t1>max(t0,0.)){float t=max(t0,0.);for(int i=0;i<110;i++){vec4 h=feetSDF(ro+rd*t);if(h.x<.0004){tf=t;hit=h;break;}t+=h.x*.9;if(t>t1)break;}}}
   float wd=waterDepth(p);
+  // Sand dries unevenly, so the edge of the wet patch is mottled rather than a clean line.
   float wet=max(texture(uWet,vec2((p.x+1.8)/3.6,(p.y+.3)/2.5)).r,smoothstep(1.,1.4,p.y));
-  float edge,cov=foamCover(p,edge);
+  float fresh=smoothstep(.9,1.,wet);
+  wet=smoothstep(.0,.6,wet+(fbm(p*22.)-.5)*.45+(vnoise(p*90.)-.5)*.16+(vnoise(p*300.)-.5)*.08*lod(300.,FW));
+  float edge,bore,drain;vec2 fq;float cov=foamCover(p,edge,fq,bore,drain);
   if(tf<tg){
     vec3 X=ro+rd*tf,n=feetNormal(X);int fi=int(hit.w);vec4 S=uSkin[fi];vec3 skin=S.rgb;
     float foot=0.;for(int i=0;i<4;i++)if(i==fi)foot=uF[i].z;
@@ -205,25 +235,49 @@ void main(){
     vec3 wa=alb*vec3(.62,.63,.66);vec3 wn=normalize(mix(n,vec3(0,0,1),.6));
     vec3 wetC=shadeSurface(wa,wn,vdir,.32,.04,sh);
     col=mix(dry,wetC,wet);
+    // Sand the water has only just left still holds a film: smoother, reflecting the sky, and glittering where grains catch the moon.
+    if(fresh>0.){vec3 fn0=normalize(mix(n,vec3(0,0,1),.85));vec3 hv0=normalize(uMoonDir+vdir);
+      float F0=.02+.98*pow(1.-max(dot(fn0,vdir),0.),5.);
+      col=mix(col,col*.9+sky(reflect(rd,fn0))*F0*1.2+uMoonCol*ggx(fn0,hv0,.12)*.05*sh,fresh*.8);
+      vec4 gl0=bits(p,.004,41.);float glint=step(.93,gl0.x)*gl0.w*lod(1./.004,FW*.6);
+      col+=uMoonCol*glint*fresh*sh*.35;}
+    // Just ahead of the water the sand is soaked darker, right up to the edge.
+    float ahead=front(0,p.x)-p.y;if(ahead>0.)col*=1.-.3*exp(-ahead/.012);
+    float fw=length(fwidth(p));
     if(wd>0.){
-      // Water: ripples bend the view of the sand, depth soaks up the red first, and the surface mirrors the moon.
-      vec2 g=ripple(p);vec3 wn2=normalize(vec3(-g*.012*(.3+min(wd*30.,1.)),1.));
-      vec2 rp=p+wn2.xy*wd*1.6;vec3 ra=sandAlbedo(rp)*vec3(.62,.63,.66);
+      // Water: a surface of depth, the lip of an incoming wave and ripples, which bends the view of the sand,
+      // focuses moonlight into faint caustics on it, soaks up red light with depth and mirrors the moon.
+      float dr=drain;wd=wd*mix(1.,.45,dr)+bore;
+      float amp=smoothstep(.0,.008,wd);
+      vec2 e2=vec2(.003,0);
+      // Five ripple samples give both the slope of the surface and its curvature, which focuses the caustics.
+      float R0=rippleH(p,dr),Rxp=rippleH(p+e2.xy,dr),Rxm=rippleH(p-e2.xy,dr),Ryp=rippleH(p+e2.yx,dr),Rym=rippleH(p-e2.yx,dr);
+      float D0=waterDepth(p),gx=(waterDepth(p+e2.xy)-D0)/e2.x*mix(1.,.45,dr)+(Rxp-Rxm)/(2.*e2.x)*amp,gy=(waterDepth(p+e2.yx)-D0)/e2.x*mix(1.,.45,dr)+(Ryp-Rym)/(2.*e2.x)*amp;
+      vec3 wn2=normalize(vec3(-gx,-gy,1.));
+      vec2 rp=p-wn2.xy*wd*.8;vec3 ra=sandAlbedo(rp)*vec3(.62,.63,.66);
+      float lap=(Rxp+Rxm+Ryp+Rym-4.*R0)*amp;
+      float caust=clamp(1.-lap*1.1e4,.6,1.8);
       float rsh=nearFeet?sh:1.;
-      vec3 under=shadeSurface(ra,vec3(0,0,1),vdir,.6,.0,rsh);
+      vec3 under=ra*(uMoonCol*max(uMoonDir.z,0.)*rsh*caust+sky(vec3(0,0,1))*2.2);
       under*=exp(-wd*vec3(26.,10.,7.));under+=vec3(.012,.03,.035)*uMoonCol*(1.-exp(-wd*8.));
       float F=.02+.98*pow(1.-max(dot(wn2,vdir),0.),5.);
-      vec3 hv=normalize(uMoonDir+vdir);vec3 refl=sky(reflect(rd,wn2))+uMoonCol*ggx(wn2,hv,.06)*.6;
-      col=mix(under,refl,F)+uMoonCol*ggx(wn2,hv,.06)*.05;
-      // The film right at the edge catches a bright line of light.
-      col+=uMoonCol*edge*.18;
+      vec3 hv=normalize(uMoonDir+vdir);float glint=ggx(wn2,hv,.05);
+      vec3 refl=sky(reflect(rd,wn2))+uMoonCol*glint*.5;
+      col=mix(under,refl,F)+uMoonCol*glint*.04*rsh;
+      // The thin edge of the water catches a bright line, and the lip of a wave running up catches more.
+      col+=uMoonCol*(edge*.22+smoothstep(.002,.007,bore)*.05);
     }
-    // Foam, lit by the moon, with a little shadow under it on the sand.
-    if(cov>.01){float fs;float f=foam(p,cov,fs);
-      col*=1.-.3*cov*(1.-f);
-      vec3 fc=vec3(.78,.82,.86)*fs*(.82+.18*vnoise(p*60.));vec3 fn=normalize(vec3((vnoise(p*800.)-.5)*.6,(vnoise(p*800.+5.)-.5)*.6,1.));
-      vec3 lit=fc*(uMoonCol*(max(dot(fn,uMoonDir),0.)*.85+.25)*sh+sky(fn)*3.)+uMoonCol*ggx(fn,normalize(uMoonDir+vdir),.25)*.08;
-      col=mix(col,lit,f);}
+    // Foam: thick bright strands that thin to translucent lace at their edges, bubbles that catch the moon,
+    // water darkened in the shade at the rim of each hole, and a faint shadow on the sand beneath.
+    if(cov>.01){vec2 bub;vec3 fa=foamAt(fq,cov,fw,bub);float f=fa.x,th=fa.y;
+      col*=1.-.25*cov*(1.-fa.z)*(1.-f);
+      vec3 fn=normalize(vec3(bub*.9+(vec2(vnoise(fq*300.),vnoise(fq*300.+4.))-.5)*.5,1.));
+      float lam=max(dot(fn,uMoonDir),0.);
+      // Each bubble is darker at its rim and bright where its dome faces the moon.
+      float ring=length(bub);float bubShade=1.-.28*smoothstep(.55,1.,ring)*step(.001,ring);
+      vec3 fc=vec3(.88,.9,.93)*mix(.68,1.12,th)*bubShade;
+      vec3 lit=fc*(uMoonCol*(lam*.75+.3)*sh+sky(fn)*3.2)+uMoonCol*ggx(fn,normalize(uMoonDir+vdir),.12)*.14*sh*(.3+th);
+      col=mix(col,lit,f*mix(.42,1.,th));}
   }
   // Exposure, a filmic curve, a cool night grade, vignette and a little grain.
   col*=1.45;col=(col*(2.51*col+.03))/(col*(2.43*col+.59)+.14);
@@ -239,10 +293,10 @@ function program(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VER
 let MAIN,STATE;
 try{MAIN=program(MAIN_FS);STATE=program(STATE_FS);}catch(e){console.error(e);fallback();return;}
 const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
-const NX=128,FRONT=new Float32Array(NX*7);
+const NX=256,FRONT=new Float32Array(NX*7);
 const frontTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,frontTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,NX,7,0,gl.RED,gl.FLOAT,FRONT);
 for(const k of[gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.NEAREST);
-const WS=256,wetTex=[],wetFb=[];
+const WS=512,wetTex=[],wetFb=[];
 for(let i=0;i<2;i++){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,WS,WS,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   for(const k of[gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR);
   for(const k of[gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE);
@@ -252,7 +306,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 let wetI=0,wetT=0;
 
 /* ---------- waves ---------- */
-let t=0,bright=1,brightTo=1,cloudEnd=0,foamOX=0,foamOY=0,lastMid=SEA.y;
+let t=0,bright=1,brightTo=1,cloudEnd=0,foamOX=0,foamOY=0,lastMid=SEA.y,rip=0;
 const waves=[],stats={waves:0,reached:0,short:0};
 const xAt=i=>-1.8+i*3.6/(NX-1);
 function phase(w,tt){const x=tt-w.t0;if(x<0)return[0,0];if(x<w.up){const k=x/w.up;return[1-Math.pow(1-k,2.3),0];}
@@ -262,14 +316,16 @@ function newWave(kind){
   kind=kind||wpick([['short',.42],['touch',.4],['past',.18]]);
   const reach=kind==='short'?TOE_Y+rr(.02,.22):kind==='touch'?lerp(ANKLE_Y,TOE_Y,rr(.05,.95)):ANKLE_Y-rr(.04,.3);
   waves.push({kind,t0:t,up:rr(2.4,3.8),hold:rr(.2,.7),down:rr(4,6.5),reach:clamp(reach-tide()*SEA.energy,-.1,SEA.y-.2),
-    a1:rr(.02,.07),l1:rr(.4,1.1),p1:rr(0,6.3),a2:rr(.008,.03),l2:rr(1.8,3.5),p2:rr(0,6.3),nO:rr(0,500),obl:rr(-.5,.5),
-    lace:rr(.55,1),dense:rr(.7,1),front:new Float32Array(NX),max:new Float32Array(NX).fill(9),st:0,logged:false,strand:0,strandLife:rr(6,14)});
+    a1:rr(.02,.05),l1:rr(1.2,2.6),p1:rr(0,6.3),a2:rr(.008,.022),l2:rr(3.5,7),p2:rr(0,6.3),nO:rr(0,500),obl:rr(-.5,.5),
+    lace:rr(.55,1),dense:rr(.7,1),sx:rr(0,50),sy:rr(0,50),front:new Float32Array(NX),max:new Float32Array(NX).fill(9),st:0,logged:false,strand:0,strandLife:rr(6,14)});
   stats.waves++;
 }
 function waveFront(w){const top=SEA.y+.15;let st=0;
   for(let i=0;i<NX;i++){const x=xAt(i),[p,s]=phase(w,t-w.obl*(x/1.8)*.5);st=Math.max(st,s);
-    const lobe=w.a1*Math.sin(x*Math.PI*w.l1+w.p1)+w.a2*Math.sin(x*Math.PI*w.l2+w.p2)+.02*(fbm(x*3+w.nO)-.5);
-    w.front[i]=top-(top-(w.reach+lobe))*p;if(w.front[i]<w.max[i])w.max[i]=w.front[i];}
+    const lobe=w.a1*Math.sin(x*Math.PI*w.l1+w.p1)+w.a2*Math.sin(x*Math.PI*w.l2+w.p2)+.035*(fbm(x*4+w.nO)-.5)+.012*(fbm(x*13+w.nO+40)-.5);
+    // While it runs up, the front pushes ahead in shifting fingers that settle as it slows.
+    const finger=s===0?(fbm(x*16+t*.9+w.nO)-.5)*.018*(1-p*.7):0;
+    w.front[i]=top-(top-(w.reach+lobe))*p+finger;if(w.front[i]<w.max[i])w.max[i]=w.front[i];}
   return st;}
 const frontAt=(row,x)=>{const u=clamp((x+1.8)/3.6,0,1)*(NX-1),i=Math.floor(u),j=Math.min(NX-1,i+1);return lerp(FRONT[row*NX+i],FRONT[row*NX+j],u-i);};
 let nextWave=0;
@@ -286,6 +342,8 @@ function update(dt){
     if(w.st>=1&&!w.logged){w.logged=true;logWave(w);}
     if(w.st>=2&&!w.strand)w.strand=t;}
   for(let i=waves.length-1;i>=0;i--){const w=waves[i];if(w.st===3&&t-w.strand>w.strandLife)waves.splice(i,1);}
+  // Ripples drift up the beach with the newest wave running up, and back down while it drains.
+  const lead=waves.filter(w=>w.st<3).slice(-1)[0];rip+=dt*(lead&&lead.st===0?.3:-.12);
   const mid=frontAt(0,0),d=mid-lastMid;lastMid=mid;foamOY+=d<0?d:d*.55;foamOX+=dt*.004;
   for(const f of feet){const depth=f.y+.13*f.p.size-frontAt(0,f.x);
     if(depth>0){f.wet=1;if(!f.dunk){f.dunk=true;if(depth>.08)f.sink=Math.min(.012,f.sink+rr(.001,.0025));}}else if(depth<-.03)f.dunk=false;
@@ -305,7 +363,7 @@ const SCALE=parseFloat(new URLSearchParams(location.search).get('glq'))||1;
 function build(){
   CW=Math.max(240,innerWidth);CH=Math.max(240,innerHeight);
   DPR=(LOWQ?.55:Math.min(1.25,devicePixelRatio||1)*.85)*SCALE;
-  const maxPx=LOWQ?6e5:1.8e6;if(CW*CH*DPR*DPR>maxPx)DPR=Math.sqrt(maxPx/(CW*CH));
+  const maxPx=LOWQ?6e5:1.3e6;if(CW*CH*DPR*DPR>maxPx)DPR=Math.sqrt(maxPx/(CW*CH));
   cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);
 }
 // The camera: at eye height a little behind the feet, looking down and forward toward the sea.
@@ -336,6 +394,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[1-wetI]);gl.viewport(0,0,WS,WS);
   gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform1f(U.uT,t);
   const W=[],S=[];for(let s=0;s<3;s++){const w=slots[s];if(!w){W.push(0,3,0,0);S.push(0,0);continue;}const[p,st]=phase(w,t);W.push(p,w.st===3?3:st,w.lace,w.dense);
     S.push(0,w.strand?Math.max(0,1-(t-w.strand)/w.strandLife)*w.lace:0);}
+  gl.uniform4fv(U.uSeed,[0,1,2].flatMap(i=>slots[i]?[slots[i].sx,slots[i].sy,0,0]:[0,0,0,0]));gl.uniform1f(U.uRip,rip);
   gl.uniform4fv(U.uWave,W);gl.uniform2fv(U.uStrand,S);gl.uniform2f(U.uFoamOff,foamOX,-foamOY);
   gl.uniform3fv(U.uMoonDir,MOON_DIR);gl.uniform3fv(U.uMoonCol,MOON.c.map(v=>v*.4*bright));gl.uniform3fv(U.uSand,lin(SAND.c));
   gl.uniform1f(U.uBright,bright);gl.uniform1f(U.uSeaY,SEA.y);gl.uniform1f(U.uMoonX,SEA.moonX);

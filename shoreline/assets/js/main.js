@@ -50,7 +50,8 @@ function makePerson(main){
     nails:chance(main?.25:.5)?pick(POLISH):null,anklet:chance(.25)?(chance(.5)?-1:1):0,
     size:rr(.94,1.06),spread:rr(.1,.2),splay:rr(.03,.14),seed:R()*1e4};}
 const people=[makePerson(true)];
-if(chance(.3)){const p=makePerson(false);p.side=chance(.5)?-1:1;p.size*=rr(.86,.96);p.rot=p.side*rr(.12,.26);p.back=rr(-.08,.05);people.push(p);}
+// Almost always one pair of feet. A second pair is a rare night.
+if(chance(.04)){const p=makePerson(false);p.side=chance(.5)?-1:1;p.size*=rr(.86,.96);p.rot=p.side*rr(.12,.26);p.back=rr(-.08,.05);people.push(p);}
 // Per-foot details drawn once from the generator, so a resize redraws the same feet.
 for(const p of people){p.feet=[-1,1].map(s=>{
   const hairs=[];for(let i=0;i<Math.round(520*p.hair);i++)hairs.push([rr(-.3,.3),rr(1.02,3.2),rr(.01,.026),rr(-.7,.7),rr(.18,.45)]);
