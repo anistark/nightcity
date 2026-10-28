@@ -82,20 +82,43 @@ float sdCap(vec3 p,vec3 a,vec3 b,float r){vec3 pa=p-a,ba=b-a;float h=clamp(dot(p
 float sdRC(vec3 p,vec3 a,vec3 b,float r1,float r2){vec3 ba=b-a;float l2=dot(ba,ba),rr=r1-r2,a2=l2-rr*rr,il2=1./l2;vec3 pa=p-a;float y=dot(pa,ba),z=y-l2;
   vec3 xv=pa*l2-ba*y;float x2=dot(xv,xv),y2=y*y*l2,z2=z*z*l2,k=sign(rr)*rr*rr*x2;
   if(sign(z)*a2*z2>k)return sqrt(x2+z2)*il2-r2;if(sign(y)*a2*y2<k)return sqrt(x2+y2)*il2-r1;return(sqrt(x2*a2*il2)+y*rr)*il2-r1;}
-const vec3 TB[5]=vec3[5](vec3(-.027,.086,.018),vec3(-.005,.094,.014),vec3(.013,.091,.013),vec3(.028,.085,.012),vec3(.041,.077,.011));
-const vec3 TT[5]=vec3[5](vec3(-.026,.138,.0145),vec3(-.005,.13,.0105),vec3(.014,.124,.0098),vec3(.03,.115,.009),vec3(.044,.104,.0082));
-// Returns distance, and which toe is nearest with how far along it, for the nails.
+// Toes, big to little, in a right foot's frame: where each meets the foot, its knuckle, its tip and its thickness.
+// The knuckle rides high and the tip curls down to rest a fleshy pad on the sand. The second toe is the longest.
+const vec3 TB[5]=vec3[5](vec3(-.028,.082,.021),vec3(-.0065,.091,.017),vec3(.0115,.088,.016),vec3(.027,.082,.015),vec3(.0405,.074,.014));
+const vec3 TJ[5]=vec3[5](vec3(-.027,.11,.022),vec3(-.0055,.113,.019),vec3(.0135,.107,.018),vec3(.0295,.099,.0165),vec3(.044,.0885,.015));
+const vec3 TT[5]=vec3[5](vec3(-.0255,.137,.0135),vec3(-.0045,.134,.0085),vec3(.0155,.126,.008),vec3(.0315,.116,.0075),vec3(.0465,.102,.007));
+const float TR[5]=float[5](.0158,.0101,.0096,.009,.0082);
+// COARSE skips the small details (bone knobs, tendons, toe pads) for shadows and occlusion, which don't need them.
+bool COARSE=false;
+// The distance to one foot, which toe is nearest (-1 for the body of the foot), and how far along that toe's last segment.
 vec3 footLocal(vec3 p){
-  float d=sdEll(p-vec3(0,-.078,.036),vec3(.032,.042,.036));
-  d=smin(d,sdRC(p,vec3(0,-.055,.058),vec3(-.004,.058,.022),.033,.024),.035);
-  d=smin(d,sdEll(p-vec3(-.003,.07,.019),vec3(.05,.034,.019)),.025);
-  d=smin(d,sdEll(p-vec3(.03,.005,.017),vec3(.018,.062,.016)),.025);
-  d=smin(d,sdEll(p-vec3(-.026,.0,.024),vec3(.018,.06,.022)),.025);
-  d=smin(d,length(p-vec3(-.032,-.06,.072))-.011,.012);d=smin(d,length(p-vec3(.034,-.066,.066))-.01,.012);
-  float td=1e9,ti=0.,th=0.;
-  for(int i=0;i<5;i++){vec3 a=TB[i],b=vec3(TT[i].xy,TT[i].z);float r=TT[i].z;vec3 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
-    float rad=r*(1.-.1*h)*(i==0?1.08:1.);float dd=length(pa-ba*h)-rad;if(dd<td){td=dd;ti=float(i);th=h;}}
-  d=smin(d,td,.005);
+  // Heel, the arch rising to the ankle, and the broad ball of the foot.
+  float d=sdEll(p-vec3(0,-.082,.034),vec3(.031,.036,.034));
+  d=smin(d,sdRC(p,vec3(0,-.05,.06),vec3(-.004,.056,.021),.034,.023),.035);
+  d=smin(d,sdEll(p-vec3(-.003,.068,.018),vec3(.051,.03,.018)),.024);
+  d=smin(d,sdEll(p-vec3(.031,.008,.016),vec3(.017,.06,.015)),.024);
+  d=smin(d,sdEll(p-vec3(-.027,.004,.025),vec3(.018,.058,.023)),.024);
+  // The knobs of bone just behind the toes, and the ankle bones, the inner one higher.
+  d=smin(d,sdEll(p-vec3(-.033,-.058,.074),vec3(.01,.013,.012)),.012);d=smin(d,sdEll(p-vec3(.035,-.066,.064),vec3(.009,.012,.011)),.012);
+  // Details only matter close to the skin: the bone knobs behind the toes, and tendons up to the front of the ankle.
+  if(!COARSE&&d<.012){
+    for(int i=0;i<5;i++)d=smin(d,length(p-(TB[i]-vec3(0,.012,.002)))-TR[i]*.95,.01);
+    d=smin(d,sdCap(p,TB[0]+vec3(.002,-.004,.012),vec3(-.008,-.036,.068),.0032),.006);
+    for(int i=1;i<5;i++)d=smin(d,sdCap(p,TB[i]+vec3(0,-.006,.01),vec3(.004+float(i)*.003,-.034,.066),.0019),.005);}
+  // Toes: two segments each, a pad under the tip, and only a slight blend into the foot so each stays separate.
+  float td=1e9,ti=-1.,th=0.;
+  // The toes sit inside one small sphere: outside it, its distance stands in for all five.
+  float tb=length(p-vec3(.009,.106,.014))-.056;
+  if(tb>.008)td=tb;else
+  for(int i=0;i<5;i++){float r=TR[i];
+    float a=sdRC(p,TB[i],TJ[i],r,r*.96);
+    vec3 pa=p-TJ[i],ba=TT[i]-TJ[i];float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
+    float b=sdRC(p,TJ[i],TT[i],r*.96,r*.82);
+    float dd=min(a,b);
+    if(!COARSE)dd=smin(dd,sdEll(p-(TT[i]+vec3(0,-.003,-.0015)),vec3(r*.9,r*.95,r*.62)),.004);
+    if(dd<td){td=dd;ti=float(i);th=h;}}
+  float body=d;d=smin(d,td,.0045);
+  if(body<td)ti=-1.;
   d=max(d,-p.z);
   return vec3(d,ti,th);}
 mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -108,12 +131,16 @@ vec4 feetSDF(vec3 p){vec4 best=vec4(1e9,0,0,-1);
     vec3 f=footLocal(q);float d=f.x*sc;
     // The leg: ankle to knee to hip, running up toward the viewer.
     vec3 ank=vec3(F.xy,0)+vec3(rot(F.z)*vec2(0,-.062*sc),.07*sc),knee=vec3(mix(F.x,P.x,.6),P.y,.5),calf=mix(ank,knee,.55)+vec3(0,-.012,0);
-    float leg=min(sdRC(p,ank,calf,.033*sc,.05*sc),sdRC(p,calf,knee,.05*sc,.046*sc));
-    d=smin(d,leg,.03*sc);
+    float leg=min(sdRC(p,ank+vec3(0,0,.012*sc),calf,.03*sc,.05*sc),sdRC(p,calf,knee,.05*sc,.046*sc));
+    vec3 fwd=vec3(rot(F.z)*vec2(0,1),0);leg=smin(leg,sdCap(p,ank+fwd*.024*sc+vec3(0,0,.03*sc),knee+fwd*.036*sc,.007*sc),.02*sc);
+    d=smin(d,leg,.045*sc);
     if(d<best.x)best=vec4(d,f.y,f.z,float(i));}
   return best;}
+// A world point in foot i's own frame, as footLocal sees it.
+vec3 footSpace(vec3 p,int i){vec4 F=vec4(0),P=vec4(1);float sink=0.;for(int k=0;k<4;k++)if(k==i){F=uF[k];P=uFP[k];sink=uSkin[k].w;}
+  vec3 q=p-vec3(F.xy,-sink);q.xy=rot(-F.z)*q.xy;q.x*=F.w;return q/P.w;}
 vec3 feetNormal(vec3 p){vec2 e=vec2(.0006,-.0006);return normalize(e.xyy*feetSDF(p+e.xyy).x+e.yyx*feetSDF(p+e.yyx).x+e.yxy*feetSDF(p+e.yxy).x+e.xxx*feetSDF(p+e.xxx).x);}
-float feetShadow(vec3 ro,vec3 rd){float res=1.,t=.004;for(int i=0;i<22;i++){float h=feetSDF(ro+rd*t).x;res=min(res,10.*h/t);t+=clamp(h,.004,.08);if(res<.02||t>1.2)break;}return clamp(res,0.,1.);}
+float feetShadow(vec3 ro,vec3 rd){COARSE=true;float res=1.,t=.004;for(int i=0;i<22;i++){float h=feetSDF(ro+rd*t).x;res=min(res,10.*h/t);t+=clamp(h,.004,.08);if(res<.02||t>1.2)break;}COARSE=false;return clamp(res,0.,1.);}
 
 /* ---- the beach: sand, water, foam ---- */
 float sandH(vec2 p){return vnoise(p*90.)*.25*lod(90.,FW)+vnoise(p*260.)*.12*lod(260.,FW)+fbm(p*14.)*.6+sin(p.y*55.+vnoise(p*6.)*6.)*.06;}
@@ -223,19 +250,39 @@ void main(){
   float edge,bore,drain;vec2 fq;float cov=foamCover(p,edge,fq,bore,drain);
   if(tf<tg){
     vec3 X=ro+rd*tf,n=feetNormal(X);int fi=int(hit.w);vec4 S=uSkin[fi];vec3 skin=S.rgb;
-    float foot=0.;for(int i=0;i<4;i++)if(i==fi)foot=uF[i].z;
-    // Skin: a little bumpy, warm where light scatters through it, glossier when wet. The nails are smooth and pale.
-    vec3 bn=normalize(n+vec3(vnoise(X.xy*900.)-.5,vnoise(X.yz*900.+3.)-.5,vnoise(X.xz*900.+7.)-.5)*.08);
-    float nail=0.;if(X.z<.045&&hit.z>.55){vec3 a=vec3(0);nail=smoothstep(.55,.75,hit.z)*smoothstep(.35,.7,n.z);}
-    vec3 alb=mix(skin,uNail[fi].rgb,nail*.9);
-    float wetF=uNail[fi].w,rough=mix(mix(.62,.28,wetF),.2,nail);
+    vec4 FF=uF[fi];float hair=uFP[fi].z,wetF=uNail[fi].w;vec3 q=footSpace(X,fi);float toe=hit.y,along=hit.z;
+    // Nails: on top of each toe's last segment, with a pale half-moon at the base and a whiter free edge.
+    float nail=0.,lunula=0.,edgeW=0.,rimN=0.;vec3 axW=vec3(0,1,0);float knuckle=0.;
+    if(toe>-.5){int k=int(toe);vec3 J=TJ[k],T=TT[k];float r=TR[k];vec3 ax=normalize(T-J);
+      vec3 pj=q-J;float u=dot(pj,ax)/length(T-J);vec3 side=normalize(cross(ax,vec3(0,0,1)));float lat=dot(pj,side);
+      float nw=r*(k==0?.74:.64);
+      nail=(1.-smoothstep(nw*.8,nw,abs(lat)))*smoothstep(.3,.42,u)*(1.-smoothstep(.96,1.04,u))*smoothstep(.15,.45,n.z);
+      lunula=nail*(1.-smoothstep(.34,.42,u));edgeW=nail*smoothstep(.9,.98,u);
+      // A thin darker rim where the skin folds over the nail at its sides and base.
+      rimN=nail*max(1.-smoothstep(0.,.18,(nw-abs(lat))/nw),1.-smoothstep(.3,.36,u));
+      // Fine creases across the top of each toe joint.
+      vec3 pb=q-mix(TB[k],J,.85);float kd=dot(pb,normalize(J-TB[k]));knuckle=sin(kd*2400.)*exp(-kd*kd/(r*r*.35))*(1.-nail);
+      vec2 a2=ax.xy;a2.x*=FF.w;a2=rot(FF.z)*a2;axW=normalize(vec3(a2,ax.z));}
+    // Skin: uneven in tone, flushed toward the toe tips, with pores and creases in its surface.
+    vec3 alb=skin*(1.+.08*(fbm(X.xy*150.+X.z*40.)-.5)+.04*(vnoise(X.yz*420.)-.5));
+    float flush=toe>-.5?.4+.6*along:smoothstep(.06,.0,X.z)*.3;
+    alb=mix(alb,alb*vec3(1.1,.84,.82),flush*.35);
+    // Fine hair down the shin.
+    if(hair>0.&&X.z>.08){vec2 sd=rot(FF.z)*vec2(1,0);float hx=dot(X.xy,sd);float hs=smoothstep(.8,.93,vnoise(vec2(hx*1800.,X.z*110.)))*smoothstep(.08,.14,X.z)*lod(1800.,FW*.8);alb*=1.-.22*hs*hair;}
+    vec3 nailC=uNail[fi].rgb;alb=mix(alb,mix(nailC,vec3(.84,.78,.74),lunula*.15+edgeW*.3)*mix(1.,.75,rimN),nail);
+    alb*=mix(1.,.86,wetF*(1.-nail));
+    vec3 bn=normalize(n+vec3(vnoise(X.xy*1100.)-.5,vnoise(X.yz*1100.+3.)-.5,vnoise(X.xz*1100.+7.)-.5)*.07*(1.-nail)+axW*knuckle*.07);
     float sh=feetShadow(X+n*.002,uMoonDir);
-    float ao=0.;for(int i=1;i<=4;i++){float h=.006*float(i);ao+=(h-feetSDF(X+n*h).x)/h;}ao=clamp(1.-ao*.22,0.,1.);
-    vec3 L=uMoonDir;float nl=dot(bn,L),wrap=max((nl+.45)/1.45,0.);
-    vec3 sss=skin*vec3(1.,.42,.3)*max(0.,.35-abs(nl))*1.4;
+    COARSE=true;float ao=0.;for(int i=1;i<=4;i++){float h=.005*float(i);ao+=(h-feetSDF(X+n*h).x)/h;}ao=clamp(1.-ao*.24,0.,1.);COARSE=false;
+    // Light spreads further through skin in red than in blue, so shadows turn warm, and thin edges glow red.
+    vec3 L=uMoonDir;float nl=dot(bn,L);vec3 wr=vec3(.6,.36,.26);vec3 diff=max((vec3(nl)+wr)/(1.+wr),0.);
+    col=alb*uMoonCol*diff*sh+alb*sky(bn)*2.4*ao;
+    float rimT=pow(1.-max(dot(n,vdir),0.),3.)*(.5+.5*max(-dot(n,L),0.));col+=skin*vec3(.9,.22,.15)*uMoonCol*rimT*.22*sh;
+    // Shine: a broad soft sheen and a tighter oily one, a sharp one when wet, and glossy nails.
     vec3 h=normalize(L+vdir);float F=.028+.972*pow(1.-max(dot(bn,vdir),0.),5.);
-    col=alb*uMoonCol*wrap*sh+uMoonCol*sss*sh+alb*sky(bn)*2.4*ao+uMoonCol*ggx(bn,h,rough)*F*max(nl,0.)*sh*(.12+wetF*.5+nail*.4);
-    col*=mix(.6,1.,ao);
+    float spec=ggx(bn,h,.62)*.45+ggx(bn,h,.36)*.3+wetF*ggx(n,h,.14)*.55+nail*ggx(n,h,.12)*.8;
+    col+=uMoonCol*spec*F*max(nl,0.)*sh;
+    col*=mix(.55,1.,ao);
     // Water running over the top of the foot, and foam where the water surface meets the skin.
     float wl=wd*.9;if(X.z<wl&&wd>0.){float dep=wl-X.z;col*=exp(-dep*vec3(60.,24.,18.));col+=vec3(.6,.7,.8)*uMoonCol*.02;}
     float ring=wd>.004?(1.-smoothstep(.0,.0035,abs(X.z-wl)))*smoothstep(.004,.01,wd)*smoothstep(.35,.65,vnoise(X.xy*500.)+vnoise(X.xy*150.)*.4):0.;
@@ -367,7 +414,7 @@ function update(dt){
   const mid=frontAt(0,0),d=mid-lastMid;lastMid=mid;foamOY+=d<0?d:d*.55;foamOX+=dt*.004;
   for(const f of feet){const depth=f.y+.13*f.p.size-frontAt(0,f.x);
     if(depth>0){f.wet=1;if(!f.dunk){f.dunk=true;if(depth>.08)f.sink=Math.min(.012,f.sink+rr(.001,.0025));}}else if(depth<-.03)f.dunk=false;
-    f.wet=Math.max(0,f.wet-dt/30);}
+    f.wet=Math.max(0,f.wet-dt/40);}
 }
 function logWave(w){
   let near=1e9,hit=0;for(const f of feet){const g=frontAt(0,f.x)-(f.y+.13*f.p.size);near=Math.min(near,g);if(g<0)hit++;}
@@ -387,10 +434,12 @@ function build(){
   cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);
 }
 // The camera: at eye height a little behind the feet, looking down and forward toward the sea.
-function camera(){const asp=CW/CH,cam=[0,.06,1.42],target=[0,.6,0];
+// ZOOM narrows the view onto the feet, for looking at them closely in ?debug.
+let ZOOM=1;
+function camera(){const asp=CW/CH,cam=[0,.06,1.42],target=[0,lerp(.6,TOE_Y-.1,1-1/ZOOM),0];
   const f=norm(sub(target,cam)),r=norm(cross(f,[0,0,1])),u=cross(r,f);
   // On a tall screen, keep about the same view up and down and crop the sides, so the legs don't fill the frame.
-  const tanY=asp<1?Math.tan(.3)*1.22:Math.tan(.3),tanX=tanY*asp;return{cam,f,r,u,tanX,tanY};}
+  const tanY=(asp<1?Math.tan(.3)*1.22:Math.tan(.3))/ZOOM,tanX=tanY*asp;return{cam,f,r,u,tanX,tanY};}
 const sub=(a,b)=>a.map((v,i)=>v-b[i]),norm=a=>{const l=Math.hypot(...a);return a.map(v=>v/l);},cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const MOON_DIR=norm([SEA.moonX,.78,.56]);
 // Wet sand: mark what the water covers and let the rest dry. Runs a few times a second, reading the fronts already uploaded.
@@ -420,8 +469,8 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[1-wetI]);gl.viewport(0,0,WS,WS);
   gl.uniform1f(U.uBright,bright);gl.uniform1f(U.uSeaY,SEA.y);gl.uniform1f(U.uMoonX,SEA.moonX);
   const F=[],FP=[],SK=[],NL=[];
   for(let i=0;i<4;i++){const f=feet[i];if(!f){F.push(0,0,0,1);FP.push(0,0,0,1);SK.push(0,0,0,0);NL.push(0,0,0,0);continue;}
-    F.push(f.x,f.y,f.rot,f.s);FP.push(f.hipX,.02,0,f.p.size);SK.push(...lin(f.p.skin),f.sink);
-    const nail=f.p.nails?lin(f.p.nails):lin(f.p.skin.map((v,i)=>Math.min(255,v*.75+[52,44,44][i])));NL.push(...nail,f.wet);}
+    F.push(f.x,f.y,f.rot,f.s);FP.push(f.hipX,.02,f.p.hair,f.p.size);SK.push(...lin(f.p.skin),f.sink);
+    const nail=f.p.nails?lin(f.p.nails):lin(f.p.skin.map((v,i)=>Math.min(255,v*.8+[46,26,30][i])));NL.push(...nail,f.wet);}
   {let x0=9,x1=-9,y0=9,y1=-9;for(const f of feet){x0=Math.min(x0,f.x);x1=Math.max(x1,f.x);y0=Math.min(y0,f.y);y1=Math.max(y1,f.y);}
    gl.uniform4f(U.uBox,x0-.12,y0-.42,x1+.12,y1+.18);}
   gl.uniform1i(U.uFeet,feet.length);gl.uniform4fv(U.uF,F);gl.uniform4fv(U.uFP,FP);gl.uniform4fv(U.uSkin,SK);gl.uniform4fv(U.uNail,NL);
@@ -429,7 +478,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[1-wetI]);gl.viewport(0,0,WS,WS);
 }
 
 /* ---------- start ---------- */
-if(DEBUG)window.SH={gl:true,readWet(){const px=new Uint8Array(WS*WS*4);gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[wetI]);gl.readPixels(0,0,WS,WS,gl.RGBA,gl.UNSIGNED_BYTE,px);gl.bindFramebuffer(gl.FRAMEBUFFER,null);const col=[];for(let y=0;y<WS;y+=32)col.push(px[(y*WS+128)*4]);return{status:gl.checkFramebufferStatus(gl.FRAMEBUFFER),col};},waves,feet,people,stats,newWave,get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},
+if(DEBUG)window.SH={gl:true,set zoom(v){ZOOM=v;},readWet(){const px=new Uint8Array(WS*WS*4);gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[wetI]);gl.readPixels(0,0,WS,WS,gl.RGBA,gl.UNSIGNED_BYTE,px);gl.bindFramebuffer(gl.FRAMEBUFFER,null);const col=[];for(let y=0;y<WS;y+=32)col.push(px[(y*WS+128)*4]);return{status:gl.checkFramebufferStatus(gl.FRAMEBUFFER),col};},waves,feet,people,stats,newWave,get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},
   draw:()=>draw(),step:dt=>update(dt),run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();NightCity.refresh();}};
 build();
 for(let i=0;i<30*14;i++){update(1/30);if(i%6===5){gl.bindTexture(gl.TEXTURE_2D,frontTex);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,NX,7,gl.RED,gl.FLOAT,FRONT);wetPass();}}
