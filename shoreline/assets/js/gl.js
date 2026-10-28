@@ -140,9 +140,16 @@ float rippleH(vec2 p,float drain){
 // Which wave owns this spot, how much foam it carries there, and where that foam has travelled to.
 // Running up, the foam rides with the front. From the moment a wave stops, its foam stays put where it reached,
 // and stretches into streaks down the slope as the water drains.
+// How turbulent the foam is here, and how much spray hangs just ahead of a running front. Set by foamCover.
+float CHURN=0.,SPRAY=0.;
 float foamCover(vec2 p,out float edge,out vec2 q,out float bore,out float drain){
-  float c=0.,best=-1.;edge=0.;bore=0.;drain=0.;q=p;
+  float c=0.,best=-1.;edge=0.;bore=0.;drain=0.;q=p;CHURN=0.;SPRAY=0.;
+  float upS=9.,backWater=0.;
   for(int i=0;i<3;i++){vec4 W=uWave[i];if(W.y>2.5)continue;float f=front(1+i,p.x),m=front(4+i,p.x),s=p.y-f;
+    if(W.y<.5&&s>-.03)upS=min(upS,abs(s));
+    if(W.y>1.5&&s>0.)backWater=1.;
+    // Spray: a scatter of droplets and bubbles just ahead of a front that's still moving fast.
+    if(W.y<.5&&s<0.)SPRAY=max(SPRAY,(1.-smoothstep(0.,.035,-s))*pow(1.-W.x,1.5));
     float up=W.y<.5?1.:0.,b=up>0.?0.:clamp(1.-W.x,0.,1.),k=up>0.?1.:pow(max(W.x,0.),1.4);
     float dense=W.w*(up>0.?1.:.85*k)*(1.-smoothstep(.0,.04+.08*(1.-W.x)*up,s))*step(-.002,s);
     float lace=W.z*(up>0.?1.:.8*k)*(1.-smoothstep(.1,.35+.3*W.x,s))*step(0.,s);
@@ -150,8 +157,15 @@ float foamCover(vec2 p,out float edge,out vec2 q,out float bore,out float drain)
     if(W.y<1.5)edge=max(edge,(1.-smoothstep(0.,.006,abs(s-.0015)))*(up>0.?1.:.5));
     if(up>0.)bore=max(bore,.007*exp(-max(s,0.)/.03)*step(0.,s)*(1.-W.x*.7));
     vec2 sd=uSeed[i].xy;
-    if(ci>best){best=ci;drain=b*step(0.,s);q=up>0.?vec2(p.x+sd.x,s+sd.y):vec2(p.x+sd.x,(p.y-m)*mix(1.,.42,b)+sd.y);}
+    // Foam behind the front moves slower than the front, so it slips back seaward as the wave runs up.
+    // Near the front it churns, settling as the wave slows and drains.
+    float lag=min(uSeed[i].z,6.)*.025*smoothstep(0.,.9,s);
+    if(ci>best){best=ci;drain=b*step(0.,s);q=up>0.?vec2(p.x+sd.x,s-lag+sd.y):vec2(p.x+sd.x,(p.y-m)*mix(1.,.62,b)-lag+sd.y);
+      CHURN=up>0.?exp(-max(s,0.)/.18)*(1.-W.x*.6):.25*(1.-b);}
     c=max(c,ci);}
+  // Where a new wave runs into water still draining from the last one, the meeting line churns white and piles up.
+  float hit=backWater*exp(-upS/.035)*step(upS,8.)*smoothstep(.25,.75,gnoise(vec2(p.x*7.,uT*.6))+gnoise(vec2(p.x*23.,uT*1.3))*.4);
+  if(hit>.01){c=max(c,.8*hit);bore+=.005*hit;CHURN=max(CHURN,hit);edge=max(edge,hit*.3);}
   for(int i=0;i<3;i++){vec2 S=uStrand[i];if(S.y<=0.)continue;float m=front(4+i,p.x),wid=.003+.011*fbm(vec2(p.x*18.,float(i)*7.)),d=abs(p.y-m+.004),ci=S.y*(1.-smoothstep(wid*.5,wid,d))*.95*smoothstep(.25,.5,fbm(vec2(p.x*30.,float(i)*3.)));
     if(ci>best){best=ci;q=vec2(p.x+uSeed[i].x,(p.y-m)*.5+uSeed[i].y);}c=max(c,ci);}
   float sea=smoothstep(uSeaY-.1,uSeaY+.15,p.y);float cs=sea*.35*smoothstep(.3,.7,fbm(p*3.+vec2(0,uT*.1)));if(cs>best)q=p+vec2(0,uT*.01);c=max(c,cs);
@@ -165,10 +179,12 @@ float holeField(vec2 g,float seed){vec2 i=floor(g),f=fract(g);float best=9.;
 // Finer layers fade out once they get smaller than a pixel, so the foam doesn't shimmer.
 vec3 foamAt(vec2 q,float c,float fw,out vec2 bub){
   vec2 w=vec2(fbm(q*6.),fbm(q*6.+5.2))-.5;w+=(vec2(vnoise(q*35.),vnoise(q*35.+3.))-.5)*.35;
+  // Churn: the lace keeps swirling, so holes open, close and drift while the water is lively.
+  w+=(vec2(gnoise(q*12.+vec2(0,uT*.9)),gnoise(q*12.+vec2(7.,uT*.9)))-.5)*.9*CHURN;
   float h1=holeField(q/.055+w*1.6,1.),h2=holeField(q/.019+w*2.4,7.),h3=holeField(q/.007+w*3.,13.);
   float d2=1.-smoothstep(.15,.45,fw/.019),d3=1.-smoothstep(.15,.45,fw/.007);
   float clump=(fbm(q*4.5+11.)-.5)*(1.2-c);
-  float t1=h1-mix(.45,-.3,c)-clump,t2=(h2-mix(.4,-.3,c))*d2+1.*(1.-d2),t3=(h3-mix(.3,-.35,c))*d3+1.*(1.-d3);
+  float t1=h1-mix(.45,-.3,c)-clump+(gnoise(q*9.+uT*.35)-.5)*.25*(.3+CHURN),t2=(h2-mix(.4,-.3,c))*d2+1.*(1.-d2),t3=(h3-mix(.3,-.35,c))*d3+1.*(1.-d3);
   float thick=min(t1*1.,min(t2*.55,t3*.3));
   float aa=max(fw/.055*1.5,.02);
   float f=smoothstep(0.,aa,thick);
@@ -278,6 +294,10 @@ void main(){
       vec3 fc=vec3(.88,.9,.93)*mix(.68,1.12,th)*bubShade;
       vec3 lit=fc*(uMoonCol*(lam*.75+.3)*sh+sky(fn)*3.2)+uMoonCol*ggx(fn,normalize(uMoonDir+vdir),.12)*.14*sh*(.3+th);
       col=mix(col,lit,f*mix(.42,1.,th));}
+    // Spray: droplets and flecks of foam that flicker in and out just ahead of a fast front.
+    if(SPRAY>.01){vec2 g=p/.004,ci=floor(g),cf=fract(g);float fr=floor(uT*9.);float h=hash(ci+fr*.37);
+      vec2 o=hash2(ci+fr*.61)*.6+.2;float dot0=(1.-smoothstep(.12,.3,length(cf-o)))*step(.82,h)*lod(1./.004,FW*.7);
+      col=mix(col,vec3(.85,.88,.92)*(uMoonCol*.9*sh+sky(vec3(0,0,1))*3.),dot0*SPRAY);}
   }
   // Exposure, a filmic curve, a cool night grade, vignette and a little grain.
   col*=1.45;col=(col*(2.51*col+.03))/(col*(2.43*col+.59)+.14);
@@ -394,7 +414,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[1-wetI]);gl.viewport(0,0,WS,WS);
   gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform1f(U.uT,t);
   const W=[],S=[];for(let s=0;s<3;s++){const w=slots[s];if(!w){W.push(0,3,0,0);S.push(0,0);continue;}const[p,st]=phase(w,t);W.push(p,w.st===3?3:st,w.lace,w.dense);
     S.push(0,w.strand?Math.max(0,1-(t-w.strand)/w.strandLife)*w.lace:0);}
-  gl.uniform4fv(U.uSeed,[0,1,2].flatMap(i=>slots[i]?[slots[i].sx,slots[i].sy,0,0]:[0,0,0,0]));gl.uniform1f(U.uRip,rip);
+  gl.uniform4fv(U.uSeed,[0,1,2].flatMap(i=>slots[i]?[slots[i].sx,slots[i].sy,t-slots[i].t0,0]:[0,0,0,0]));gl.uniform1f(U.uRip,rip);
   gl.uniform4fv(U.uWave,W);gl.uniform2fv(U.uStrand,S);gl.uniform2f(U.uFoamOff,foamOX,-foamOY);
   gl.uniform3fv(U.uMoonDir,MOON_DIR);gl.uniform3fv(U.uMoonCol,MOON.c.map(v=>v*.4*bright));gl.uniform3fv(U.uSand,lin(SAND.c));
   gl.uniform1f(U.uBright,bright);gl.uniform1f(U.uSeaY,SEA.y);gl.uniform1f(U.uMoonX,SEA.moonX);
