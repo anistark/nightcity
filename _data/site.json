@@ -1,0 +1,10 @@
+{
+  "name": "Night City",
+  "url": "https://anistark.github.io/nightcity/",
+  "description": "Generative scenes that run forever and never repeat.",
+  "pitch": "Generative scenes that run forever and never repeat. A pixel-art city, one-on-one streetball and rain on a window, seeded from the clock.",
+  "image": "assets/images/og.jpg",
+  "imageAlt": "Night City: the hooded logo over a pixel-art night skyline, with a basketball court inset",
+  "creator": "@kranirudha",
+  "theme": "#07081a"
+}
