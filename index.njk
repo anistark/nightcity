@@ -15,45 +15,21 @@ ogPath: ""
     <section id="scenes" aria-labelledby="scenes-h">
       <h2 class="section" id="scenes-h">Scenes</h2>
       <ul class="scenes">
+{%- for s in collections.scenes %}
         <li>
-          <a class="scene" href="pixel-city/">
+          <a class="scene" href="{{ s.url.slice(1) }}">
             <div class="preview">
-              <iframe data-src="pixel-city/" title="Live preview of Pixel City" tabindex="-1" aria-hidden="true"></iframe>
+              <iframe data-src="{{ s.url.slice(1) }}" title="Live preview of {{ s.data.title }}" tabindex="-1" aria-hidden="true"></iframe>
             </div>
             <div class="info">
               <div>
-                <h3>Pixel City</h3>
-                <p>A pixel-art night city seen from a rooftop. Traffic, a metro, a cat on the ledge, pigeons, weather, flickering windows and neon.</p>
+                <h3>{{ s.data.title }}</h3>
+                <p>{{ s.data.card }}</p>
               </div>
             </div>
           </a>
         </li>
-        <li>
-          <a class="scene" href="basketball-court/">
-            <div class="preview">
-              <iframe data-src="basketball-court/" title="Live preview of Half Court" tabindex="-1" aria-hidden="true"></iframe>
-            </div>
-            <div class="info">
-              <div>
-                <h3>Half Court</h3>
-                <p>One-on-one under the floodlights, in streetwear inspired by the Night City logo. Real ball physics off the rim and glass, crossovers, blocks, steals, streetball rules and a cat that wanders by.</p>
-              </div>
-            </div>
-          </a>
-        </li>
-        <li>
-          <a class="scene" href="rain-window/">
-            <div class="preview">
-              <iframe data-src="rain-window/" title="Live preview of Rain Window" tabindex="-1" aria-hidden="true"></iframe>
-            </div>
-            <div class="info">
-              <div>
-                <h3>Rain Window</h3>
-                <p>Slow rain on a window at night, in front of a city out of focus. Drops land, join their neighbours and run down the glass, leaving clear trails while cars and windows glow behind.</p>
-              </div>
-            </div>
-          </a>
-        </li>
+{%- endfor %}
       </ul>
     </section>
 
