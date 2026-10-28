@@ -11,7 +11,8 @@ const pages = [];
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p);
+    // plan/ is only copied in by the local dev server, never deployed.
+    if (statSync(p).isDirectory()) { if (relative(SITE, p) !== 'plan') walk(p); }
     else if (extname(name) === '.html') pages.push(p);
   }
 })(SITE);

@@ -26,21 +26,14 @@ These rules make exact repetition effectively impossible. The real target is *pe
 
 ## Run it locally
 
-Open `index.html` in a browser. It lists every scene with a live preview and links to each one.
-
-Each scene is a single browser page with no server, build step, install or libraries, so you can also open a scene's own `index.html` directly.
-
-To serve over HTTP instead, use [just](https://github.com/casey/just):
+The site is built with [Eleventy](https://www.11ty.dev). With Node 24 and [just](https://github.com/casey/just) installed:
 
 ```sh
+npm install
 just serve
 ```
 
-```sh
-just serve pixel-city
-```
-
-The first serves the whole project and the second serves one folder, both at http://localhost:8765. Pass a second argument to change the port.
+This serves the site at http://localhost:8765 and rebuilds on every change. The landing page lists every scene with a live preview and links to each one. The scenes themselves use no libraries, only plain JavaScript and Canvas 2D.
 
 ## Embed a scene
 

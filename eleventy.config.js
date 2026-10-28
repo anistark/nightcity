@@ -7,6 +7,8 @@ export default function (eleventyConfig) {
   for (const path of ['assets', '*/assets', 'embed.js', 'manifest.webmanifest']) {
     eleventyConfig.addPassthroughCopy(path);
   }
+  // The private plan/ tools, like the share preview composer, are served locally but never deployed.
+  if (process.env.ELEVENTY_RUN_MODE === 'serve') eleventyConfig.addPassthroughCopy('plan');
   // The relative path from a page back to the site root, so links work at /nightcity/, on a custom domain or anywhere else.
   eleventyConfig.addFilter('root', url => {
     const depth = url.split('/').length - 2;
@@ -24,7 +26,7 @@ export default function (eleventyConfig) {
 }
 
 // Fills CORE in sw.js with every built file as a site-relative URL (folders for index pages), and CACHE with a hash of their contents.
-// Share images aren't needed offline, and forwarding pages only point elsewhere.
+// Share images aren't needed offline, forwarding pages only point elsewhere, and plan/ is only there locally.
 function writeServiceWorker(out) {
   const skip = new Set(JSON.parse(readFileSync('_data/redirects.json', 'utf8')).map(r => r.from));
   const files = [];
@@ -35,7 +37,7 @@ function writeServiceWorker(out) {
       else files.push(relative(out, p).split('\\').join('/'));
     }
   })(out);
-  const keep = files.filter(f => f !== 'sw.js' && !f.endsWith('/og.jpg') && f !== 'assets/images/og.jpg' && !skip.has(f) && !f.endsWith('.DS_Store'));
+  const keep = files.filter(f => f !== 'sw.js' && !f.startsWith('plan/') && !f.endsWith('/og.jpg') && f !== 'assets/images/og.jpg' && !skip.has(f) && !f.endsWith('.DS_Store'));
   const hash = createHash('sha256');
   for (const f of keep) hash.update(f).update(readFileSync(join(out, f)));
   const urls = keep.map(f => f === 'index.html' ? './' : f.endsWith('/index.html') ? f.slice(0, -'index.html'.length) : f);
