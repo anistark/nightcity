@@ -98,8 +98,15 @@ function log(type,text,params){
   if(logArr.length>50)logArr.pop();
   uiDirty=true;
 }
+// The clock's colon shows for the first half of every second, like a bedside clock. Checked each frame, redrawn only on change.
+ui.clock.innerHTML='<span></span><span class="colon">:</span><span></span>';
+const[clkH,clkC,clkM]=ui.clock.children;let clkKey='';
+function tickClock(blink){
+  const d=new Date(),on=!blink||d.getMilliseconds()<500,k=d.getHours()*60+d.getMinutes()+(on?'':'-');
+  if(k===clkKey)return;clkKey=k;clkH.textContent=p2(d.getHours());clkM.textContent=p2(d.getMinutes());clkC.classList.toggle('off',!on);
+}
 function updateUI(){
-  ui.clock.textContent=fmtTime(new Date());
+  tickClock(!RM);
   ui.ev.textContent=stats.events;ui.di.textContent=seen.size;ui.sh.textContent=stats.shots;ui.mk.textContent=stats.makes;
   if(scoreDirty){
     ui.score.textContent='';
@@ -1615,14 +1622,15 @@ if(RM){
     let dt=Math.min(.1,Math.max(0,(now-last)/1000))*SPEED;last=now;
     if(window.HC&&window.HC.paused)dt=0;
     while(dt>0){const s=Math.min(dt,1/60);update(s);dt-=s;}
-    draw();uiT+=1/60;if(uiT>.5){uiT=0;updateUI();}
+    draw();tickClock(true);uiT+=1/60;if(uiT>.5){uiT=0;updateUI();}
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();draw();},200);});
+const LOG_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v1H0zM0 1h1v1H0zM4 1h2v1H4zM0 2h1v1H0zM6 2h1v1H6zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM0 4h1v1H0zM6 4h1v1H6zM0 5h1v1H0zM2 5h3v1H2zM6 5h1v1H6zM0 6h7v1H0z"/></svg>';
 const CLOSE_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
-function toggleLog(){ui.panel.hidden=!ui.panel.hidden;ui.btn.setAttribute('aria-expanded',String(!ui.panel.hidden));if(ui.panel.hidden){ui.btn.textContent='Log';ui.btn.classList.remove('icon');ui.btn.removeAttribute('aria-label');}else{ui.btn.innerHTML=CLOSE_ICON;ui.btn.classList.add('icon');ui.btn.setAttribute('aria-label','Close log');}uiDirty=true;updateUI();}
+function toggleLog(){ui.panel.hidden=!ui.panel.hidden;ui.btn.setAttribute('aria-expanded',String(!ui.panel.hidden));ui.btn.innerHTML=ui.panel.hidden?LOG_ICON:CLOSE_ICON;ui.btn.setAttribute('aria-label',ui.panel.hidden?'Open log':'Close log');uiDirty=true;updateUI();}
 ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
 cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
 addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});

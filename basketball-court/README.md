@@ -10,7 +10,7 @@ To serve it over HTTP instead, run `just serve basketball-court` from the projec
 
 ## Controls
 
-- **Log** (bottom-right) or `L`: open the live event list with counters. The ✕ closes it.
+- **Log**, the page icon (bottom-right), or `L`: open the live event list with counters. The ✕ closes it.
 - **Share** (top-right, beside fullscreen): a dialog with the link and a copy button, then X, Bluesky, LinkedIn and Reddit as pixel logos, plus your device's own share sheet where there is one. A separate **Embed** button gives copy-paste snippets for putting the scene behind another site or app.
 - **Fullscreen** (top-right) or `F`.
 - **Back** (bottom-left): return to the Night City landing page.

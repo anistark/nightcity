@@ -2,7 +2,7 @@
 
    <script src="https://anistark.github.io/nightcity/embed.js" data-scene="pixel-city" async></script>
 
-   data-scene    pixel-city (default) or basketball-court
+   data-scene    pixel-city (default), basketball-court or rain-window
    data-target   a CSS selector: fill that element instead of the whole page
    data-dim      0 to 1: darken the scene so text on top stays readable
    data-quality  low (default) or high. Low draws at a lower resolution and about 30 frames a second
@@ -12,7 +12,7 @@
 (()=>{
   const me=document.currentScript;if(!me)return;
   const root=new URL('.',me.src).href;
-  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/'};
+  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/','rain-window':'rain-window/'};
   const d=me.dataset,scene=SCENES[d.scene]||SCENES['pixel-city'];
   const dim=Math.min(1,Math.max(0,parseFloat(d.dim)||0));
   const start=()=>{

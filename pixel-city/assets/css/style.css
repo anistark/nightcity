@@ -26,6 +26,7 @@ body{background:var(--night);color:var(--ink);overflow:hidden;padding-left:max(1
 #logBtn svg{display:block}
 .brand{margin:0;font-weight:400;font-family:var(--f-pixel);font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
 .clock{font-family:var(--f-term);font-size:26px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.clock .colon.off{visibility:hidden}
 button{font-family:var(--f-pixel);font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--ink);border:1px solid var(--edge);padding:8px 12px;cursor:pointer;border-radius:0}
 button:hover{border-color:var(--amber);color:var(--amber)}
 button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}

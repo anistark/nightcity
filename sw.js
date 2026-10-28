@@ -2,7 +2,7 @@
 // Same-origin requests go to the network first and fall back to the cache, so updates show up straight away.
 // Fonts from other origins rarely change, so they come from the cache once they have been fetched.
 // Bump CACHE when the CORE list changes.
-const CACHE = 'nightcity-v6';
+const CACHE = 'nightcity-v7';
 const CORE = [
   './', 'index.html', 'license.html', '404.html', 'LICENSE', 'manifest.webmanifest', 'embed.js',
   'assets/css/site.css', 'assets/css/scene-ui.css',
@@ -11,6 +11,7 @@ const CORE = [
   'assets/images/icons/icon-192.png', 'assets/images/icons/icon-512.png', 'assets/images/icons/icon-maskable-512.png', 'assets/images/icons/apple-touch-icon.png',
   'pixel-city/', 'pixel-city/index.html', 'pixel-city/assets/css/style.css', 'pixel-city/assets/js/main.js', 'pixel-city/assets/images/logo.svg',
   'basketball-court/', 'basketball-court/index.html', 'basketball-court/assets/css/style.css', 'basketball-court/assets/js/main.js', 'basketball-court/assets/images/logo.svg',
+  'rain-window/', 'rain-window/index.html', 'rain-window/assets/css/style.css', 'rain-window/assets/js/main.js', 'rain-window/assets/images/logo.svg',
 ];
 const FONT_HOSTS = /^(fonts\.googleapis\.com|fonts\.gstatic\.com|pixelspace\.anirudha\.dev)$/;
 

@@ -25,6 +25,7 @@ assets/
   images/  logo.png, favicon.png, og.jpg, icons/ (PWA icons)
 pixel-city/           a scene: index.html, README.md, assets/{css/style.css, js/main.js, images/logo.svg, images/og.jpg}
 basketball-court/     Half Court, same layout
+rain-window/          Rain Window, same layout
 README.md  CONTRIBUTING.md  AGENTS.md  CLAUDE.md  LICENSE  justfile
 plan/                 private planning notes and tools, gitignored
 .claude/launch.json   preview server config for the Claude desktop app, runs `just serve`
@@ -38,6 +39,7 @@ Notes on the pieces:
 - **Shared scene controls:** `scene-ui.js` and `scene-ui.css` add a back link (bottom left), and share and fullscreen buttons (top right, `F` for fullscreen). Share opens a dialog with the link and a copy button, social buttons, and a separate Embed button with snippets per platform. Each scene loads `scene-ui.js` with `data-scene` and `data-text` set.
 - **Share previews:** `assets/images/og.jpg` and each scene's `assets/images/og.jpg` are 1200x630, referenced by the Open Graph and Twitter tags in every page's `<head>`. Rebuild them with the private `plan/og-compose.html` and headless Chrome. A new scene needs its own `og.jpg` and tags.
 - **Half Court debugging:** `?speed=8`, and `?debug` exposes `window.HC` with `run()`, `step()` and `testShot()`.
+- **Rain Window debugging:** `?speed=8`, and `?debug` exposes `window.RW` with `run()`, `step()`, `draw()` and `fire()`.
 - **Embed mode:** every scene supports `?embed`: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `&q=high`. It listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings. A new scene needs the same.
 
 The nav and footer markup is copied into `index.html`, `license.html` and `404.html`. A change to one must go into all three.
@@ -53,7 +55,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 - **One seed from the clock.** Hash the page-open time, formatted `YYYY-MM-DD HH:MM:SS.mmm`, with `cyrb128` into `sfc32`. Every choice in a scene comes from that generator, never from `Math.random`. Copy the generator from `pixel-city/assets/js/main.js` so all scenes match. Show the seed somewhere in the scene.
 - **Events on independent timers** with exponentially distributed gaps, so there are bursts and lulls instead of a beat.
 - **Variation inside every event** from continuous ranges, plus slow drift from smooth noise.
-- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court is the exception: the owner asked for it to look as realistic as possible, so it draws smooth geometry at full device resolution. Its players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
+- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court and Rain Window are the exceptions: the owner asked for them to look as realistic as possible, so they draw smooth geometry at full device resolution. Its players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
 - **Reduced motion.** Respect `prefers-reduced-motion` and show a still frame instead.
 - **Keep it light.** Cache static layers off-screen. Check that the scene holds about 60 fps.
 
@@ -61,7 +63,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 
 - **Dark only.** It's a night look by design. The colour tokens are on `:root` in `assets/css/site.css` and match Pixel City's `assets/css/style.css`. The accent is amber `#ffcf7a`.
 - **Font:** Pixelspace, the owner's own pixel typeface, loaded from `https://pixelspace.anirudha.dev/pixelspace-font.css` (the font is embedded, so it works offline once cached). Pixel City's overlay still uses Silkscreen and VT323 from Google Fonts.
-- **Font sizes are multiples of 8px only** (16, 24, 32, 48, 64), or the pixel glyphs blur. Body text is 16px, the intro paragraph 24px from 640px up. The owner found a larger step too big, so don't raise sizes without being asked.
+- **Font sizes are multiples of 8px only** (16, 24, 32, 48, 64), or the pixel glyphs blur. The one exception is Rain Window's log panel at 12px, which the owner chose. Body text is 16px, the intro paragraph 24px from 640px up. The owner found a larger step too big, so don't raise sizes without being asked.
 - **Pixelspace is ASCII only.** No `©`, `·`, curly quotes or other non-ASCII text, because they fall back to another font. Use an inline pixel SVG instead, like the copyright mark in the footer.
 - **No max widths on landing page text.** Content spans the window with a 16px side gutter. The scene cards keep their own internal layout.
 - **Scene grid:** one column below 1200px, two columns from 1200px.

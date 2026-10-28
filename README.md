@@ -11,6 +11,7 @@ Each scene is a small set of rules fed by one random generator. Nothing is a sto
 |---|---|---|
 | [Pixel City](pixel-city/) | A pixel-art night city seen from a rooftop: traffic, a metro, a cat, pigeons, weather, flickering windows and neon | [@anistark](https://github.com/anistark) |
 | [Half Court](basketball-court/) | One-on-one basketball under the floodlights, in isometric view, with players in streetwear inspired by the Night City logo: real ball physics, dribble moves, blocks, steals, streetball rules, and a cat that wanders by | [@anistark](https://github.com/anistark) |
+| [Rain Window](rain-window/) | Slow rain on a window at night in front of a city out of focus: drops land, join, run down the glass and wipe clear trails, while cars, windows, showers and lightning come and go behind | [@anistark](https://github.com/anistark) |
 
 ## The approach
 
@@ -49,13 +50,13 @@ Any scene can run as the live background of another site or app. Paste one line 
 <script src="https://anistark.github.io/nightcity/embed.js" data-scene="pixel-city" async></script>
 ```
 
-`data-scene` is `pixel-city` or `basketball-court`. Add `data-target="#hero"` to fill one element instead of the page, `data-dim="0.4"` to darken the scene under your text, or `data-quality="high"` for full resolution. The scene runs in an iframe, ignores clicks, is hidden from screen readers, and pauses while scrolled out of view.
+`data-scene` is `pixel-city`, `basketball-court` or `rain-window`. Add `data-target="#hero"` to fill one element instead of the page, `data-dim="0.4"` to darken the scene under your text, or `data-quality="high"` for full resolution. The scene runs in an iframe, ignores clicks, is hidden from screen readers, and pauses while scrolled out of view.
 
 Each scene's share dialog has an **Embed** option with snippets for HTML, a plain iframe, React, Vue, React Native and Flutter, plus the Content Security Policy line a site may need and a note on transparent backgrounds.
 
 ## Contribute
 
-These two scenes are just the start. New scenes, fixes and ideas are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how the project is laid out and how to add a scene, including how to credit yourself in the table above.
+These scenes are just the start. New scenes, fixes and ideas are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how the project is laid out and how to add a scene, including how to credit yourself in the table above.
 
 ## License
 

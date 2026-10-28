@@ -32,6 +32,7 @@ pixel-city/                           one scene
     js/main.js
     images/logo.svg, og.jpg
 basketball-court/                     Half Court, same layout
+rain-window/                          Rain Window, same layout
 ```
 
 Shared files live in the root `assets/` folder. Each scene keeps its own files in its own `assets/` folder, split into `css`, `js` and `images`. A scene's folder name is its public URL, so existing folders are never renamed.
@@ -48,7 +49,7 @@ Shared files live in the root `assets/` folder. Each scene keeps its own files i
 
 ### Embed support
 
-Every scene can run as a background on someone else's site, so a new one needs the same hooks as the existing two. Copy them from either scene's `main.js`:
+Every scene can run as a background on someone else's site, so a new one needs the same hooks as the existing ones. Copy them from any scene's `main.js`:
 
 - `?embed` hides the overlay and controls, skips the wake lock, and draws at a lower resolution and about 30 fps unless `&q=high` is set.
 - In embed mode the scene listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`.
@@ -65,7 +66,7 @@ Every scene can run as a background on someone else's site, so a new one needs t
    <script src="../assets/js/scene-ui.js" data-scene="night-train" data-text="A night train that never runs the same way twice. Mine was seeded at {seed}." defer></script>
    ```
 
-   They expect the scene's overlay to have `id="hud"`, a `Log` button with `id="logBtn"`, and the seed shown in an element with `id="seed"`, as in the existing scenes.
+   They expect the scene's overlay to have `id="hud"`, a log button with `id="logBtn"` showing the page icon, and the seed shown in an element with `id="seed"`, as in the existing scenes.
 4. Add a 1200x630 share preview at `assets/images/og.jpg`, and copy the Open Graph and Twitter tags from another scene's `<head>`, changing the title, description, URL and image.
 5. Write the scene's `README.md`: what it shows, the files, and how it works.
 6. Add a card to the scenes list in the root `index.html`, copied from an existing one.
