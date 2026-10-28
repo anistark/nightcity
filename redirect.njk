@@ -1,0 +1,23 @@
+---
+pagination:
+  data: redirects
+  size: 1
+  alias: r
+permalink: "{{ r.from }}"
+eleventyExcludeFromCollections: true
+---
+{#- A page that moved. GitHub Pages can't send real redirects, so this forwards in the browser and keeps any ?query and #hash. -#}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Moved | Night City</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{{ site.url }}{{ r.to }}">
+<meta http-equiv="refresh" content="0; url={{ r.to }}">
+<script>location.replace(new URL('{{ r.to }}',location.href).href+location.search+location.hash);</script>
+</head>
+<body>
+<p>This page moved to <a href="{{ r.to }}">{{ site.url }}{{ r.to }}</a>.</p>
+</body>
+</html>

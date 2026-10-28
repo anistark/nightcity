@@ -5,7 +5,7 @@ import { join, dirname, relative, extname } from 'node:path';
 
 const SITE = '_site';
 // Pages link to folders, never to .html files. The 404 page and forwarding pages are the only .html URLs.
-const CLEAN_URLS = false;
+const CLEAN_URLS = true;
 
 const pages = [];
 (function walk(dir) {

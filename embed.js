@@ -28,7 +28,7 @@
       target.prepend(box);
     }else document.body.prepend(box);
     const f=document.createElement('iframe');
-    f.src=`${root}${scene}?embed${d.quality==='high'?'&q=high':''}`;
+    f.src=`${root}${scene}embed/${d.quality==='high'?'?q=high':''}`;
     f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');
     // A full-page background is always on screen, so only an embed inside an element waits until it scrolls into view.
     if(target)f.loading='lazy';

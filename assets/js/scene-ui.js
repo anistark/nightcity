@@ -61,7 +61,7 @@
   const el=(tag,attrs,html)=>{const e=document.createElement(tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(html!==undefined)e.innerHTML=html;return e;};
 
   // Back to the landing page.
-  hud.append(el('a',{class:'ctl ctl-back',href:'../index.html','aria-label':'Back to Night City',title:'Back to Night City'},ICON.back));
+  hud.append(el('a',{class:'ctl ctl-back',href:'../','aria-label':'Back to Night City',title:'Back to Night City'},ICON.back));
 
   // Top-right corner: share, then fullscreen where the browser allows it.
   const top=el('div',{class:'ctl-top'});hud.append(top);
@@ -118,13 +118,13 @@
   const local=!/^https?:$/.test(location.protocol)||/^(localhost|127\.|\[::1\])/.test(location.hostname);
   const root=local?'https://anistark.github.io/nightcity/':new URL('..',location.href).href;
   const key=me.dataset.scene||'pixel-city',folder=location.pathname.split('/').filter(Boolean).slice(-2,-1)[0]||key;
-  const src=`${root}${local?key:folder}/?embed`,origin=new URL(root).origin;
+  const src=`${root}${local?key:folder}/embed/`,origin=new URL(root).origin;
   const style="position:fixed;inset:0;width:100%;height:100%;border:0;z-index:-1;pointer-events:none";
   const TABS=[
     ['HTML',`<script src="${root}embed.js" data-scene="${key}" async></script>`,
       'Paste it before </body>. Add data-target="#hero" to fill one element instead of the page, or data-dim="0.4" to darken the scene under your text.'],
     ['iframe',`<iframe src="${src}" title="" aria-hidden="true" tabindex="-1"\n  style="${style}"></iframe>`,
-      'For site builders that allow iframes but not scripts. Add &q=high to the address for full quality.'],
+      'For site builders that allow iframes but not scripts. Add ?q=high to the address for full quality.'],
     ['React',`export function NightCityBackground() {\n  return (\n    <iframe\n      src="${src}"\n      title=""\n      aria-hidden="true"\n      tabIndex={-1}\n      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%',\n        border: 0, zIndex: -1, pointerEvents: 'none' }}\n    />\n  );\n}`,
       'Render it once, near the root of your app. It works with server rendering, including Next.js.'],
     ['Vue',`<template>\n  <iframe :src="src" title="" aria-hidden="true" tabindex="-1" class="night-city" />\n</template>\n\n<script setup>\nconst src = '${src}'\n</script>\n\n<style scoped>\n.night-city {\n  position: fixed; inset: 0; width: 100%; height: 100%;\n  border: 0; z-index: -1; pointer-events: none;\n}\n</style>`,
