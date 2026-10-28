@@ -69,6 +69,17 @@ You can tune these in `assets/js/main.js`: the `SCHED` table holds the average g
 
 Each frame draws the dry sand, the wet sand through its mask, things on the sand, the water, the foam and its shadows, the feet with their contact shadows, sinking sand, water over the toes and wet sheen, then the moonlight over everything, glints on the water and wet sand, a vignette and a little film grain. The moonlight first takes out some of the colour, then tints the whole frame, and dims when a cloud passes.
 
+## WebGL prototype
+
+Open the scene with `?gl` to try a WebGL 2 version that aims closer to a photograph. A camera at eye height looks down at the feet in real perspective, and a fragment shader works out every pixel:
+
+- **Sand** has grain-level relief from noise, round pebbles and shell bits, and turns darker and shinier where a wet-sand map, kept on the GPU, says water has been.
+- **Water** bends the view of the sand beneath it with moving ripples, soaks up red light first as it deepens, and mirrors the moon, which makes the glints.
+- **Foam** is a sheet of bubbles with holes that grow as it thins, lit by the moon and shading the sand beneath it.
+- **Feet and legs** are smooth 3D shapes, ray-marched and lit with light scattering through the skin, soft shadows on themselves and the sand, ambient occlusion and glossy nails. They get glossier when wet, sink a little with each wave, and water and foam ride over the toes.
+
+The waves, tide and log run in JavaScript, in metres, and reach the shader through a small data texture each frame. The prototype doesn't have the crabs, clams, shells or air holes yet. If WebGL 2 isn't available, or a shader fails to compile, the Canvas 2D version runs instead. `?glq=0.7` lowers the render resolution, and `?glfail` forces the fallback for testing.
+
 ## Testing
 
 Two URL parameters help when changing the scene:

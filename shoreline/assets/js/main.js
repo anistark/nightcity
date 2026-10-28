@@ -5,6 +5,8 @@
    and every frame composites them through masks that follow the water. No libraries, no image files. */
 (()=>{
 'use strict';
+// ?gl runs the WebGL prototype in gl.js instead. It must start before this file takes a 2D context on the canvas.
+if(new URLSearchParams(location.search).has('gl')&&!window.SHORELINE_2D){const s=document.createElement('script');s.src=document.currentScript.src.replace(/main\.js(\?.*)?$/,'gl.js');document.body.append(s);return;}
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
 // Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.
