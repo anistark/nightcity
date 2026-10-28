@@ -6,37 +6,11 @@
 'use strict';
 const cv=document.getElementById('scene');
 let ctx=cv.getContext('2d');
-const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-// ?embed runs the scene as a background on another site: no overlay, no wake lock, lower quality unless q=high,
-// and the host page can pause and resume it with postMessage({nightcity:'pause'}) and {nightcity:'play'}.
-const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
-let PAUSED=false;
-if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
-// nightcity.step(dt) advances one frame and draws it, for frame-exact recordings.
-if(EMBED)window.nightcity={step(dt){PAUSED=true;for(let d=dt;d>1e-9;d-=1/60)update(Math.min(d,1/60));draw();}};
+// Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.
 // ?speed=8 runs the simulation faster, which helps when checking how games play out.
-const SPEED=Math.max(.25,Math.min(16,+new URLSearchParams(location.search).get('speed')||1));
+const{RM,LOWQ,DEBUG,R,rr,ri,pick,chance,expo,gauss,wpick,noise,fbm,p2,sfc32,cyrb128,seed:SEED_STR}=NightCity;
 
-/* ---------- randomness ---------- */
-function sfc32(a,b,c,d){return()=>{a>>>=0;b>>>=0;c>>>=0;d>>>=0;let x=(a+b)|0;a=b^(b>>>9);b=(c+(c<<3))|0;c=(c<<21)|(c>>>11);d=(d+1)|0;x=(x+d)|0;c=(c+x)|0;return(x>>>0)/4294967296;};}
-/* The seed is the moment the page opened: date + time down to the millisecond.
-   cyrb128 hashes that string into four 32-bit words to fill the generator's whole state. */
-const p2=n=>String(n).padStart(2,'0');
-const NOW=new Date();
-const SEED_STR=NOW.getFullYear()+'-'+p2(NOW.getMonth()+1)+'-'+p2(NOW.getDate())+' '+p2(NOW.getHours())+':'+p2(NOW.getMinutes())+':'+p2(NOW.getSeconds())+'.'+String(NOW.getMilliseconds()).padStart(3,'0');
-function cyrb128(s){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0;i<s.length;i++){const k=s.charCodeAt(i);h1=h2^Math.imul(h1^k,597399067);h2=h3^Math.imul(h2^k,2869860233);h3=h4^Math.imul(h3^k,951274213);h4=h1^Math.imul(h4^k,2716044539);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044539);h1^=(h2^h3^h4);h2^=h1;h3^=h1;h4^=h1;return[h1>>>0,h2>>>0,h3>>>0,h4>>>0];}
-const R=sfc32(...cyrb128(SEED_STR));
-for(let i=0;i<20;i++)R();
-const rr=(a,b)=>a+(b-a)*R();
-const ri=(a,b)=>b<=a?Math.round(a):Math.floor(rr(a,b+1));
-const pick=a=>a[Math.floor(R()*a.length)];
-const chance=p=>R()<p;
-const expo=m=>-Math.log(1-R())*m;
-const gauss=()=>(R()+R()+R()+R()-2)*1.732;
-function wpick(list){let s=0;for(const it of list)s+=it[1];let r=R()*s;for(const it of list){r-=it[1];if(r<=0)return it[0];}return list[0][0];}
-const NT=new Float32Array(4096);for(let i=0;i<4096;i++)NT[i]=R();
-function noise(x){const i=Math.floor(x),f=x-i,u=f*f*(3-2*f),a=NT[i&4095],b=NT[(i+1)&4095];return a+(b-a)*u;}
-function fbm(x){return noise(x)*.55+noise(x*2.031+17.3)*.3+noise(x*4.97+91.1)*.15;}
+/* ---------- helpers ---------- */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,u)=>a+(b-a)*u;
 const hyp=Math.hypot;
@@ -81,45 +55,29 @@ const SURF=pick(SURFACES);
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);return[c,c.getContext('2d')];}
 function hex(c){const n=parseInt(c.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
 function shade(c,f){const v=hex(c).map(x=>f<0?x*(1+f):x+(255-x)*f);return'#'+v.map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');}
-const fmtTime=(d,s)=>p2(d.getHours())+':'+p2(d.getMinutes())+(s?':'+p2(d.getSeconds()):'');
 const m1=v=>v.toFixed(1)+' m';
 
 /* ---------- event log ---------- */
+// Each entry also gets a signature from its type, first words and numbers, which counts how many distinct things happened.
 let t=0;
-const logArr=[];const seen=new Set();const stats={events:0,shots:0,makes:0,kinds:{}};
-const $=id=>document.getElementById(id);
-const ui={clock:$('clock'),btn:$('logBtn'),panel:$('log'),list:$('logList'),ev:$('stEvents'),di:$('stDistinct'),sh:$('stShots'),mk:$('stMakes'),seed:$('seed'),hud:$('hud'),score:$('score')};
-ui.seed.textContent=SEED_STR;
-let uiDirty=true,scoreDirty=true;
+const seen=new Set();const stats={events:0,shots:0,makes:0,kinds:{}};
+let scoreDirty=true;const scoreEl=document.getElementById('score');
 function log(type,text,params){
   const sig=type+'|'+text.split(' ').slice(0,3).join(' ')+'|'+JSON.stringify(params||{},(k,v)=>typeof v==='number'?+v.toFixed(3):v);
   stats.events++;seen.add(sig);
-  logArr.unshift({time:fmtTime(new Date(),true),text});
-  if(logArr.length>50)logArr.pop();
-  uiDirty=true;
+  NightCity.log(text);
 }
-// The clock's colon shows for the first half of every second, like a bedside clock. Checked each frame, redrawn only on change.
-ui.clock.innerHTML='<span></span><span class="colon">:</span><span></span>';
-const[clkH,clkC,clkM]=ui.clock.children;let clkKey='';
-function tickClock(blink){
-  const d=new Date(),on=!blink||d.getMilliseconds()<500,k=d.getHours()*60+d.getMinutes()+(on?'':'-');
-  if(k===clkKey)return;clkKey=k;clkH.textContent=p2(d.getHours());clkM.textContent=p2(d.getMinutes());clkC.classList.toggle('off',!on);
-}
+// The score beside the title, with each player's avatar. Only the scene page has it, not the embed.
 function updateUI(){
-  tickClock(!RM);
-  ui.ev.textContent=stats.events;ui.di.textContent=seen.size;ui.sh.textContent=stats.shots;ui.mk.textContent=stats.makes;
+  NightCity.stats({events:stats.events,distinct:seen.size,shots:stats.shots,makes:stats.makes});
+  if(!scoreEl)return;
   if(scoreDirty){
-    ui.score.textContent='';
+    scoreEl.textContent='';
     const a=players[0],b=players[1];
     const mkB=(p,s)=>{const w=document.createElement('span');w.className='team';const im=document.createElement('img');if(p.look.avatarURL)im.src=p.look.avatarURL;im.alt='';im.style.borderColor=p.col;const e=document.createElement('b');e.style.color=p.col;e.textContent=p.name+' '+s;w.append(im,e);return w;};
     const to=document.createElement('span');to.className='to';to.textContent='To '+game.target;
-    ui.score.append(mkB(a,game.score[0]),mkB(b,game.score[1]),to);
+    scoreEl.append(mkB(a,game.score[0]),mkB(b,game.score[1]),to);
     scoreDirty=false;
-  }
-  if(uiDirty&&!ui.panel.hidden){
-    ui.list.textContent='';
-    for(const e of logArr.slice(0,40)){const li=document.createElement('li');const tm=document.createElement('time');tm.textContent=e.time;const sp=document.createElement('span');sp.textContent=e.text;li.append(tm,sp);ui.list.append(li);}
-    uiDirty=false;
   }
 }
 
@@ -1591,7 +1549,7 @@ function draw(){
 
 /* ---------- start ---------- */
 // ?debug exposes the live state for poking at in the console.
-if(new URLSearchParams(location.search).has('debug'))window.HC={paused:false,proj:(x,z,h)=>P3(x,z,h),game,players,ball,E,logArr,stats,SHOTS,AIM,get t(){return t;},run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();uiDirty=true;updateUI();},
+if(DEBUG)window.HC={get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},proj:(x,z,h)=>P3(x,z,h),game,players,ball,E,logArr:NightCity.entries,stats,SHOTS,AIM,get t(){return t;},run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();NightCity.refresh();},
   step(n){for(let i=0;i<n;i++)update(1/60);},
   // Fire n uncontested shots of one kind from (x, z) and report how many go in and how they miss.
   testShot(kind,x,z,n){const p=players[0],q=players[1],res={made:0,rim:0,board:0,air:0};
@@ -1608,32 +1566,8 @@ for(const p of players)log('player',describe(p),{h:p.hgt,s:p.speed});
 log('rules',`${SURF.name[0].toUpperCase()+SURF.name.slice(1)} court. Game to ${game.target}${game.winBy2?', win by two':''}, ${game.rule==='make'?'make it take it':"loser's ball"}. Ones and twos`,{});
 // Start with the offense holding the ball at the top and the defender facing up.
 {const o=players[game.off],q=other(o);game.spot={x:rr(-1.5,1.5),z:rr(9.2,10.3)};o.x=game.spot.x+rr(-2,2);o.z=game.spot.z+rr(.5,2);q.x=rr(-2,2);q.z=rr(5,7);ball.holder=o;for(const p of players)p.pose=limbsOf(p,poseOf(p));placeHeldBall();}
-if(RM){
-  // Reduced motion: play a while out of sight, then show one still frame.
-  for(let i=0;i<900;i++)update(1/30);
-  draw();updateUI();
-}else{
-  draw();updateUI();
-  let last=performance.now(),uiT=0,lastDraw=0;
-  function frame(now){
-    if(PAUSED){last=now;requestAnimationFrame(frame);return;}
-    if(LOWQ&&now-lastDraw<32){requestAnimationFrame(frame);return;}
-    lastDraw=now;
-    let dt=Math.min(.1,Math.max(0,(now-last)/1000))*SPEED;last=now;
-    if(window.HC&&window.HC.paused)dt=0;
-    while(dt>0){const s=Math.min(dt,1/60);update(s);dt-=s;}
-    draw();tickClock(true);uiT+=1/60;if(uiT>.5){uiT=0;updateUI();}
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
+// Reduced motion: play a while out of sight, then show one still frame.
+if(RM)for(let i=0;i<900;i++)update(1/30);
+NightCity.run({step:1/60,update,draw,ui:updateUI});
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();draw();},200);});
-const LOG_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v1H0zM0 1h1v1H0zM4 1h2v1H4zM0 2h1v1H0zM6 2h1v1H6zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM0 4h1v1H0zM6 4h1v1H6zM0 5h1v1H0zM2 5h3v1H2zM6 5h1v1H6zM0 6h7v1H0z"/></svg>';
-const CLOSE_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
-function toggleLog(){ui.panel.hidden=!ui.panel.hidden;ui.btn.setAttribute('aria-expanded',String(!ui.panel.hidden));ui.btn.innerHTML=ui.panel.hidden?LOG_ICON:CLOSE_ICON;ui.btn.setAttribute('aria-label',ui.panel.hidden?'Open log':'Close log');uiDirty=true;updateUI();}
-ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
-cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
-addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});
-async function wake(){try{if('wakeLock'in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen');}catch(e){}}
-if(!EMBED){wake();document.addEventListener('visibilitychange',wake);}
 })();

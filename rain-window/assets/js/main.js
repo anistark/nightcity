@@ -6,35 +6,8 @@
 'use strict';
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
-const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-// ?embed runs the scene as a background on another site: no overlay, no wake lock, lower quality unless q=high,
-// and the host page can pause and resume it with postMessage({nightcity:'pause'}) and {nightcity:'play'}.
-const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
-const SPEED=Math.max(.1,Math.min(16,parseFloat(QS.get('speed'))||1));
-let PAUSED=false;
-if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
-// nightcity.step(dt) advances one frame and draws it, for frame-exact recordings.
-if(EMBED)window.nightcity={step(dt){PAUSED=true;for(let d=dt;d>1e-9;d-=1/60)update(Math.min(d,1/60));draw();}};
-
-/* ---------- randomness ---------- */
-function sfc32(a,b,c,d){return()=>{a>>>=0;b>>>=0;c>>>=0;d>>>=0;let x=(a+b)|0;a=b^(b>>>9);b=(c+(c<<3))|0;c=(c<<21)|(c>>>11);d=(d+1)|0;x=(x+d)|0;c=(c+x)|0;return(x>>>0)/4294967296;};}
-/* The seed is the moment the page opened: date + time down to the millisecond.
-   cyrb128 hashes that string into four 32-bit words to fill the generator's whole state. */
-const p2=n=>String(n).padStart(2,'0');
-const NOW=new Date();
-const SEED_STR=NOW.getFullYear()+'-'+p2(NOW.getMonth()+1)+'-'+p2(NOW.getDate())+' '+p2(NOW.getHours())+':'+p2(NOW.getMinutes())+':'+p2(NOW.getSeconds())+'.'+String(NOW.getMilliseconds()).padStart(3,'0');
-function cyrb128(s){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0;i<s.length;i++){const k=s.charCodeAt(i);h1=h2^Math.imul(h1^k,597399067);h2=h3^Math.imul(h2^k,2869860233);h3=h4^Math.imul(h3^k,951274213);h4=h1^Math.imul(h4^k,2716044539);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044539);h1^=(h2^h3^h4);h2^=h1;h3^=h1;h4^=h1;return[h1>>>0,h2>>>0,h3>>>0,h4>>>0];}
-const R=sfc32(...cyrb128(SEED_STR));
-for(let i=0;i<20;i++)R();
-const rr=(a,b)=>a+(b-a)*R();
-const ri=(a,b)=>b<=a?Math.round(a):Math.floor(rr(a,b+1));
-const pick=a=>a[Math.floor(R()*a.length)];
-const chance=p=>R()<p;
-const expo=m=>-Math.log(1-R())*m;
-function wpick(list){let s=0;for(const it of list)s+=it[1];let r=R()*s;for(const it of list){r-=it[1];if(r<=0)return it[0];}return list[0][0];}
-const NT=new Float32Array(4096);for(let i=0;i<4096;i++)NT[i]=R();
-function noise(x){const i=Math.floor(x),f=x-i,u=f*f*(3-2*f),a=NT[i&4095],b=NT[(i+1)&4095];return a+(b-a)*u;}
-function fbm(x){return noise(x)*.55+noise(x*2.031+17.3)*.3+noise(x*4.97+91.1)*.15;}
+// Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.
+const{RM,LOWQ,DEBUG,R,rr,ri,pick,chance,expo,wpick,noise,fbm}=NightCity;
 
 /* ---------- helpers ---------- */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -47,8 +20,6 @@ function mixHex(a,b,k){const x=hex(a),y=hex(b);return'#'+x.map((v,i)=>Math.round
 const tint=(c,a)=>mixHex(c,chance(.5)?'#000000':'#ffffff',rr(0,a));
 // A fixed hash for things painted on every resize, like which windows are lit, so a resize repaints the same city.
 const h3=(a,b,c)=>{const v=Math.sin(a*12.9898+b*78.233+c*37.719)*43758.5453;return v-Math.floor(v);};
-const fmt2=n=>String(n).padStart(2,'0');
-const fmtTime=(d,s)=>fmt2(d.getHours())+':'+fmt2(d.getMinutes())+(s?':'+fmt2(d.getSeconds()):'');
 
 /* Separable box blur, three passes come close to a gaussian. Only runs on small canvases when the scene is built. */
 function blur(c,r,passes){
@@ -147,33 +118,9 @@ const X=wx=>CW/2+wx*sc,Y=wy=>CH*city.yb-wy*sc;
 const LX=l=>(l.fx!==undefined?l.fx*CW:X(l.x))+(l.k||0)*BR,LY=l=>l.y<0?Y(l.wy):CH*l.y;
 
 /* ---------- event log ---------- */
-const logArr=[];const stats={landed:0,merges:0,runs:0};
-const $=id=>document.getElementById(id);
-const ui={clock:$('clock'),btn:$('logBtn'),panel:$('log'),list:$('logList'),la:$('stLanded'),me:$('stMerges'),ru:$('stRuns'),seed:$('seed'),hud:$('hud')};
-ui.seed.textContent=SEED_STR;
-let uiDirty=true,lastRunLog=-99;
-function log(text){
-  if(warming)return;
-  logArr.unshift({time:fmtTime(new Date(),true),text});
-  if(logArr.length>40)logArr.pop();
-  uiDirty=true;
-}
-// The clock's colon shows for the first half of every second, like a bedside clock. Checked each frame, redrawn only on change.
-ui.clock.innerHTML='<span></span><span class="colon">:</span><span></span>';
-const[clkH,clkC,clkM]=ui.clock.children;let clkKey='';
-function tickClock(blink){
-  const d=new Date(),on=!blink||d.getMilliseconds()<500,k=d.getHours()*60+d.getMinutes()+(on?'':'-');
-  if(k===clkKey)return;clkKey=k;clkH.textContent=fmt2(d.getHours());clkM.textContent=fmt2(d.getMinutes());clkC.classList.toggle('off',!on);
-}
-function updateUI(){
-  tickClock(!RM);
-  ui.la.textContent=stats.landed;ui.me.textContent=stats.merges;ui.ru.textContent=stats.runs;
-  if(uiDirty&&!ui.panel.hidden){
-    ui.list.textContent='';
-    for(const e of logArr.slice(0,30)){const li=document.createElement('li');const tm=document.createElement('time');tm.textContent=e.time;const sp=document.createElement('span');sp.textContent=e.text;li.append(tm,sp);ui.list.append(li);}
-    uiDirty=false;
-  }
-}
+const stats={landed:0,merges:0,runs:0};
+let lastRunLog=-99;
+function log(text){if(!warming)NightCity.log(text);}
 
 /* ---------- painting the backdrop ---------- */
 // Paints the city at scale s with an offset, so the same picture can be drawn small for blurring or with a margin for the drops.
@@ -473,35 +420,11 @@ function warmup(sec){
 function remist(){composeFocus(liveLights());warming=true;for(let i=Math.round(areaK*2200);i>0;i--)mistDrop();warming=false;}
 
 /* ---------- start ---------- */
-if(QS.has('debug'))window.RW={drops,E,city,stats,logArr,get t(){return t;},get I(){return I;},paused:false,fire,draw:()=>draw(),step:dt=>update(dt),
-  run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();uiDirty=true;updateUI();}};
+if(DEBUG)window.RW={drops,E,city,stats,get t(){return t;},get I(){return I;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},fire,draw:()=>draw(),step:dt=>update(dt),
+  run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();NightCity.refresh();}};
 build();
 warmup(180);
 log(`${MOOD.name[0].toUpperCase()+MOOD.name.slice(1)} over the city. ${I<.25?'A light rain':I<.5?'Steady rain':'Heavy rain'} on the glass`);
-if(RM){
-  draw();updateUI();
-}else{
-  draw();updateUI();
-  let last=performance.now(),uiT=0,lastDraw=0;
-  function frame(now){
-    if(PAUSED){last=now;requestAnimationFrame(frame);return;}
-    if(LOWQ&&now-lastDraw<32){requestAnimationFrame(frame);return;}
-    lastDraw=now;
-    let dt=Math.min(.1,Math.max(0,(now-last)/1000))*SPEED;last=now;
-    if(window.RW&&window.RW.paused)dt=0;
-    while(dt>0){const s=Math.min(dt,1/60);update(s);dt-=s;}
-    draw();tickClock(true);uiT+=1/60;if(uiT>.5){uiT=0;updateUI();}
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
+NightCity.run({step:1/60,update,draw,ui:()=>NightCity.stats(stats)});
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();remist();draw();},200);});
-const LOG_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v1H0zM0 1h1v1H0zM4 1h2v1H4zM0 2h1v1H0zM6 2h1v1H6zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM0 4h1v1H0zM6 4h1v1H6zM0 5h1v1H0zM2 5h3v1H2zM6 5h1v1H6zM0 6h7v1H0z"/></svg>';
-const CLOSE_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
-function toggleLog(){ui.panel.hidden=!ui.panel.hidden;ui.btn.setAttribute('aria-expanded',String(!ui.panel.hidden));ui.btn.innerHTML=ui.panel.hidden?LOG_ICON:CLOSE_ICON;ui.btn.setAttribute('aria-label',ui.panel.hidden?'Open log':'Close log');uiDirty=true;updateUI();}
-ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
-cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
-addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});
-async function wake(){try{if('wakeLock'in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen');}catch(e){}}
-if(!EMBED){wake();document.addEventListener('visibilitychange',wake);}
 })();

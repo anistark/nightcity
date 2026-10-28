@@ -1,0 +1,28 @@
+{
+  "tags": "scene",
+  "order": 3,
+  "title": "Rain Window",
+  "description": "Slow rain on a window at night, drops joining and running down the glass in front of a city out of focus. It never runs the same way twice.",
+  "ogTitle": "Rain Window | Night City",
+  "ogImage": "rain-window/assets/images/og.jpg",
+  "ogPath": "rain-window/",
+  "ogAlt": "Rain Window: raindrops on a window at night, with city lights blurred into soft discs behind the glass",
+  "canvasLabel": "Animated raindrops on a window at night, joining and running down the glass in front of blurred city lights",
+  "share": "Rain on a window at night that never runs the same way twice. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "landed",
+      "drops landed."
+    ],
+    [
+      "merges",
+      "joined."
+    ],
+    [
+      "runs",
+      "ran"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "Slow rain on a window at night, in front of a city out of focus. Drops land, join their neighbours and run down the glass, leaving clear trails while cars and windows glow behind."
+}

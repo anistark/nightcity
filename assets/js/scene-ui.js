@@ -1,10 +1,43 @@
-/* Shared scene controls: a back link to Night City (bottom left), and in the top-right corner a share button
-   that opens a dialog of share options, beside a fullscreen toggle.
-   Load it with data-text set to the share message. {seed} in the message becomes the scene's seed. */
+/* Shared scene overlay. The scene layout renders the markup: title, clock, log panel and log button.
+   This wires it to the scene through window.NightCity: the clock, whose colon blinks once a second, the log list and
+   counters, the log toggle (L) and hiding the overlay (H, or a click on the scene).
+   Then it adds a back link to Night City (bottom left), and in the top-right corner a share button that opens
+   a dialog of share options, beside a fullscreen toggle (F).
+   Load it after the scene, with data-text set to the share message. {seed} in the message becomes the scene's seed. */
 (()=>{
-  const me=document.currentScript,hud=document.getElementById('hud'),logBtn=document.getElementById('logBtn');
-  // Skip them inside the landing page's live previews.
-  if(!hud||!logBtn||window.self!==window.top||new URLSearchParams(location.search).has('embed'))return;
+  const me=document.currentScript,hud=document.getElementById('hud'),logBtn=document.getElementById('logBtn'),NC=window.NightCity;
+  if(!hud||!logBtn||!NC||NC.EMBED)return;
+  const $=id=>document.getElementById(id);
+  const panel=$('log'),list=$('logList'),clock=$('clock'),LOG_HTML=logBtn.innerHTML;
+  $('seed').textContent=NC.seed;
+
+  // The clock's colon shows for the first half of every second, like a bedside clock. Checked each frame, redrawn only on change.
+  clock.innerHTML='<span></span><span class="colon">:</span><span></span>';
+  const[clkH,clkC,clkM]=clock.children;let clkKey='';
+  const tickClock=blink=>{
+    const d=new Date(),on=!blink||d.getMilliseconds()<500,k=d.getHours()*60+d.getMinutes()+(on?'':'-');
+    if(k===clkKey)return;clkKey=k;clkH.textContent=NC.p2(d.getHours());clkM.textContent=NC.p2(d.getMinutes());clkC.classList.toggle('off',!on);
+  };
+  let shown=-1;
+  const refresh=()=>{
+    tickClock(!NC.RM);
+    for(const el of hud.querySelectorAll('[data-stat]'))el.textContent=NC.counts[el.dataset.stat]??0;
+    if(!panel.hidden&&shown!==NC.logVersion){
+      shown=NC.logVersion;list.textContent='';
+      for(const e of NC.entries.slice(0,40)){const li=document.createElement('li'),tm=document.createElement('time'),sp=document.createElement('span');tm.textContent=e.time;sp.textContent=e.text;li.append(tm,sp);list.append(li);}
+    }
+  };
+  NC.ui={tick:()=>tickClock(!NC.RM),refresh};
+  refresh();
+
+  const CLOSE_HTML='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
+  const toggleLog=()=>{panel.hidden=!panel.hidden;logBtn.setAttribute('aria-expanded',String(!panel.hidden));logBtn.innerHTML=panel.hidden?LOG_HTML:CLOSE_HTML;logBtn.setAttribute('aria-label',panel.hidden?'Open log':'Close log');shown=-1;NC.refresh();};
+  logBtn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
+  const cv=$('scene');if(cv)cv.addEventListener('click',()=>hud.classList.toggle('off'));
+  addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||document.querySelector('dialog[open]'))return;if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')hud.classList.toggle('off');});
+
+  // The rest are controls for a scene opened on its own, not inside the landing page's live previews.
+  if(window.self!==window.top)return;
   // Pixel icons drawn from small grids, like the log's close button.
   const icon=(rows,size)=>{let d='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++)if(r[x]==='#')d+=`M${x} ${y}h1v1H${x}z`;});
     return`<svg viewBox="0 0 ${rows[0].length} ${rows.length}" width="${size||16}" height="${size||16}" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="${d}"/></svg>`;};
