@@ -109,7 +109,7 @@ vec3 footLocal(vec3 p){
   float td=1e9,ti=-1.,th=0.;
   // The toes sit inside one small sphere: outside it, its distance stands in for all five.
   float tb=length(p-vec3(.009,.106,.014))-.056;
-  if(tb>.008)td=tb;else
+  if(tb>.03)td=tb;else
   for(int i=0;i<5;i++){float r=TR[i];
     float a=sdRC(p,TB[i],TJ[i],r,r*.96);
     vec3 pa=p-TJ[i],ba=TT[i]-TJ[i];float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
@@ -252,11 +252,14 @@ void main(){
     vec3 X=ro+rd*tf,n=feetNormal(X);int fi=int(hit.w);vec4 S=uSkin[fi];vec3 skin=S.rgb;
     vec4 FF=uF[fi];float hair=uFP[fi].z,wetF=uNail[fi].w;vec3 q=footSpace(X,fi);float toe=hit.y,along=hit.z;
     // Nails: on top of each toe's last segment, with a pale half-moon at the base and a whiter free edge.
-    float nail=0.,lunula=0.,edgeW=0.,rimN=0.;vec3 axW=vec3(0,1,0);float knuckle=0.;
+    float nail=0.,lunula=0.,edgeW=0.,rimN=0.,nailSide=0.;vec3 axW=vec3(0,1,0);float knuckle=0.;
     if(toe>-.5){int k=int(toe);vec3 J=TJ[k],T=TT[k];float r=TR[k];vec3 ax=normalize(T-J);
       vec3 pj=q-J;float u=dot(pj,ax)/length(T-J);vec3 side=normalize(cross(ax,vec3(0,0,1)));float lat=dot(pj,side);
       float nw=r*(k==0?.74:.64);
-      nail=(1.-smoothstep(nw*.8,nw,abs(lat)))*smoothstep(.3,.42,u)*(1.-smoothstep(.96,1.04,u))*smoothstep(.15,.45,n.z);
+      // A curved cuticle at the base and a rounded tip, so the nail isn't a rectangle.
+      float lr=abs(lat)/nw;
+      nail=(1.-smoothstep(nw*.82,nw,abs(lat)))*smoothstep(.3+.12*lr*lr,.38+.12*lr*lr,u)*(1.-smoothstep(.95-.12*lr*lr,1.02-.12*lr*lr,u))*smoothstep(.15,.45,n.z);
+      nailSide=lr;
       lunula=nail*(1.-smoothstep(.34,.42,u));edgeW=nail*smoothstep(.9,.98,u);
       // A thin darker rim where the skin folds over the nail at its sides and base.
       rimN=nail*max(1.-smoothstep(0.,.18,(nw-abs(lat))/nw),1.-smoothstep(.3,.36,u));
@@ -269,7 +272,7 @@ void main(){
     alb=mix(alb,alb*vec3(1.1,.84,.82),flush*.35);
     // Fine hair down the shin.
     if(hair>0.&&X.z>.08){vec2 sd=rot(FF.z)*vec2(1,0);float hx=dot(X.xy,sd);float hs=smoothstep(.8,.93,vnoise(vec2(hx*1800.,X.z*110.)))*smoothstep(.08,.14,X.z)*lod(1800.,FW*.8);alb*=1.-.22*hs*hair;}
-    vec3 nailC=uNail[fi].rgb;alb=mix(alb,mix(nailC,vec3(.84,.78,.74),lunula*.15+edgeW*.3)*mix(1.,.75,rimN),nail);
+    vec3 nailC=uNail[fi].rgb;alb=mix(alb,mix(nailC,vec3(.84,.78,.74),lunula*.15+edgeW*.3)*mix(1.,.75,rimN)*(1.-.35*nailSide*nailSide),nail);
     alb*=mix(1.,.86,wetF*(1.-nail));
     vec3 bn=normalize(n+vec3(vnoise(X.xy*1100.)-.5,vnoise(X.yz*1100.+3.)-.5,vnoise(X.xz*1100.+7.)-.5)*.07*(1.-nail)+axW*knuckle*.07);
     float sh=feetShadow(X+n*.002,uMoonDir);
@@ -280,7 +283,7 @@ void main(){
     float rimT=pow(1.-max(dot(n,vdir),0.),3.)*(.5+.5*max(-dot(n,L),0.));col+=skin*vec3(.9,.22,.15)*uMoonCol*rimT*.22*sh;
     // Shine: a broad soft sheen and a tighter oily one, a sharp one when wet, and glossy nails.
     vec3 h=normalize(L+vdir);float F=.028+.972*pow(1.-max(dot(bn,vdir),0.),5.);
-    float spec=ggx(bn,h,.62)*.45+ggx(bn,h,.36)*.3+wetF*ggx(n,h,.14)*.55+nail*ggx(n,h,.12)*.8;
+    float spec=ggx(bn,h,.62)*.45+ggx(bn,h,.36)*.3+wetF*ggx(n,h,.14)*.55+nail*ggx(n,h,.1)*1.3;
     col+=uMoonCol*spec*F*max(nl,0.)*sh;
     col*=mix(.55,1.,ao);
     // Water running over the top of the foot, and foam where the water surface meets the skin.
