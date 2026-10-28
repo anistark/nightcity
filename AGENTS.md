@@ -34,6 +34,7 @@ assets/
 pixel-city/           a scene: pixel-city.11tydata.json, index.njk, embed.njk, README.md, assets/{css/style.css, js/main.js, images/logo.svg, images/og.jpg}
 basketball-court/     Half Court, same layout
 rain-window/          Rain Window, same layout
+shoreline/            Shoreline, same layout
 .github/              pages.yml (build and deploy on push to main), check.yml (build and link check on pull requests), dependabot.yml
 README.md  CONTRIBUTING.md  AGENTS.md  CLAUDE.md  LICENSE  justfile  package.json  .nvmrc
 plan/                 private planning notes and tools, gitignored
@@ -51,6 +52,7 @@ Notes on the pieces:
 - **Shared scene overlay:** `scene.njk` renders the title, clock, log panel and page-icon log button. `scene-ui.js` and `scene-ui.css` wire them up (the clock's colon blinks once a second, `L` for the log, `H` or a click hides the overlay), then add a back link (bottom left), and share and fullscreen buttons (top right, `F` for fullscreen). Share opens a dialog with the link and a copy button, social buttons, and a separate Embed button with snippets per platform. Each scene styles the overlay in its own `style.css`.
 - **Share previews:** `assets/images/og.jpg` and each scene's `assets/images/og.jpg` are 1200x630, referenced by the Open Graph and Twitter tags that `head.njk` writes from each page's data. Rebuild them with the private `plan/og-compose.html` and headless Chrome. A new scene needs its own `og.jpg`.
 - **Half Court debugging:** `?speed=8`, and `?debug` exposes `window.HC` with `run()`, `step()` and `testShot()`.
+- **Shoreline debugging:** `?speed=8`, and `?debug` exposes `window.SH` with `run()`, `step()`, `draw()`, `newWave()` and `fire()`.
 - **Rain Window debugging:** `?speed=8`, and `?debug` exposes `window.RW` with `run()`, `step()`, `draw()` and `fire()`.
 - **Embed mode:** every scene has an `embed/` page with only the canvas and its scripts, which `embed.js` and the share snippets use. `?embed` on the full page still works for older embeds. Either way: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `q=high`. `nightcity.js` listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings.
 
@@ -69,7 +71,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 - **One seed from the clock.** `nightcity.js` hashes the page-open time, formatted `YYYY-MM-DD HH:MM:SS.mmm`, with `cyrb128` into `sfc32`. Every choice in a scene comes from that generator, never from `Math.random`. The overlay shows the seed in the log.
 - **Events on independent timers** with exponentially distributed gaps, so there are bursts and lulls instead of a beat.
 - **Variation inside every event** from continuous ranges, plus slow drift from smooth noise.
-- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court and Rain Window are the exceptions: the owner asked for them to look as realistic as possible, so they draw smooth geometry at full device resolution. Half Court's players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
+- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court, Rain Window and Shoreline are the exceptions: the owner asked for them to look as realistic as possible, so they draw smooth geometry at full device resolution. Half Court's players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
 - **Reduced motion.** Respect `prefers-reduced-motion` and show a still frame instead.
 - **Keep it light.** Cache static layers off-screen. Check that the scene holds about 60 fps.
 

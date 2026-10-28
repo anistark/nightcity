@@ -1,0 +1,28 @@
+{
+  "tags": "scene",
+  "order": 4,
+  "title": "Shoreline",
+  "description": "Bare feet at the water's edge under the moon. Waves run up the sand, wash over the toes or fall just short, and never the same way twice.",
+  "ogTitle": "Shoreline | Night City",
+  "ogImage": "shoreline/assets/images/og.jpg",
+  "ogPath": "shoreline/",
+  "ogAlt": "Shoreline: looking down at bare feet on wet sand at night as moonlit foam washes up around them",
+  "canvasLabel": "Animated view looking down at bare feet on a beach at night, with waves washing up the sand around them under moonlight",
+  "share": "Feet in the surf under the moon, where no two waves land the same way. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "waves",
+      "waves."
+    ],
+    [
+      "reached",
+      "reached the feet."
+    ],
+    [
+      "short",
+      "fell short"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "Looking down at bare feet on wet sand under the moon. Waves run up and wash over the toes or fall just short, foam laces the sand, and now and then a crab scuttles past."
+}

@@ -7,6 +7,8 @@ export default function (eleventyConfig) {
   for (const path of ['assets', '*/assets', 'embed.js', 'manifest.webmanifest']) {
     eleventyConfig.addPassthroughCopy(path);
   }
+  // In `just serve`, copy changed files into _site/ too, so edits to scene code show up on reload.
+  eleventyConfig.setServerPassthroughCopyBehavior('copy');
   // The private plan/ tools, like the share preview composer, are served locally but never deployed.
   if (process.env.ELEVENTY_RUN_MODE === 'serve') eleventyConfig.addPassthroughCopy('plan');
   // The relative path from a page back to the site root, so links work at /nightcity/, on a custom domain or anywhere else.
