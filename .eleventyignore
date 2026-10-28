@@ -6,3 +6,5 @@ CONTRIBUTING.md
 plan/
 node_modules/
 _site/
+scripts/
+.github/

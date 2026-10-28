@@ -1,0 +1,11 @@
+# Weekly pull requests to keep the pinned workflow actions and Eleventy up to date.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly

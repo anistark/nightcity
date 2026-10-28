@@ -5,3 +5,7 @@ serve:
 # Build the site into _site/.
 build:
     npx @11ty/eleventy
+
+# Build the site, then check that every internal link resolves.
+check: build
+    node scripts/check-links.js
