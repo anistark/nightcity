@@ -45,3 +45,6 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .foot{margin-top:12px}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.hud{transition:none}}
+/* Embedded as a background on another site: just the scene. */
+.embed .hud{display:none}
+.embed #scene{cursor:default}

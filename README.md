@@ -28,6 +28,18 @@ Any missing path gets `404.html`, the way static hosts handle it. That page is a
 
 Night City is a Progressive Web App. Serve it over HTTP, open it in Chrome, Edge or Safari, and use Install (or Add to Home Screen) to get it as an app with its own icon. Once it has loaded, it also works offline.
 
+## Embed a scene
+
+Any scene can run as the live background of another site or app. Paste one line before `</body>`:
+
+```html
+<script src="https://anistark.github.io/nightcity/embed.js" data-scene="pixel-city" async></script>
+```
+
+`data-scene` is `pixel-city` or `basketball-court`. Add `data-target="#hero"` to fill one element instead of the page, `data-dim="0.4"` to darken the scene under your text, or `data-quality="high"` for full resolution. The scene runs in an iframe, ignores clicks, is hidden from screen readers, and pauses while scrolled out of view.
+
+Each scene's share dialog has an **Embed** option with snippets for HTML, a plain iframe, React, Vue, React Native and Flutter, plus the Content Security Policy line a site may need and a note on transparent backgrounds.
+
 ## Scenes
 
 | Scene | What it is |

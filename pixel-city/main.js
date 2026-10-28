@@ -6,6 +6,11 @@
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
 const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+// ?embed runs the scene as a background on another site: no overlay, no wake lock, lower quality unless q=high,
+// and the host page can pause and resume it with postMessage({nightcity:'pause'}) and {nightcity:'play'}.
+const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
+let PAUSED=false;
+if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
 
 /* ---------- randomness ---------- */
 function sfc32(a,b,c,d){return()=>{a>>>=0;b>>>=0;c>>>=0;d>>>=0;let x=(a+b)|0;a=b^(b>>>9);b=(c+(c<<3))|0;c=(c<<21)|(c>>>11);d=(d+1)|0;x=(x+d)|0;c=(c+x)|0;return(x>>>0)/4294967296;};}
@@ -653,8 +658,8 @@ function draw(){
 build();
 for(let i=0;i<90;i++){t+=1/30;update(1/30);}
 draw();updateUI();
-let last=performance.now(),uiT=0;
-function frame(now){const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;t+=dt;update(dt);draw();uiT+=dt;if(uiT>.5){uiT=0;updateUI();}requestAnimationFrame(frame);}
+let last=performance.now(),uiT=0,lastDraw=0;
+function frame(now){if(PAUSED){last=now;requestAnimationFrame(frame);return;}if(LOWQ&&now-lastDraw<32){requestAnimationFrame(frame);return;}lastDraw=now;const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;t+=dt;update(dt);draw();uiT+=dt;if(uiT>.5){uiT=0;updateUI();}requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();draw();},200);});
@@ -664,5 +669,5 @@ ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
 cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
 addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});
 async function wake(){try{if('wakeLock'in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen');}catch(e){}}
-wake();document.addEventListener('visibilitychange',wake);
+if(!EMBED){wake();document.addEventListener('visibilitychange',wake);}
 })();

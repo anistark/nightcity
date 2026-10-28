@@ -37,10 +37,12 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .panel li span{min-width:0}
 .panel time{color:var(--dim);font-variant-numeric:tabular-nums}
 .foot{margin:12px 0 0;font-family:var(--f-pixel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-@media (prefers-reduced-motion:reduce){.hud,
+@media (prefers-reduced-motion:reduce){.hud{transition:none}}
 /* Base reset */
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;font:14px/1.4 system-ui,sans-serif}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
-
+/* Embedded as a background on another site: just the scene. */
+.embed .hud{display:none}
+.embed #scene{cursor:default}

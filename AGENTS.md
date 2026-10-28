@@ -21,12 +21,15 @@ Owner: Kumar Anirudha (GitHub `anistark`, X `kranirudha`). Repo: `github.com/ani
 | `site.js` | Twinkling star background for the landing and license pages |
 | `logo.png`, `favicon.png` | Night City logo: a hooded cyberpunk character in sunglasses with yellow and cyan neon trim, supplied by the owner as a transparent PNG. `logo.png` is 512px and shows in the nav. `favicon.png` is 64px for the browser tab. Earlier SVG drafts, and the script that generated the Pixel City pixel logo from a grid (`logos.py`), are in `plan/logo-drafts/` |
 | `manifest.webmanifest`, `sw.js`, `pwa.js`, `icons/` | PWA: the manifest, the service worker, its registration, and app icons made from `logo.png` on the night background (`plan/logo-drafts/make_icons.swift` regenerates them) |
-| `scene-ui.js`, `scene-ui.css` | Shared scene controls: back link (bottom left), fullscreen (top right, `F`), and a share button beside Log that opens a dialog of share options. Each scene loads them with `data-text` set to its share message |
+| `embed.js` | One-line installer for embedding a scene as a background elsewhere: injects a fixed or element-filling iframe with `?embed`, dims it, and pauses it off screen with `postMessage({nightcity:'pause'})` |
+| `scene-ui.js`, `scene-ui.css` | Shared scene controls: back link (bottom left), fullscreen (top right, `F`), and a share button beside fullscreen that opens a dialog of share options. Each scene loads them with `data-text` set to its share message |
 | `justfile` | `just serve [dir] [port]` serves over HTTP and returns `404.html` for missing paths |
 | `pixel-city/` | The Pixel City scene: `index.html`, `style.css`, `main.js`, `logo.svg`, its own README |
 | `basketball-court/` | The Half Court scene: one-on-one basketball in isometric view, drawn smooth at full resolution. Same file set as Pixel City. Outfits vary per seed, the logo's hooded look is one of them, and each avatar is drawn from the player's outfit. `?speed=8` and `?debug` (exposes `window.HC` with `run()` and `testShot()`) help when tuning it |
 | `plan/` | Private planning notes, gitignored |
 | `.claude/launch.json` | Preview server config for the Claude desktop app, runs `just serve` |
+
+Every scene supports `?embed`: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `&q=high`, and it listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`. A new scene needs the same, and a `data-scene` on its `scene-ui.js` tag.
 
 The nav and footer markup is copied into `index.html`, `license.html` and `404.html`. A change to one must go into all three.
 

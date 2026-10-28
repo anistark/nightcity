@@ -7,6 +7,11 @@
 const cv=document.getElementById('scene');
 let ctx=cv.getContext('2d');
 const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+// ?embed runs the scene as a background on another site: no overlay, no wake lock, lower quality unless q=high,
+// and the host page can pause and resume it with postMessage({nightcity:'pause'}) and {nightcity:'play'}.
+const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
+let PAUSED=false;
+if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
 // ?speed=8 runs the simulation faster, which helps when checking how games play out.
 const SPEED=Math.max(.25,Math.min(16,+new URLSearchParams(location.search).get('speed')||1));
 
@@ -197,7 +202,7 @@ const reset=g=>g.setTransform(1,0,0,1,0,0);
 const poolOf=L=>({x:L.x+(0-L.x)*.42,z:L.z+(6-L.z)*.42});
 
 function build(){
-  DPR=Math.min(2,devicePixelRatio||1);
+  DPR=LOWQ?1:Math.min(2,devicePixelRatio||1);
   W=Math.max(320,Math.round(innerWidth*DPR));H=Math.max(240,Math.round(innerHeight*DPR));
   cv.width=W;cv.height=H;ctx.imageSmoothingEnabled=true;
   // Frame the part of the court the game uses: the paint, the arc and a little beyond. The far corner crops.
@@ -1600,8 +1605,11 @@ if(RM){
   draw();updateUI();
 }else{
   draw();updateUI();
-  let last=performance.now(),uiT=0;
+  let last=performance.now(),uiT=0,lastDraw=0;
   function frame(now){
+    if(PAUSED){last=now;requestAnimationFrame(frame);return;}
+    if(LOWQ&&now-lastDraw<32){requestAnimationFrame(frame);return;}
+    lastDraw=now;
     let dt=Math.min(.1,Math.max(0,(now-last)/1000))*SPEED;last=now;
     if(window.HC&&window.HC.paused)dt=0;
     while(dt>0){const s=Math.min(dt,1/60);update(s);dt-=s;}
@@ -1617,5 +1625,5 @@ ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
 cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
 addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});
 async function wake(){try{if('wakeLock'in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen');}catch(e){}}
-wake();document.addEventListener('visibilitychange',wake);
+if(!EMBED){wake();document.addEventListener('visibilitychange',wake);}
 })();
