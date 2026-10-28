@@ -47,8 +47,6 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
 .info{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 20px;padding:20px}
 .info h3{margin:0;font-weight:400;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
 .info p{margin:6px 0 0;max-width:62ch;color:var(--dim)}
-.open{font-size:16px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--edge);padding:6px 12px;white-space:nowrap}
-.scene:hover .open{border-color:var(--amber);color:var(--amber)}
 
 /* How it works */
 .rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}

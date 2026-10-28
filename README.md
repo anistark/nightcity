@@ -33,6 +33,7 @@ Night City is a Progressive Web App. Serve it over HTTP, open it in Chrome, Edge
 | Scene | What it is |
 |---|---|
 | [Pixel City](pixel-city/) | A pixel-art night city seen from a rooftop: traffic, a metro, a cat, pigeons, weather, flickering windows and neon |
+| [Half Court](basketball-court/) | One-on-one basketball under the floodlights, in isometric view, with players in streetwear inspired by the Night City logo: real ball physics, dribble moves, blocks, steals, streetball rules, and a cat that wanders by |
 
 ## The approach
 

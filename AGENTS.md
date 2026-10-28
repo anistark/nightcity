@@ -6,7 +6,7 @@ Context for coding agents working on Night City. Read this first. The [README](R
 
 Night City is a set of generative browser scenes that run forever and never repeat. Each scene is a small set of rules fed by one seeded random generator. Nothing is a stored clip and nothing loops.
 
-The real goal behind it is a scene of two people playing basketball on an empty court forever, with no movement ever repeating. Pixel City is the test of that theory on a simpler scene. Plans for future scenes live in `plan/`, which is gitignored. Read it for context, but never commit it or mention its contents in public files.
+The real goal behind it is a scene of two people playing basketball on an empty court forever, with no movement ever repeating. Pixel City tested that theory on a simpler scene, and Half Court (`basketball-court/`) is the first version of the basketball scene itself. Plans for future scenes live in `plan/`, which is gitignored. Read it for context, but never commit it or mention its contents in public files.
 
 Owner: Kumar Anirudha (GitHub `anistark`, X `kranirudha`). Repo: `github.com/anistark/nightcity`, branch `main`.
 
@@ -21,8 +21,10 @@ Owner: Kumar Anirudha (GitHub `anistark`, X `kranirudha`). Repo: `github.com/ani
 | `site.js` | Twinkling star background for the landing and license pages |
 | `logo.png`, `favicon.png` | Night City logo: a hooded cyberpunk character in sunglasses with yellow and cyan neon trim, supplied by the owner as a transparent PNG. `logo.png` is 512px and shows in the nav. `favicon.png` is 64px for the browser tab. Earlier SVG drafts, and the script that generated the Pixel City pixel logo from a grid (`logos.py`), are in `plan/logo-drafts/` |
 | `manifest.webmanifest`, `sw.js`, `pwa.js`, `icons/` | PWA: the manifest, the service worker, its registration, and app icons made from `logo.png` on the night background (`plan/logo-drafts/make_icons.swift` regenerates them) |
+| `scene-ui.js`, `scene-ui.css` | Shared scene controls: back link (bottom left), fullscreen (top right, `F`), and a share button beside Log that opens a dialog of share options. Each scene loads them with `data-text` set to its share message |
 | `justfile` | `just serve [dir] [port]` serves over HTTP and returns `404.html` for missing paths |
 | `pixel-city/` | The Pixel City scene: `index.html`, `style.css`, `main.js`, `logo.svg`, its own README |
+| `basketball-court/` | The Half Court scene: one-on-one basketball in isometric view, drawn smooth at full resolution. Same file set as Pixel City. Outfits vary per seed, the logo's hooded look is one of them, and each avatar is drawn from the player's outfit. `?speed=8` and `?debug` (exposes `window.HC` with `run()` and `testShot()`) help when tuning it |
 | `plan/` | Private planning notes, gitignored |
 | `.claude/launch.json` | Preview server config for the Claude desktop app, runs `just serve` |
 
@@ -32,12 +34,12 @@ The site is a PWA. `sw.js` fetches from the network first and falls back to its 
 
 ## Rules for scenes
 
-- **No build, no libraries, no image files.** Plain HTML, CSS and Canvas 2D. A scene must open by double-clicking its `index.html`.
+- **No build, no libraries.** Plain HTML, CSS and Canvas 2D, and no image files beyond logos and avatars. A scene must open by double-clicking its `index.html`.
 - **One folder per scene** with `index.html`, `README.md` and a `logo.svg`. Scene logos are 16×16 pixel art in the scene palette, written as one SVG path per colour with `shape-rendering="crispEdges"`. Only the umbrella Night City logo is an illustration. Add it to the scenes list on the landing page and to the table in the root README.
 - **One seed from the clock.** Hash the page-open time, formatted `YYYY-MM-DD HH:MM:SS.mmm`, with `cyrb128` into `sfc32`. Every choice in a scene comes from that generator, never from `Math.random`. Copy the generator from `pixel-city/main.js` so all scenes match. Show the seed somewhere in the scene.
 - **Events on independent timers** with exponentially distributed gaps, so there are bursts and lulls instead of a beat.
 - **Variation inside every event** from continuous ranges, plus slow drift from smooth noise.
-- **Pixel art.** Draw at low resolution and scale up with `image-rendering: pixelated`.
+- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court is the exception: the owner asked for it to look as realistic as possible, so it draws smooth geometry at full device resolution. Its players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
 - **Reduced motion.** Respect `prefers-reduced-motion` and show a still frame instead.
 - **Keep it light.** Cache static layers off-screen. Check that the scene holds about 60 fps.
 

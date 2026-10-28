@@ -6,6 +6,10 @@ serve dir="." port="8765":
     root = os.path.abspath("{{dir}}")
     class Handler(http.server.SimpleHTTPRequestHandler):
         extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, ".webmanifest": "application/manifest+json"}
+        def end_headers(self):
+            # Revalidate on every load, so edits show up without a hard reload.
+            self.send_header("Cache-Control", "no-cache")
+            super().end_headers()
         def send_error(self, code, message=None, explain=None):
             page = os.path.join(root, "404.html")
             if code != 404 or not os.path.isfile(page):

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Half Court">
+  <title>Half Court</title>
+  <path fill="#07081a" d="M1 0h14v1h-14zM0 1h2v1h-2zM14 1h2v1h-2zM0 2h2v1h-2zM3 2h10v1h-10zM14 2h2v1h-2zM0 3h2v1h-2zM3 3h3v1h-3zM10 3h3v1h-3zM14 3h2v1h-2zM0 4h2v1h-2zM3 4h3v1h-3zM7 4h2v1h-2zM10 4h3v1h-3zM14 4h2v1h-2zM0 5h2v1h-2zM3 5h3v1h-3zM10 5h3v1h-3zM14 5h2v1h-2zM0 6h2v1h-2zM14 6h2v1h-2zM0 7h5v1h-5zM11 7h5v1h-5zM0 8h5v1h-5zM6 8h1v1h-1zM9 8h1v1h-1zM11 8h5v1h-5zM0 9h6v1h-6zM7 9h2v1h-2zM10 9h6v1h-6zM0 10h6v1h-6zM10 10h3v1h-3zM15 10h1v1h-1zM0 11h13v1h-13zM0 12h12v1h-12zM0 13h13v1h-13zM15 13h1v1h-1z"/>
+  <path fill="#cfd8f0" d="M2 1h12v1h-12zM2 2h1v1h-1zM13 2h1v1h-1zM2 3h1v1h-1zM13 3h1v1h-1zM2 4h1v1h-1zM13 4h1v1h-1zM2 5h1v1h-1zM13 5h1v1h-1zM2 6h12v1h-12z"/>
+  <path fill="#e8ecff" d="M6 3h4v1h-4zM6 4h1v1h-1zM9 4h1v1h-1zM6 5h4v1h-4z"/>
+  <path fill="#ff5a2a" d="M5 7h6v1h-6z"/>
+  <path fill="#b8b4c8" d="M5 8h1v1h-1zM7 8h2v1h-2zM10 8h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM6 10h4v1h-4z"/>
+  <path fill="#e0782e" d="M13 10h2v1h-2zM13 11h3v1h-3zM12 12h4v1h-4zM13 13h2v1h-2z"/>
+  <path fill="#2c4f8f" d="M0 14h16v1h-16zM1 15h14v1h-14z"/>
+</svg>

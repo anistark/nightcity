@@ -2,13 +2,14 @@
 // Same-origin requests go to the network first and fall back to the cache, so updates show up straight away.
 // Fonts from other origins rarely change, so they come from the cache once they have been fetched.
 // Bump CACHE when the CORE list changes.
-const CACHE = 'nightcity-v1';
+const CACHE = 'nightcity-v4';
 const CORE = [
   './', 'index.html', 'license.html', '404.html', 'LICENSE',
-  'site.css', 'site.js', 'beach.js', 'pwa.js',
+  'site.css', 'site.js', 'beach.js', 'pwa.js', 'scene-ui.js', 'scene-ui.css',
   'logo.png', 'favicon.png', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'pixel-city/', 'pixel-city/index.html', 'pixel-city/style.css', 'pixel-city/main.js', 'pixel-city/logo.svg',
+  'basketball-court/', 'basketball-court/index.html', 'basketball-court/style.css', 'basketball-court/main.js', 'basketball-court/logo.svg',
 ];
 const FONT_HOSTS = /^(fonts\.googleapis\.com|fonts\.gstatic\.com|pixelspace\.anirudha\.dev)$/;
 

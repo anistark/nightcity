@@ -35,14 +35,26 @@
         <li>
           <a class="scene" href="pixel-city/index.html">
             <div class="preview">
-              <iframe id="preview" title="Live preview of Pixel City" tabindex="-1" aria-hidden="true"></iframe>
+              <iframe data-src="pixel-city/index.html" title="Live preview of Pixel City" tabindex="-1" aria-hidden="true"></iframe>
             </div>
             <div class="info">
               <div>
                 <h3>Pixel City</h3>
                 <p>A pixel-art night city seen from a rooftop. Traffic, a metro, a cat on the ledge, pigeons, weather, flickering windows and neon.</p>
               </div>
-              <span class="open">Open scene</span>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a class="scene" href="basketball-court/index.html">
+            <div class="preview">
+              <iframe data-src="basketball-court/index.html" title="Live preview of Half Court" tabindex="-1" aria-hidden="true"></iframe>
+            </div>
+            <div class="info">
+              <div>
+                <h3>Half Court</h3>
+                <p>One-on-one under the floodlights, in streetwear inspired by the Night City logo. Real ball physics off the rim and glass, crossovers, blocks, steals, streetball rules and a cat that wanders by.</p>
+              </div>
             </div>
           </a>
         </li>
@@ -77,8 +89,8 @@
 </footer>
 
 <script>
-// The live preview runs the full scene, so skip it for viewers who prefer reduced motion.
-if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.getElementById('preview').src='pixel-city/index.html';
+// Each live preview runs its full scene, so skip them for viewers who prefer reduced motion.
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const f of document.querySelectorAll('iframe[data-src]'))f.src=f.dataset.src;
 
 </script>
 <script src="site.js" defer></script>

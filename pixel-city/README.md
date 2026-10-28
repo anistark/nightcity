@@ -17,6 +17,9 @@ To serve it over HTTP instead, run `just serve pixel-city` from the project root
 ## Controls
 
 - **Log** (bottom-right) or `L`: open the live event list with counters. The ✕ closes it.
+- **Share** (beside Log): a dialog with X, Bluesky, LinkedIn, Reddit and copy link, each with a pixel logo, plus your device's own share sheet where there is one.
+- **Fullscreen** (top-right) or `F`.
+- **Back** (bottom-left): return to the Night City landing page.
 - Click the scene or press `H`: hide or show the overlay.
 
 The title and clock sit in the top-left corner.

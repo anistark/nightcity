@@ -9,6 +9,8 @@
   --edge:rgba(170,160,240,.24);
   --f-pixel:"Silkscreen","Courier New",ui-monospace,monospace;
   --f-term:"VT323",ui-monospace,"Courier New",monospace;
+  --share-size:22px;
+  --share-opt-size:13px;
   color-scheme:dark;
 }
 html,body{height:100%}

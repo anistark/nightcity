@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Half Court</title>
+<meta name="description" content="Two players, one hoop, a night of one-on-one that never plays the same way twice.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://pixelspace.anirudha.dev/pixelspace-font.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../scene-ui.css">
+</head>
+<body>
+<canvas id="scene" role="img" aria-label="Animated basketball half court at night, two players playing one-on-one"></canvas>
+<div class="hud" id="hud">
+  <div class="title">
+    <h1 class="brand">Half Court</h1>
+    <span class="clock" id="clock">--:--</span>
+  </div>
+  <div class="score" id="score" aria-live="polite"></div>
+  <div class="dock">
+    <section class="panel" id="log" hidden>
+      <p class="stats"><b id="stEvents">0</b> events. <b id="stDistinct">0</b> distinct. <b id="stShots">0</b> shots, <b id="stMakes">0</b> made</p>
+      <ol id="logList"></ol>
+      <p class="foot">Seeded from <span id="seed"></span>. Tap the scene to hide this</p>
+    </section>
+    <button type="button" id="logBtn" aria-expanded="false" aria-controls="log">Log</button>
+  </div>
+</div>
+<script src="main.js" defer></script>
+<script src="../scene-ui.js" data-text="Two players, one hoop, and a game of one-on-one that never plays the same way twice. This game was seeded at {seed}." defer></script>
+</body>
+</html>
