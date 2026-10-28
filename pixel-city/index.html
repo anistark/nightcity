@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel City</title>
+<meta name="description" content="A pixel-art night city seen from a rooftop. Every event is generated on the fly, so the scene never loops.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="scene" role="img" aria-label="Animated pixel-art night city seen from a rooftop"></canvas>
+<div class="hud" id="hud">
+  <div class="title">
+    <h1 class="brand">Pixel City</h1>
+    <span class="clock" id="clock">--:--</span>
+  </div>
+  <div class="dock">
+    <section class="panel" id="log" hidden>
+      <p class="stats"><b id="stEvents">0</b> events · <b id="stDistinct">0</b> distinct · <b id="stLights">0</b> lights switched</p>
+      <ol id="logList"></ol>
+      <p class="foot">Seeded from <span id="seed"></span> · tap the scene to hide this</p>
+    </section>
+    <button type="button" id="logBtn" aria-expanded="false" aria-controls="log">Log</button>
+  </div>
+</div>
+<script src="main.js" defer></script>
+</body>
+</html>

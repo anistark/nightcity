@@ -1,0 +1,84 @@
+/* Shared styles for the Night City pages. Same night palette as Pixel City, single dark look by design.
+   Pixelspace is drawn on a pixel grid, so font sizes stay on multiples of 8px to keep edges crisp. */
+:root{
+  --night:#07081a;
+  --ink:#ece6ff;
+  --dim:#9890c6;
+  --amber:#ffcf7a;
+  --panel:rgba(9,8,24,.8);
+  --edge:rgba(170,160,240,.24);
+  --font:"Pixelspace","Courier New",ui-monospace,monospace;
+  --gutter:max(16px,env(safe-area-inset-left,0px));
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:120px}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--night);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.75;-webkit-font-smoothing:none}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+.wrap{padding:0 var(--gutter)}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:10;background:var(--panel);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--edge);padding-top:env(safe-area-inset-top,0px)}
+.nav .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 20px;min-height:56px;padding-top:12px;padding-bottom:12px}
+.brand{display:inline-flex;align-items:center;gap:12px;font-size:16px;white-space:nowrap;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);text-decoration:none}
+.nav ul{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:20px}
+.nav ul a{font-size:16px;white-space:nowrap;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);text-decoration:none}
+.nav ul a:hover{color:var(--amber)}
+.nav .help{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--edge);color:var(--ink);letter-spacing:0;line-height:1}
+.brand img{width:32px;height:32px}
+.nav .help:hover{border-color:var(--amber);color:var(--amber)}
+
+/* Hero and sections */
+main{flex:1;padding:64px 0}
+.eyebrow{margin:0 0 20px;font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+h1{margin:0;font-weight:400;font-size:32px;line-height:1.25;letter-spacing:.04em;text-transform:uppercase;color:var(--amber)}
+.lead{margin:20px 0 0;font-size:16px}
+section{margin-top:112px}
+h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+/* Scene cards */
+.scenes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:36px}
+@media (min-width:1200px){.scenes{grid-template-columns:repeat(2,1fr)}}
+.scene{display:block;text-decoration:none;border:1px solid var(--edge);background:var(--panel)}
+.scene:hover{border-color:var(--amber)}
+.preview{position:relative;aspect-ratio:1.43/1;background:linear-gradient(#0b0c26,#1a1440 70%,#0c0a18);overflow:hidden}
+.preview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.info{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 20px;padding:20px}
+.info h3{margin:0;font-weight:400;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.info p{margin:6px 0 0;max-width:62ch;color:var(--dim)}
+.open{font-size:16px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--edge);padding:6px 12px;white-space:nowrap}
+.scene:hover .open{border-color:var(--amber);color:var(--amber)}
+
+/* How it works */
+.rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}
+.rules li{border-top:1px solid var(--edge);padding-top:12px}
+.rules b{display:block;margin-bottom:6px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.rules span{color:var(--dim)}
+
+/* Footer */
+.foot{font-size:16px;border-top:1px solid var(--edge);padding:36px 0 calc(36px + env(safe-area-inset-bottom,0px));color:var(--dim)}
+.foot .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px}
+.foot .tag{margin:6px 0 0}
+.socials{list-style:none;margin:0;padding:0;display:flex;gap:12px}
+.socials a{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--edge);color:var(--ink)}
+.socials a:hover{border-color:var(--amber);color:var(--amber)}
+.socials svg{width:18px;height:18px;fill:currentColor}
+.foot .tag a{text-decoration:none}
+.foot .tag a:hover{color:var(--amber)}
+/* Pixel copyright mark on the same 7-row grid as Pixelspace, 2px per cell at 16px. */
+.cr{width:14px;height:14px;vertical-align:-1px;fill:currentColor;shape-rendering:crispEdges}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (min-width:640px){h1{font-size:48px}.lead{font-size:24px}}
+@media (min-width:1200px){h1{font-size:64px}}
+@media (max-width:640px){.preview{aspect-ratio:4/5}main{padding:36px 0}section{margin-top:64px}}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* License page */
+.license p{margin:20px 0 0}
+.license .note{color:var(--dim)}
+.license .note a{color:var(--amber);text-decoration:none}
+.license .note a:hover{color:var(--ink)}
+.license code{font-family:inherit;color:var(--ink)}

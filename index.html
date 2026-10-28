@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Night City</title>
+<meta name="description" content="Generative scenes that run forever and never repeat.">
+<link rel="stylesheet" href="https://pixelspace.anirudha.dev/pixelspace-font.css">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#07081a">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="logo.png" alt="">Night City</a>
+    <ul>
+      <li><a href="#scenes">Scenes</a></li>
+      <li><a class="help" href="#how" aria-label="How it works" title="How it works">?</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="top">
+  <div class="wrap">
+    <p class="eyebrow">Generative scenes</p>
+    <h1>Scenes that never repeat</h1>
+    <p class="lead">Each scene is a small set of rules fed by one random generator. Nothing is scripted and nothing loops, so no two runs play the same way.</p>
+
+    <section id="scenes" aria-labelledby="scenes-h">
+      <h2 class="section" id="scenes-h">Scenes</h2>
+      <ul class="scenes">
+        <li>
+          <a class="scene" href="pixel-city/index.html">
+            <div class="preview">
+              <iframe id="preview" title="Live preview of Pixel City" tabindex="-1" aria-hidden="true"></iframe>
+            </div>
+            <div class="info">
+              <div>
+                <h3>Pixel City</h3>
+                <p>A pixel-art night city seen from a rooftop. Traffic, a metro, a cat on the ledge, pigeons, weather, flickering windows and neon.</p>
+              </div>
+              <span class="open">Open scene</span>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 class="section" id="how-h">How it works</h2>
+      <ul class="rules">
+        <li><b>One seed</b><span>A single random generator, seeded from the clock when the page opens, drives every choice.</span></li>
+        <li><b>Independent timers</b><span>Each kind of event waits a random gap, so the scene has bursts and lulls instead of a beat.</span></li>
+        <li><b>Variation inside events</b><span>Speed, colour, size and duration come from continuous ranges. No two taxis are quite the same taxi.</span></li>
+        <li><b>Slow drift</b><span>Smooth noise shifts traffic, wind and mood over minutes, on top of the individual events.</span></li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <a class="brand" href="#top">Night City</a>
+        <p class="tag"><svg class="cr" viewBox="0 0 7 7" role="img" aria-label="Copyright"><path d="M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM1 1h1v1h-1zM5 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM6 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM6 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM6 4h1v1h-1zM1 5h1v1h-1zM5 5h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1z"/></svg> 2026 Kumar Anirudha. <a href="license.html">MIT License</a>. Set in <a href="https://pixelspace.anirudha.dev" rel="noopener" target="_blank">Pixelspace</a>, SIL Open Font License.</p>
+      </div>
+      <ul class="socials">
+        <li><a href="https://github.com/anistark" rel="me noopener" target="_blank"><span class="sr">GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57l-.02-2.04c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.62-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3"/></svg></a></li>
+        <li><a href="https://x.com/kranirudha" rel="me noopener" target="_blank"><span class="sr">X</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.4l-5.8-7.59-6.64 7.59H.47l8.6-9.83L0 1.15h7.6l5.24 6.93zm-1.29 19.5h2.04L6.49 3.24H4.3z"/></svg></a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script>
+// The live preview runs the full scene, so skip it for viewers who prefer reduced motion.
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.getElementById('preview').src='pixel-city/index.html';
+
+</script>
+<script src="site.js" defer></script>
+<script src="pwa.js" defer></script>
+</body>
+</html>
