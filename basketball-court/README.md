@@ -23,9 +23,10 @@ The title, clock and score sit in the top-left corner.
 | File | What it holds |
 |---|---|
 | `index.html` | Page markup: the canvas and the overlay |
-| `style.css` | Overlay styles |
-| `main.js` | The whole simulation: generator, court, players, ball physics, events, drawing |
-| `logo.svg` | 16×16 pixel logo for the favicon |
+| `assets/css/style.css` | Overlay styles |
+| `assets/js/main.js` | The whole simulation: generator, court, players, ball physics, events, drawing |
+| `assets/images/logo.svg` | 16×16 pixel logo for the favicon |
+| `assets/images/og.jpg` | 1200x630 share preview |
 
 There are no libraries. Everything, including the avatars, is drawn with plain Canvas 2D at the screen's full resolution. The only outside request is the Pixelspace font for the overlay. The back, fullscreen and share controls come from `scene-ui.js` and `scene-ui.css` in the project root.
 
@@ -65,7 +66,7 @@ Each kind of event has its own timer, with exponentially distributed gaps, so th
 | A plane crosses the sky over the skyline | ~200 s |
 | A player stops to tie a shoelace before the check | ~300 s |
 
-You can tune these in `main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event. Moths circle the lights, antenna lights blink on the skyline, and the wind sways the net all the time.
+You can tune these in `assets/js/main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event. Moths circle the lights, antenna lights blink on the skyline, and the wind sways the net all the time.
 
 ### Drawing
 

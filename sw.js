@@ -2,14 +2,15 @@
 // Same-origin requests go to the network first and fall back to the cache, so updates show up straight away.
 // Fonts from other origins rarely change, so they come from the cache once they have been fetched.
 // Bump CACHE when the CORE list changes.
-const CACHE = 'nightcity-v5';
+const CACHE = 'nightcity-v6';
 const CORE = [
-  './', 'index.html', 'license.html', '404.html', 'LICENSE',
-  'site.css', 'site.js', 'beach.js', 'pwa.js', 'scene-ui.js', 'scene-ui.css', 'embed.js',
-  'logo.png', 'favicon.png', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
-  'pixel-city/', 'pixel-city/index.html', 'pixel-city/style.css', 'pixel-city/main.js', 'pixel-city/logo.svg',
-  'basketball-court/', 'basketball-court/index.html', 'basketball-court/style.css', 'basketball-court/main.js', 'basketball-court/logo.svg',
+  './', 'index.html', 'license.html', '404.html', 'LICENSE', 'manifest.webmanifest', 'embed.js',
+  'assets/css/site.css', 'assets/css/scene-ui.css',
+  'assets/js/site.js', 'assets/js/beach.js', 'assets/js/pwa.js', 'assets/js/scene-ui.js',
+  'assets/images/logo.png', 'assets/images/favicon.png',
+  'assets/images/icons/icon-192.png', 'assets/images/icons/icon-512.png', 'assets/images/icons/icon-maskable-512.png', 'assets/images/icons/apple-touch-icon.png',
+  'pixel-city/', 'pixel-city/index.html', 'pixel-city/assets/css/style.css', 'pixel-city/assets/js/main.js', 'pixel-city/assets/images/logo.svg',
+  'basketball-court/', 'basketball-court/index.html', 'basketball-court/assets/css/style.css', 'basketball-court/assets/js/main.js', 'basketball-court/assets/images/logo.svg',
 ];
 const FONT_HOSTS = /^(fonts\.googleapis\.com|fonts\.gstatic\.com|pixelspace\.anirudha\.dev)$/;
 

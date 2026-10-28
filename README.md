@@ -4,7 +4,26 @@ Experiments in generative scenes that run forever and never repeat.
 
 Each scene is a small set of rules fed by one random generator. Nothing is a stored clip and nothing loops: events are generated as they happen, so no two runs play the same way.
 
-## Run it
+
+## Scenes
+
+| Scene | What it is | By |
+|---|---|---|
+| [Pixel City](pixel-city/) | A pixel-art night city seen from a rooftop: traffic, a metro, a cat, pigeons, weather, flickering windows and neon | [@anistark](https://github.com/anistark) |
+| [Half Court](basketball-court/) | One-on-one basketball under the floodlights, in isometric view, with players in streetwear inspired by the Night City logo: real ball physics, dribble moves, blocks, steals, streetball rules, and a cat that wanders by | [@anistark](https://github.com/anistark) |
+
+## The approach
+
+The scenes share a few rules for avoiding repetition:
+
+- **One seed.** A single random generator, seeded from the clock when the page opens, drives every choice.
+- **Independent timers.** Each kind of event waits a random, exponentially distributed gap, so the scene has bursts and lulls instead of a beat.
+- **Variation inside every event.** Speed, colour, size, duration and direction come from continuous ranges, so the same kind of event never looks quite the same.
+- **Slow drift.** Smooth noise shifts the overall mood over minutes, on top of the individual events.
+
+These rules make exact repetition effectively impossible. The real target is *perceived* repetition, the feeling of "I've seen that before."
+
+## Run it locally
 
 Open `index.html` in a browser. It lists every scene with a live preview and links to each one.
 
@@ -22,12 +41,6 @@ just serve pixel-city
 
 The first serves the whole project and the second serves one folder, both at http://localhost:8765. Pass a second argument to change the port.
 
-Any missing path gets `404.html`, the way static hosts handle it. That page is a scene of its own: a moonlit beach seen from above, with waves that wash in at random and footprints they wipe away.
-
-## Install it
-
-Night City is a Progressive Web App. Serve it over HTTP, open it in Chrome, Edge or Safari, and use Install (or Add to Home Screen) to get it as an app with its own icon. Once it has loaded, it also works offline.
-
 ## Embed a scene
 
 Any scene can run as the live background of another site or app. Paste one line before `</body>`:
@@ -40,23 +53,9 @@ Any scene can run as the live background of another site or app. Paste one line 
 
 Each scene's share dialog has an **Embed** option with snippets for HTML, a plain iframe, React, Vue, React Native and Flutter, plus the Content Security Policy line a site may need and a note on transparent backgrounds.
 
-## Scenes
+## Contribute
 
-| Scene | What it is |
-|---|---|
-| [Pixel City](pixel-city/) | A pixel-art night city seen from a rooftop: traffic, a metro, a cat, pigeons, weather, flickering windows and neon |
-| [Half Court](basketball-court/) | One-on-one basketball under the floodlights, in isometric view, with players in streetwear inspired by the Night City logo: real ball physics, dribble moves, blocks, steals, streetball rules, and a cat that wanders by |
-
-## The approach
-
-The scenes share a few rules for avoiding repetition:
-
-- **One seed.** A single random generator, seeded from the clock when the page opens, drives every choice.
-- **Independent timers.** Each kind of event waits a random, exponentially distributed gap, so the scene has bursts and lulls instead of a beat.
-- **Variation inside every event.** Speed, colour, size, duration and direction come from continuous ranges, so the same kind of event never looks quite the same.
-- **Slow drift.** Smooth noise shifts the overall mood over minutes, on top of the individual events.
-
-These rules make exact repetition effectively impossible. The real target is *perceived* repetition, the feeling of "I've seen that before."
+These two scenes are just the start. New scenes, fixes and ideas are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how the project is laid out and how to add a scene, including how to credit yourself in the table above.
 
 ## License
 

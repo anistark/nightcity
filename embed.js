@@ -29,7 +29,9 @@
     }else document.body.prepend(box);
     const f=document.createElement('iframe');
     f.src=`${root}${scene}?embed${d.quality==='high'?'&q=high':''}`;
-    f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');f.loading='lazy';
+    f.title='';f.tabIndex=-1;f.setAttribute('aria-hidden','true');
+    // A full-page background is always on screen, so only an embed inside an element waits until it scrolls into view.
+    if(target)f.loading='lazy';
     f.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;background:#07081a';
     box.append(f);
     if(dim>0){const v=document.createElement('div');v.style.cssText=`position:absolute;inset:0;background:rgba(0,0,0,${dim})`;box.append(v);}

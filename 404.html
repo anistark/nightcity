@@ -5,17 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Washed away | Night City</title>
 <meta name="description" content="This page is not here. The tide took it.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Night City">
+<meta property="og:title" content="Night City">
+<meta property="og:description" content="Generative scenes that run forever and never repeat. A pixel-art city and one-on-one streetball, seeded from the clock.">
+<meta property="og:url" content="https://anistark.github.io/nightcity/">
+<meta property="og:image" content="https://anistark.github.io/nightcity/assets/images/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Night City: the hooded logo over a pixel-art night skyline, with a basketball court inset">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://anistark.github.io/nightcity/assets/images/og.jpg">
+<meta name="twitter:creator" content="@kranirudha">
 <link rel="stylesheet" href="https://pixelspace.anirudha.dev/pixelspace-font.css">
 <script>
 // 404.html is served for any missing path, so pin relative links to the site root.
 // On a github.io project site the root is the first path segment.
 (()=>{if(location.protocol==='file:')return;const seg=location.hostname.endsWith('.github.io')?location.pathname.split('/')[1]:'';const b=document.createElement('base');b.href=seg?'/'+seg+'/':'/';document.head.append(b);})();
 </script>
-<link rel="icon" href="favicon.png" type="image/png">
+<link rel="icon" href="assets/images/favicon.png" type="image/png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/images/icons/apple-touch-icon.png">
 <meta name="theme-color" content="#07081a">
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="assets/css/site.css">
 <style>
 /* 404 page. The beach canvas fills the window behind the page, drawn small and scaled up with crisp pixels. */
 #beach{position:fixed;inset:0;width:100%;height:100%;z-index:-1;image-rendering:pixelated;background:var(--night)}
@@ -33,7 +45,7 @@ main.lost{display:flex;align-items:center;justify-content:center}
 <canvas id="beach" aria-hidden="true"></canvas>
 <nav class="nav" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="index.html"><img src="logo.png" alt="">Night City</a>
+    <a class="brand" href="index.html"><img src="assets/images/logo.png" alt="">Night City</a>
     <ul>
       <li><a href="index.html#scenes">Scenes</a></li>
       <li><a class="help" href="index.html#how" aria-label="How it works" title="How it works">?</a></li>
@@ -67,7 +79,7 @@ main.lost{display:flex;align-items:center;justify-content:center}
     </div>
   </div>
 </footer>
-<script src="beach.js" defer></script>
-<script src="pwa.js" defer></script>
+<script src="assets/js/beach.js" defer></script>
+<script src="assets/js/pwa.js" defer></script>
 </body>
 </html>

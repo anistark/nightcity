@@ -12,6 +12,8 @@ const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').ma
 const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
 let PAUSED=false;
 if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
+// nightcity.step(dt) advances one frame and draws it, for frame-exact recordings.
+if(EMBED)window.nightcity={step(dt){PAUSED=true;for(let d=dt;d>1e-9;d-=1/60)update(Math.min(d,1/60));draw();}};
 // ?speed=8 runs the simulation faster, which helps when checking how games play out.
 const SPEED=Math.max(.25,Math.min(16,+new URLSearchParams(location.search).get('speed')||1));
 

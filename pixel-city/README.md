@@ -29,10 +29,12 @@ The title and clock sit in the top-left corner.
 | File | What it holds |
 |---|---|
 | `index.html` | Page markup: the canvas and the overlay |
-| `style.css` | Overlay styles and fonts |
-| `main.js` | The whole simulation: generator, world, events, drawing (about 46 KB) |
+| `assets/css/style.css` | Overlay styles and fonts |
+| `assets/js/main.js` | The whole simulation: generator, world, events, drawing (about 46 KB) |
+| `assets/images/logo.svg` | 16×16 pixel logo for the favicon |
+| `assets/images/og.jpg` | 1200x630 share preview |
 
-There are no libraries and no image files. Everything is drawn with plain Canvas 2D at a low resolution, then scaled up with crisp pixels. The only outside requests are two Google Fonts (Silkscreen and VT323) for the overlay. Offline, the overlay falls back to a monospace font and the scene runs the same.
+The scene uses no libraries and no image files. Everything is drawn with plain Canvas 2D at a low resolution, then scaled up with crisp pixels. The only outside requests are two Google Fonts (Silkscreen and VT323) for the overlay. Offline, the overlay falls back to a monospace font and the scene runs the same.
 
 ## How it works
 
@@ -52,21 +54,21 @@ Each kind of event has its own timer. The gap until the next one is drawn from a
 | Window life | ~13 s | Someone walks past, curtains move, a TV turns on or off |
 | Cloud | ~26 s | |
 | Neon sign | ~32 s | Loses a letter for a while, or stutters |
-| Pigeons | ~42 s | Flock of 3–9 |
+| Pigeons | ~42 s | Flock of 3-9 |
 | Plane | ~55 s | Blinking navigation lights |
 | Cat | ~60 s | Walks, sits, grooms, stares, trots, turns back |
-| Metro | ~80 s | 3–6 cars, random lit windows, sparks |
+| Metro | ~80 s | 3-6 cars, random lit windows, sparks |
 | Shooting star | ~85 s | Skipped in heavy rain |
 | Street lamp | ~95 s | Sputters or goes out for a while |
 | Satellite | ~2 min | |
 | Weather check | ~2.7 min | About 1 in 3 starts rain of random strength and length |
 | Rooftop smoker | ~3 min | Door opens, light spills out, they smoke and go back in |
 | Helicopter | ~3.3 min | Sometimes with a searchlight |
-| Fireworks | ~13 min | 3–9 bursts |
+| Fireworks | ~13 min | 3-9 bursts |
 
 Separately, hundreds of building windows each switch on and off on their own slow random timers.
 
-You can tune these in `main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event.
+You can tune these in `assets/js/main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event.
 
 ### 3. Variation inside every event
 
@@ -93,9 +95,9 @@ Repetition can be exact or perceived.
 
 Similar ideas, for comparison:
 
-- [Night City](https://github.com/jackcoldrick90/nightcity): walkable pixel city; mostly still, with timed lights and passing cars
+- [Night City](https://github.com/jackcoldrick90/nightcity): walkable pixel city, mostly still, with timed lights and passing cars
 - [cityscape](https://github.com/marianmeres/cityscape): endless parallax skyline from a seeded generator
-- [Pixel City by Shamus Young (2009)](https://www.shamusyoung.com/twentysidedtale/?p=2940): procedural 3D night-city fly-through screensaver; it shares this project's name
+- [Pixel City by Shamus Young (2009)](https://www.shamusyoung.com/twentysidedtale/?p=2940): procedural 3D night-city fly-through screensaver that shares this project's name
 - [Johnny Castaway (1992)](https://en.wikipedia.org/wiki/Johnny_Castaway): screensaver with random scenes and clock-triggered holidays
 - [Mountain (2014)](https://en.wikipedia.org/wiki/Mountain_(video_game)): a mountain that plays itself, with weather and random events
 - [Reflection by Brian Eno](https://apps.apple.com/us/app/id1180524479): endless generative music whose rules follow the time of day
