@@ -85,7 +85,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 - **Font sizes are multiples of 8px only** (16, 24, 32, 48, 64), or the pixel glyphs blur. The one exception is Rain Window's log panel at 12px, which the owner chose. Body text is 16px, the intro paragraph 24px from 640px up. The owner found a larger step too big, so don't raise sizes without being asked.
 - **Pixelspace is ASCII only.** No `©`, `·`, curly quotes or other non-ASCII text, because they fall back to another font. Use an inline pixel SVG instead, like the copyright mark in the footer.
 - **No max widths on landing page text.** Content spans the window with a 16px side gutter. The scene cards keep their own internal layout.
-- **Scene grid:** one column below 768px, two columns from 768px, three columns from 1200px.
+- **Scene grid:** a bento grid. One column below 768px, two columns from 768px, three columns from 1200px. The first card of every five runs two columns wide, so five cards fill the grid with no gaps, and with three columns its preview stretches to the height of the card beside it.
 - **No underlines on links,** including on hover. Show hover with colour or a border.
 - **Icons:** the nav uses a `?` box for How it works. The footer has GitHub and X icon buttons, then one line: copyright mark, year and name, MIT License (linking to `license/`), and the Pixelspace credit.
 - **The LICENSE link on the license page goes to `github.com/anistark/nightcity/blob/main/LICENSE`,** not the local file, which downloads instead of opening.
