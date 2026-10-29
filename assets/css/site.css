@@ -39,7 +39,8 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
 
 /* Scene cards */
 .scenes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:36px}
-@media (min-width:1200px){.scenes{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:768px){.scenes{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1200px){.scenes{grid-template-columns:repeat(3,1fr)}}
 .scene{display:block;text-decoration:none;border:1px solid var(--edge);background:var(--panel)}
 .scene:hover{border-color:var(--amber)}
 .preview{position:relative;aspect-ratio:1.43/1;background:linear-gradient(#0b0c26,#1a1440 70%,#0c0a18);overflow:hidden}
