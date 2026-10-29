@@ -45,6 +45,7 @@ pixel-city/                           one scene
 basketball-court/                     Half Court, same layout
 rain-window/                          Rain Window, same layout
 shoreline/                            Shoreline, same layout
+bus-stop/                             Bus Stop, same layout
 .github/                              workflows for deploying and checking, and Dependabot
 ```
 

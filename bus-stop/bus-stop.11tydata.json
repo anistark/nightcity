@@ -1,0 +1,28 @@
+{
+  "tags": "scene",
+  "order": 5,
+  "title": "Bus Stop",
+  "description": "A late-night bus stop across an empty street. Long quiet stretches, buses that go by without stopping, and now and then someone who waits and finally gets on. It never plays the same way twice.",
+  "ogTitle": "Bus Stop | Night City",
+  "ogImage": "bus-stop/assets/images/og.jpg",
+  "ogPath": "bus-stop/",
+  "ogAlt": "Bus Stop: a bus shelter at night painted like an anime film, under a street lamp, with shopfronts, utility wires and warm lit windows across the street",
+  "canvasLabel": "Animated anime-style bus stop at night across an empty street, where buses pass and now and then someone waits and gets on",
+  "share": "A late-night bus stop that never plays the same way twice. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "passed",
+      "buses went by."
+    ],
+    [
+      "boarded",
+      "got on."
+    ],
+    [
+      "cars",
+      "cars passed."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A late-night bus stop seen from across the street, painted like an anime film. Long quiet stretches, buses that go by without stopping, and now and then one person who waits, checks the road and finally gets on."
+}

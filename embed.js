@@ -12,7 +12,7 @@
 (()=>{
   const me=document.currentScript;if(!me)return;
   const root=new URL('.',me.src).href;
-  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/','rain-window':'rain-window/','shoreline':'shoreline/'};
+  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/','rain-window':'rain-window/','shoreline':'shoreline/','bus-stop':'bus-stop/'};
   const d=me.dataset,scene=SCENES[d.scene]||SCENES['pixel-city'];
   const dim=Math.min(1,Math.max(0,parseFloat(d.dim)||0));
   const start=()=>{

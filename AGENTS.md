@@ -35,6 +35,7 @@ pixel-city/           a scene: pixel-city.11tydata.json, index.njk, embed.njk, R
 basketball-court/     Half Court, same layout
 rain-window/          Rain Window, same layout
 shoreline/            Shoreline, same layout
+bus-stop/             Bus Stop, same layout
 .github/              pages.yml (build and deploy on push to main), check.yml (build and link check on pull requests), dependabot.yml
 README.md  CONTRIBUTING.md  AGENTS.md  CLAUDE.md  LICENSE  justfile  package.json  .nvmrc
 plan/                 private planning notes and tools, gitignored
@@ -55,6 +56,7 @@ Notes on the pieces:
 - **Shoreline debugging:** `?speed=8`, and `?debug` exposes `window.SH` with `run()`, `step()`, `draw()`, `newWave()` and `fire()`.
 - **Shoreline WebGL:** `shoreline/assets/js/main.js` starts `gl.js`, a WebGL 2 renderer the owner asked for to get closer to a photograph, and the one exception to the Canvas 2D rule. It shows a dark beach with no feet, Night City across the bay and faint sea creatures. `main.js` keeps a simpler Canvas 2D beach as the fallback when WebGL 2 or a shader fails. `?2d` forces the fallback, `?glfail` makes WebGL fail on purpose, and `?glq=0.7` lowers its resolution.
 - **Rain Window debugging:** `?speed=8`, and `?debug` exposes `window.RW` with `run()`, `step()`, `draw()` and `fire()`.
+- **Bus Stop debugging:** `?speed=8`, and `?debug` exposes `window.BS` with `run()`, `step()`, `draw()`, `fire()`, `people()` and `veh()`.
 - **Embed mode:** every scene has an `embed/` page with only the canvas and its scripts, which `embed.js` and the share snippets use. `?embed` on the full page still works for older embeds. Either way: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `q=high`. `nightcity.js` listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings.
 
 The head tags, nav and footer live once in `_includes/partials/` and appear on every root page.
@@ -72,7 +74,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 - **One seed from the clock.** `nightcity.js` hashes the page-open time, formatted `YYYY-MM-DD HH:MM:SS.mmm`, with `cyrb128` into `sfc32`. Every choice in a scene comes from that generator, never from `Math.random`. The overlay shows the seed in the log.
 - **Events on independent timers** with exponentially distributed gaps, so there are bursts and lulls instead of a beat.
 - **Variation inside every event** from continuous ranges, plus slow drift from smooth noise.
-- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court, Rain Window and Shoreline are the exceptions: the owner asked for them to look as realistic as possible, so they draw smooth geometry at full device resolution. Half Court's players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding.
+- **Pixel art, mostly.** Pixel City draws at low resolution and scales up with `image-rendering: pixelated`. Half Court, Rain Window and Shoreline are the exceptions: the owner asked for them to look as realistic as possible, so they draw smooth geometry at full device resolution. Half Court's players wear streetwear inspired by the logo, and their feet plant on the floor instead of sliding. Bus Stop is the other exception: the owner asked for the look of a hand-painted anime film, so it paints soft backgrounds and draws cel-shaded people and vehicles with inked outlines, at full device resolution. Keep it original, with nothing taken from a particular film.
 - **Reduced motion.** Respect `prefers-reduced-motion` and show a still frame instead.
 - **Keep it light.** Cache static layers off-screen. Check that the scene holds about 60 fps.
 
