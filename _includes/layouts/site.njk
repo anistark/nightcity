@@ -1,0 +1,27 @@
+{#- The landing, license and 404 pages: head, nav, the page's own main, footer. -#}
+{%- set root = page.url | root -%}
+{%- set home = '' if page.url == '/' else (root or './') -%}
+<!doctype html>
+<html lang="en">
+<head>
+{% include "partials/head.njk" %}
+<link rel="stylesheet" href="https://pixelspace.anirudha.dev/pixelspace-font.css">
+{% block headStart %}{% endblock %}
+<link rel="icon" href="{{ root }}assets/images/favicon.png" type="image/png">
+<link rel="manifest" href="{{ root }}manifest.webmanifest">
+<link rel="apple-touch-icon" href="{{ root }}assets/images/icons/apple-touch-icon.png">
+<meta name="theme-color" content="{{ site.theme }}">
+<link rel="stylesheet" href="{{ root }}assets/css/site.css">
+{% block headEnd %}{% endblock %}
+</head>
+<body>
+{% block bodyStart %}{% endblock %}
+{% include "partials/nav.njk" %}
+
+{% block main %}{% endblock %}
+
+{% include "partials/footer.njk" %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -10,13 +10,11 @@ In a simulated hour, the city produced about 1,700 events and no two were identi
 
 ## Run it
 
-Double-click `index.html`. It opens in any modern browser. There is no server, build step or install.
-
-To serve it over HTTP instead, run `just serve pixel-city` from the project root.
+From the project root, run `npm install` once, then `just serve`, and open http://localhost:8765/pixel-city/. The scene on its own, as embeds use it, is at http://localhost:8765/pixel-city/embed/.
 
 ## Controls
 
-- **Log** (bottom-right) or `L`: open the live event list with counters. The ✕ closes it.
+- **Log**, the page icon (bottom-right), or `L`: open the live event list with counters. The ✕ closes it.
 - **Share** (top-right, beside fullscreen): a dialog with the link and a copy button, then X, Bluesky, LinkedIn and Reddit as pixel logos, plus your device's own share sheet where there is one. A separate **Embed** button gives copy-paste snippets for putting the scene behind another site or app.
 - **Fullscreen** (top-right) or `F`.
 - **Back** (bottom-left): return to the Night City landing page.
@@ -28,13 +26,15 @@ The title and clock sit in the top-left corner.
 
 | File | What it holds |
 |---|---|
-| `index.html` | Page markup: the canvas and the overlay |
+| `pixel-city.11tydata.json` | Title, share tags, share text, log counters and landing card text |
+| `index.njk` | The scene page, built from the shared scene layout with the overlay |
+| `embed.njk` | The scene on its own, for embeds |
 | `assets/css/style.css` | Overlay styles and fonts |
 | `assets/js/main.js` | The whole simulation: generator, world, events, drawing (about 46 KB) |
 | `assets/images/logo.svg` | 16×16 pixel logo for the favicon |
 | `assets/images/og.jpg` | 1200x630 share preview |
 
-The scene uses no libraries and no image files. Everything is drawn with plain Canvas 2D at a low resolution, then scaled up with crisp pixels. The only outside requests are two Google Fonts (Silkscreen and VT323) for the overlay. Offline, the overlay falls back to a monospace font and the scene runs the same.
+The scene uses no libraries and no image files. Everything is drawn with plain Canvas 2D at a low resolution, then scaled up with crisp pixels. The only outside requests are two Google Fonts (Silkscreen and VT323) for the overlay. Offline, the overlay falls back to a monospace font and the scene runs the same. The seed, frame loop and embed mode come from `assets/js/nightcity.js` in the project root, and the overlay and its controls from the shared scene layout, `scene-ui.js` and `scene-ui.css`.
 
 ## How it works
 

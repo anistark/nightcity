@@ -1,0 +1,19 @@
+{#- A scene on its own, for running behind another site or app: the canvas and the scene's scripts, no overlay and no fonts.
+    nightcity.js sees data-embed and runs at low quality unless the address has ?q=high. -#}
+{%- set root = page.url | root -%}
+<!doctype html>
+<html lang="en" data-embed>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ title }}</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{{ site.url }}{{ ogPath }}">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+<canvas id="scene" role="img" aria-label="{{ canvasLabel }}"></canvas>
+<script src="{{ root }}assets/js/nightcity.js" defer></script>
+<script src="../assets/js/main.js" defer></script>
+</body>
+</html>

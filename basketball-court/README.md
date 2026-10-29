@@ -4,13 +4,11 @@ Two players, one hoop, an outdoor court at night under the floodlights, seen in 
 
 ## Run it
 
-Double-click `index.html`. It opens in any modern browser. There is no server, build step or install.
-
-To serve it over HTTP instead, run `just serve basketball-court` from the project root.
+From the project root, run `npm install` once, then `just serve`, and open http://localhost:8765/basketball-court/. The scene on its own, as embeds use it, is at http://localhost:8765/basketball-court/embed/.
 
 ## Controls
 
-- **Log** (bottom-right) or `L`: open the live event list with counters. The ✕ closes it.
+- **Log**, the page icon (bottom-right), or `L`: open the live event list with counters. The ✕ closes it.
 - **Share** (top-right, beside fullscreen): a dialog with the link and a copy button, then X, Bluesky, LinkedIn and Reddit as pixel logos, plus your device's own share sheet where there is one. A separate **Embed** button gives copy-paste snippets for putting the scene behind another site or app.
 - **Fullscreen** (top-right) or `F`.
 - **Back** (bottom-left): return to the Night City landing page.
@@ -22,13 +20,15 @@ The title, clock and score sit in the top-left corner.
 
 | File | What it holds |
 |---|---|
-| `index.html` | Page markup: the canvas and the overlay |
+| `basketball-court.11tydata.json` | Title, share tags, share text, log counters and landing card text |
+| `index.njk` | The scene page, built from the shared scene layout with the overlay |
+| `embed.njk` | The scene on its own, for embeds |
 | `assets/css/style.css` | Overlay styles |
 | `assets/js/main.js` | The whole simulation: generator, court, players, ball physics, events, drawing |
 | `assets/images/logo.svg` | 16×16 pixel logo for the favicon |
 | `assets/images/og.jpg` | 1200x630 share preview |
 
-There are no libraries. Everything, including the avatars, is drawn with plain Canvas 2D at the screen's full resolution. The only outside request is the Pixelspace font for the overlay. The back, fullscreen and share controls come from `scene-ui.js` and `scene-ui.css` in the project root.
+There are no libraries. Everything, including the avatars, is drawn with plain Canvas 2D at the screen's full resolution. The only outside request is the Pixelspace font for the overlay. The seed, frame loop and embed mode come from `assets/js/nightcity.js` in the project root, and the overlay and its controls from the shared scene layout, `scene-ui.js` and `scene-ui.css`.
 
 ## How it works
 

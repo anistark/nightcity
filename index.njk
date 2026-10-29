@@ -1,0 +1,57 @@
+---
+title: Night City
+description: Generative scenes that run forever and never repeat.
+ogPath: ""
+---
+{% extends "layouts/site.njk" %}
+
+{% block main %}
+<main id="top">
+  <div class="wrap">
+    <p class="eyebrow">Generative scenes</p>
+    <h1>Scenes that never repeat</h1>
+    <p class="lead">Each scene is a small set of rules fed by one random generator. Nothing is scripted and nothing loops, so no two runs play the same way.</p>
+
+    <section id="scenes" aria-labelledby="scenes-h">
+      <h2 class="section" id="scenes-h">Scenes</h2>
+      <ul class="scenes">
+{%- for s in collections.scenes %}
+        <li>
+          <a class="scene" href="{{ s.url.slice(1) }}">
+            <div class="preview">
+              <iframe data-src="{{ s.url.slice(1) }}" title="Live preview of {{ s.data.title }}" tabindex="-1" aria-hidden="true"></iframe>
+            </div>
+            <div class="info">
+              <div>
+                <h3>{{ s.data.title }}</h3>
+                <p>{{ s.data.card }}</p>
+              </div>
+            </div>
+          </a>
+        </li>
+{%- endfor %}
+      </ul>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 class="section" id="how-h">How it works</h2>
+      <ul class="rules">
+        <li><b>One seed</b><span>A single random generator, seeded from the clock when the page opens, drives every choice.</span></li>
+        <li><b>Independent timers</b><span>Each kind of event waits a random gap, so the scene has bursts and lulls instead of a beat.</span></li>
+        <li><b>Variation inside events</b><span>Speed, colour, size and duration come from continuous ranges. No two taxis are quite the same taxi.</span></li>
+        <li><b>Slow drift</b><span>Smooth noise shifts traffic, wind and mood over minutes, on top of the individual events.</span></li>
+      </ul>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Each live preview runs its full scene, so skip them for viewers who prefer reduced motion.
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const f of document.querySelectorAll('iframe[data-src]'))f.src=f.dataset.src;
+
+</script>
+<script src="{{ root }}assets/js/site.js" defer></script>
+<script src="{{ root }}assets/js/pwa.js" defer></script>
+{% endblock %}

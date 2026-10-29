@@ -1,0 +1,28 @@
+{
+  "tags": "scene",
+  "order": 1,
+  "title": "Pixel City",
+  "description": "A pixel-art night city seen from a rooftop. Every event is generated on the fly, so the scene never loops.",
+  "ogTitle": "Pixel City | Night City",
+  "ogImage": "pixel-city/assets/images/og.jpg",
+  "ogPath": "pixel-city/",
+  "ogAlt": "Pixel City: a pixel-art night skyline with neon signs and lit windows",
+  "canvasLabel": "Animated pixel-art night city seen from a rooftop",
+  "share": "A pixel-art night city that never plays the same way twice. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "events",
+      "events ·"
+    ],
+    [
+      "distinct",
+      "distinct ·"
+    ],
+    [
+      "lights",
+      "lights switched"
+    ]
+  ],
+  "footTail": " · tap the scene to hide this",
+  "card": "A pixel-art night city seen from a rooftop. Traffic, a metro, a cat on the ledge, pigeons, weather, flickering windows and neon."
+}

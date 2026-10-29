@@ -1,0 +1,32 @@
+{
+  "tags": "scene",
+  "order": 2,
+  "title": "Half Court",
+  "description": "Two players, one hoop, a night of one-on-one that never plays the same way twice.",
+  "ogTitle": "Half Court | Night City",
+  "ogImage": "basketball-court/assets/images/og.jpg",
+  "ogPath": "basketball-court/",
+  "ogAlt": "Half Court: two streetballers driving into the paint on a floodlit outdoor court at night",
+  "canvasLabel": "Animated basketball half court at night, two players playing one-on-one",
+  "share": "Two players, one hoop, and a game of one-on-one that never plays the same way twice. This game was seeded at {seed}.",
+  "stats": [
+    [
+      "events",
+      "events."
+    ],
+    [
+      "distinct",
+      "distinct."
+    ],
+    [
+      "shots",
+      "shots,"
+    ],
+    [
+      "makes",
+      "made"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "One-on-one under the floodlights, in streetwear inspired by the Night City logo. Real ball physics off the rim and glass, crossovers, blocks, steals, streetball rules and a cat that wanders by."
+}

@@ -1,0 +1,37 @@
+{#- A scene page: the scene's canvas and the shared overlay around it.
+    The scene's own data file gives the title, share tags, canvas label, share text and log counters.
+    A scene's index.njk can fill the fonts block, or the hud block for overlay parts only it has. -#}
+{%- set root = page.url | root -%}
+{%- set slug = page.fileSlug -%}
+{%- set ogDescription = ogDescription or description -%}
+<!doctype html>
+<html lang="en">
+<head>
+{% include "partials/head.njk" %}
+{% block fonts %}<link rel="stylesheet" href="https://pixelspace.anirudha.dev/pixelspace-font.css">{% endblock %}
+<link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="{{ root }}assets/css/scene-ui.css">
+</head>
+<body>
+<canvas id="scene" role="img" aria-label="{{ canvasLabel }}"></canvas>
+<div class="hud" id="hud">
+  <div class="title">
+    <h1 class="brand">{{ title }}</h1>
+    <span class="clock" id="clock">--:--</span>
+  </div>
+  {% block hud %}{% endblock %}
+  <div class="dock">
+    <section class="panel" id="log" hidden>
+      <p class="stats">{% for s in stats %}<b data-stat="{{ s[0] }}">0</b> {{ s[1] }}{{ ' ' if not loop.last }}{% endfor %}</p>
+      <ol id="logList"></ol>
+      <p class="foot">Seeded from <span id="seed"></span>{{ footTail }}</p>
+    </section>
+    <button type="button" id="logBtn" class="icon" aria-expanded="false" aria-controls="log" aria-label="Open log" title="Log (L)"><svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h5v1H0zM0 1h1v1H0zM4 1h2v1H4zM0 2h1v1H0zM6 2h1v1H6zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM0 4h1v1H0zM6 4h1v1H6zM0 5h1v1H0zM2 5h3v1H2zM6 5h1v1H6zM0 6h7v1H0z"/></svg></button>
+  </div>
+</div>
+<script src="{{ root }}assets/js/nightcity.js" defer></script>
+<script src="assets/js/main.js" defer></script>
+<script src="{{ root }}assets/js/scene-ui.js" data-scene="{{ slug }}" data-text="{{ share }}" defer></script>
+</body>
+</html>

@@ -5,35 +5,8 @@
 'use strict';
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
-const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-// ?embed runs the scene as a background on another site: no overlay, no wake lock, lower quality unless q=high,
-// and the host page can pause and resume it with postMessage({nightcity:'pause'}) and {nightcity:'play'}.
-const QS=new URLSearchParams(location.search),EMBED=QS.has('embed'),LOWQ=EMBED&&QS.get('q')!=='high';
-let PAUSED=false;
-if(EMBED){document.documentElement.classList.add('embed');addEventListener('message',e=>{const m=e.data&&e.data.nightcity;if(m==='pause')PAUSED=true;if(m==='play')PAUSED=false;});}
-// nightcity.step(dt) advances one frame and draws it, for frame-exact recordings.
-if(EMBED)window.nightcity={step(dt){PAUSED=true;t+=dt;update(dt);draw();}};
-
-/* ---------- randomness ---------- */
-function sfc32(a,b,c,d){return()=>{a>>>=0;b>>>=0;c>>>=0;d>>>=0;let x=(a+b)|0;a=b^(b>>>9);b=(c+(c<<3))|0;c=(c<<21)|(c>>>11);d=(d+1)|0;x=(x+d)|0;c=(c+x)|0;return(x>>>0)/4294967296;};}
-/* The seed is the moment the page opened: date + time down to the millisecond.
-   cyrb128 hashes that string into four 32-bit words to fill the generator's whole state. */
-const p2=n=>String(n).padStart(2,'0');
-const NOW=new Date();
-const SEED_STR=NOW.getFullYear()+'-'+p2(NOW.getMonth()+1)+'-'+p2(NOW.getDate())+' '+p2(NOW.getHours())+':'+p2(NOW.getMinutes())+':'+p2(NOW.getSeconds())+'.'+String(NOW.getMilliseconds()).padStart(3,'0');
-function cyrb128(s){let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;for(let i=0;i<s.length;i++){const k=s.charCodeAt(i);h1=h2^Math.imul(h1^k,597399067);h2=h3^Math.imul(h2^k,2869860233);h3=h4^Math.imul(h3^k,951274213);h4=h1^Math.imul(h4^k,2716044539);}h1=Math.imul(h3^(h1>>>18),597399067);h2=Math.imul(h4^(h2>>>22),2869860233);h3=Math.imul(h1^(h3>>>17),951274213);h4=Math.imul(h2^(h4>>>19),2716044539);h1^=(h2^h3^h4);h2^=h1;h3^=h1;h4^=h1;return[h1>>>0,h2>>>0,h3>>>0,h4>>>0];}
-const R=sfc32(...cyrb128(SEED_STR));
-for(let i=0;i<20;i++)R();
-const rr=(a,b)=>a+(b-a)*R();
-const ri=(a,b)=>b<=a?Math.round(a):Math.floor(rr(a,b+1));
-const pick=a=>a[Math.floor(R()*a.length)];
-const chance=p=>R()<p;
-const expo=m=>-Math.log(1-R())*m;
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function wpick(list){let s=0;for(const it of list)s+=it[1];let r=R()*s;for(const it of list){r-=it[1];if(r<=0)return it[0];}return list[0][0];}
-const NT=new Float32Array(4096);for(let i=0;i<4096;i++)NT[i]=R();
-function noise(x){const i=Math.floor(x),f=x-i,u=f*f*(3-2*f),a=NT[i&4095],b=NT[(i+1)&4095];return a+(b-a)*u;}
-function fbm(x){return noise(x)*.55+noise(x*2.031+17.3)*.3+noise(x*4.97+91.1)*.15;}
+// Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.
+const{RM,LOWQ,R,rr,ri,pick,chance,expo,shuffle,wpick,noise,fbm,fmtTime}=NightCity;
 
 /* ---------- palettes ---------- */
 const FARC=['#121133','#13143a','#100f2c','#141236'];
@@ -73,8 +46,6 @@ const glowRed=glowSprite(2,'255,60,70',.5);
 const glowWarm=glowSprite(7,'255,205,140',.3);
 const glowHead=glowSprite(3,'255,240,200',.35);
 const glowBlue=glowSprite(3,'190,220,255',.6);
-const fmt2=n=>String(n).padStart(2,'0');
-const fmtTime=(d,s)=>fmt2(d.getHours())+':'+fmt2(d.getMinutes())+(s?':'+fmt2(d.getSeconds()):'');
 
 /* ---------- world state ---------- */
 let W=0,H=0,fg=30,u=1,ledgeY=0,roadY=0,trackY=0,t=0,wind=0;
@@ -87,26 +58,12 @@ const weather={level:0,target:0,until:0,acc:0};
 let steamAcc=0;
 
 /* ---------- event log ---------- */
-const logArr=[];const seen=new Set();const stats={events:0,lights:0};
-const $=id=>document.getElementById(id);
-const ui={clock:$('clock'),btn:$('logBtn'),panel:$('log'),list:$('logList'),ev:$('stEvents'),di:$('stDistinct'),li:$('stLights'),seed:$('seed'),hud:$('hud')};
-ui.seed.textContent=SEED_STR;
-let uiDirty=true;
+// Each entry also gets a signature from its type and numbers, which counts how many distinct things happened.
+const seen=new Set();const stats={events:0,lights:0};
 function log(type,text,params){
   const sig=type+'|'+text.split(' ')[0]+'|'+JSON.stringify(params,(k,v)=>typeof v==='number'?+v.toFixed(4):v);
   stats.events++;seen.add(sig);
-  logArr.unshift({time:fmtTime(new Date(),true),text});
-  if(logArr.length>40)logArr.pop();
-  uiDirty=true;
-}
-function updateUI(){
-  ui.clock.textContent=fmtTime(new Date());
-  ui.ev.textContent=stats.events;ui.di.textContent=seen.size;ui.li.textContent=stats.lights;
-  if(uiDirty&&!ui.panel.hidden){
-    ui.list.textContent='';
-    for(const e of logArr.slice(0,30)){const li=document.createElement('li');const tm=document.createElement('time');tm.textContent=e.time;const sp=document.createElement('span');sp.textContent=e.text;li.append(tm,sp);ui.list.append(li);}
-    uiDirty=false;
-  }
+  NightCity.log(text);
 }
 
 /* ---------- world generation ---------- */
@@ -659,17 +616,8 @@ function draw(){
 /* ---------- run ---------- */
 build();
 for(let i=0;i<90;i++){t+=1/30;update(1/30);}
-draw();updateUI();
-let last=performance.now(),uiT=0,lastDraw=0;
-function frame(now){if(PAUSED){last=now;requestAnimationFrame(frame);return;}if(LOWQ&&now-lastDraw<32){requestAnimationFrame(frame);return;}lastDraw=now;const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;t+=dt;update(dt);draw();uiT+=dt;if(uiT>.5){uiT=0;updateUI();}requestAnimationFrame(frame);}
-requestAnimationFrame(frame);
+// Pixel City keeps running with reduced motion on, and slows its own effects instead.
+NightCity.run({update:dt=>{t+=dt;update(dt);},draw,still:false,ui:()=>NightCity.stats({events:stats.events,distinct:seen.size,lights:stats.lights})});
 
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();draw();},200);});
-const CLOSE_ICON='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
-function toggleLog(){ui.panel.hidden=!ui.panel.hidden;ui.btn.setAttribute('aria-expanded',String(!ui.panel.hidden));if(ui.panel.hidden){ui.btn.textContent='Log';ui.btn.classList.remove('icon');ui.btn.removeAttribute('aria-label');}else{ui.btn.innerHTML=CLOSE_ICON;ui.btn.classList.add('icon');ui.btn.setAttribute('aria-label','Close log');}uiDirty=true;updateUI();}
-ui.btn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
-cv.addEventListener('click',()=>ui.hud.classList.toggle('off'));
-addEventListener('keydown',e=>{if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')ui.hud.classList.toggle('off');});
-async function wake(){try{if('wakeLock'in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen');}catch(e){}}
-if(!EMBED){wake();document.addEventListener('visibilitychange',wake);}
 })();

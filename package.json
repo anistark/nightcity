@@ -1,0 +1,19 @@
+{
+  "name": "nightcity",
+  "private": true,
+  "description": "Generative scenes that run forever and never repeat.",
+  "license": "MIT",
+  "author": "Kumar Anirudha",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "eleventy",
+    "serve": "eleventy --serve --port 8765",
+    "check:links": "node scripts/check-links.js"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "3.1.7"
+  }
+}
