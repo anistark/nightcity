@@ -44,6 +44,7 @@ pixel-city/                           one scene
     images/logo.svg, og.jpg
 basketball-court/                     Half Court, same layout
 rain-window/                          Rain Window, same layout
+shoreline/                            Shoreline, same layout
 .github/                              workflows for deploying and checking, and Dependabot
 ```
 

@@ -1,0 +1,28 @@
+{
+  "tags": "scene",
+  "order": 4,
+  "title": "Shoreline",
+  "description": "A dark beach at night. Waves run up the sand and drain away, the moon and Night City's neon stretch across the water, and now and then something glows in the surf.",
+  "ogTitle": "Shoreline | Night City",
+  "ogImage": "shoreline/assets/images/og.jpg",
+  "ogPath": "shoreline/",
+  "ogAlt": "Shoreline: a dark beach at night, foam running up the sand, with a neon city skyline across the bay reflected in the water",
+  "canvasLabel": "Animated view of a dark beach at night, with waves washing up the sand and a neon city skyline reflected across the water",
+  "share": "Waves on a dark beach with Night City glowing across the bay. No two waves land the same way. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "waves",
+      "waves."
+    ],
+    [
+      "far",
+      "ran far up the sand."
+    ],
+    [
+      "sights",
+      "things glimpsed in the water"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A dark beach at night. Waves run up the sand and drain away, Night City's neon glows across the bay and stretches over the water, and now and then something glows in the surf."
+}
