@@ -2,27 +2,27 @@
   "tags": "scene",
   "order": 4,
   "title": "Shoreline",
-  "description": "Bare feet at the water's edge under the moon. Waves run up the sand, wash over the toes or fall just short, and never the same way twice.",
+  "description": "A dark beach at night. Waves run up the sand and drain away, the moon and Night City's neon stretch across the water, and now and then something glows in the surf.",
   "ogTitle": "Shoreline | Night City",
   "ogImage": "shoreline/assets/images/og.jpg",
   "ogPath": "shoreline/",
-  "ogAlt": "Shoreline: looking down at bare feet on wet sand at night as moonlit foam washes up around them",
-  "canvasLabel": "Animated view looking down at bare feet on a beach at night, with waves washing up the sand around them under moonlight",
-  "share": "Feet in the surf under the moon, where no two waves land the same way. Mine was seeded at {seed}.",
+  "ogAlt": "Shoreline: a dark beach at night, foam running up the sand, with a neon city skyline across the bay reflected in the water",
+  "canvasLabel": "Animated view of a dark beach at night, with waves washing up the sand and a neon city skyline reflected across the water",
+  "share": "Waves on a dark beach with Night City glowing across the bay. No two waves land the same way. Mine was seeded at {seed}.",
   "stats": [
     [
       "waves",
       "waves."
     ],
     [
-      "reached",
-      "reached the feet."
+      "far",
+      "ran far up the sand."
     ],
     [
-      "short",
-      "fell short"
+      "sights",
+      "things glimpsed in the water"
     ]
   ],
   "footTail": ". Tap the scene to hide this",
-  "card": "Looking down at bare feet on wet sand under the moon. Waves run up and wash over the toes or fall just short, foam laces the sand, and now and then a crab scuttles past."
+  "card": "A dark beach at night. Waves run up the sand and drain away, Night City's neon glows across the bay and stretches over the water, and now and then something glows in the surf."
 }

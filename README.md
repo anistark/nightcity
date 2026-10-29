@@ -12,7 +12,7 @@ Each scene is a small set of rules fed by one random generator. Nothing is a sto
 | [Pixel City](pixel-city/) | A pixel-art night city seen from a rooftop: traffic, a metro, a cat, pigeons, weather, flickering windows and neon | [@anistark](https://github.com/anistark) |
 | [Half Court](basketball-court/) | One-on-one basketball under the floodlights, in isometric view, with players in streetwear inspired by the Night City logo: real ball physics, dribble moves, blocks, steals, streetball rules, and a cat that wanders by | [@anistark](https://github.com/anistark) |
 | [Rain Window](rain-window/) | Slow rain on a window at night in front of a city out of focus: drops land, join, run down the glass and wipe clear trails, while cars, windows, showers and lightning come and go behind | [@anistark](https://github.com/anistark) |
-| [Shoreline](shoreline/) | Looking down at bare feet on wet sand under the moon, as waves run up and wash over the toes or fall just short, with foam, crabs and clams | [@anistark](https://github.com/anistark) |
+| [Shoreline](shoreline/) | A dark beach under the moon, as waves run up the sand and drain away, with foam, crabs and clams, and Night City glowing across the bay in the WebGL version | [@anistark](https://github.com/anistark) |
 
 ## The approach
 

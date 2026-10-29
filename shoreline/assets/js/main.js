@@ -49,9 +49,9 @@ function makePerson(main){
   return{skinName,skin:skin.map(v=>v*rr(.96,1.04)),hair:chance(.5)?rr(.25,1):rr(0,.12),
     nails:chance(main?.25:.5)?pick(POLISH):null,anklet:chance(.25)?(chance(.5)?-1:1):0,
     size:rr(.94,1.06),spread:rr(.1,.2),splay:rr(.03,.14),seed:R()*1e4};}
-const people=[makePerson(true)];
-// Almost always one pair of feet. A second pair is a rare night.
-if(chance(.04)){const p=makePerson(false);p.side=chance(.5)?-1:1;p.size*=rr(.86,.96);p.rot=p.side*rr(.12,.26);p.back=rr(-.08,.05);people.push(p);}
+// The beach is empty for now. The feet code stays in place, so a pair can be added back here with makePerson(true).
+const people=[];
+if(false){const p=makePerson(false);p.side=chance(.5)?-1:1;p.size*=rr(.86,.96);p.rot=p.side*rr(.12,.26);p.back=rr(-.08,.05);people.push(p);}
 // Per-foot details drawn once from the generator, so a resize redraws the same feet.
 for(const p of people){p.feet=[-1,1].map(s=>{
   const hairs=[];for(let i=0;i<Math.round(520*p.hair);i++)hairs.push([rr(-.3,.3),rr(1.02,3.2),rr(.01,.026),rr(-.7,.7),rr(.18,.45)]);
@@ -65,7 +65,7 @@ let baseDry,baseWet,glade,vig,sandTiles=null,foamTiles=null,patDense,patSparse,p
 let wet,wtx,mDense,mdx,mSparse,msx,scratch,sx,fscr,fsx;
 let foamOX=0,foamOY=0,lastFront=0,bright=1,brightTo=1,wetT=0,grainT=0,gox=0,goy=0;
 const waves=[],strands=[],crabs=[],clams=[],holes=[],shells=[],sparkles=[];
-const stats={waves:0,reached:0,short:0};
+const stats={waves:0,far:0,sights:0};
 const NX=96;let XS=new Float32Array(NX),FRONT=new Float32Array(NX);
 
 /* ---------- textures ---------- */
@@ -266,17 +266,15 @@ function frontAt(x){const i=clamp((x+20)/(CW+40)*(NX-1),0,NX-1),a=Math.floor(i),
 
 /* ---------- events ---------- */
 // Each kind of event waits its own exponentially distributed gap. m is the average gap in seconds, f the first wait.
-const SCHED={crab:{m:140,f:35},cloud:{m:220,f:90},wiggle:{m:160,f:120},shell:{m:170,f:60}};
+const SCHED={crab:{m:140,f:35},cloud:{m:220,f:90},shell:{m:170,f:60}};
 const nextEv={};for(const k in SCHED)nextEv[k]=expo(SCHED[k].f);
 let nextWave=0;
 const cm=px=>Math.max(1,Math.round(px/L*25));
-const feetWord=()=>people.length>1?'all four feet':'both feet';
 function fire(k){
   if(k==='crab'){const side=chance(.5)?-1:1,y=lerp(SEA.y*CH+CH*.18,toeY-L*.4,R());
-    crabs.push({x:side<0?-L*.3:CW+L*.3,y,dir:-side,ang:0,s:L*rr(.1,.15),state:'walk',tx:CW*rr(.15,.85),ty:y,pause:0,gait:0,life:rr(10,24),col:mixc(SAND.a,[236,228,214],rr(.3,.6)),burrow:0});
+    stats.sights++;crabs.push({x:side<0?-L*.3:CW+L*.3,y,dir:-side,ang:0,s:L*rr(.1,.15),state:'walk',tx:CW*rr(.15,.85),ty:y,pause:0,gait:0,life:rr(10,24),col:mixc(SAND.a,[236,228,214],rr(.3,.6)),burrow:0});
     NightCity.log(`A ghost crab scuttles in from the ${side<0?'left':'right'}, keeping clear of the water`);}
   else if(k==='cloud'){if(brightTo<1)return;brightTo=rr(.5,.72);cloudEnd=t+rr(25,70);NightCity.log('A cloud slides over the moon and the beach goes dim');}
-  else if(k==='wiggle'){const f=people[0].feet;if(Math.max(f[0].sink,f[1].sink)<.25)return;for(const p of people)for(const ft of p.feet)ft.sinkTo=0;NightCity.log('Toes wiggle free of the sand they had sunk into');}
   else if(k==='shell'){if(shells.length)return;shells.push({x:CW*rr(.12,.88),y:lerp(toeY-L*.6,toeY+L*.3,R()),a:rr(0,6.3),s:L*rr(.1,.16),hue:rr(0,1),age:0,gone:0,moving:0});
     NightCity.log('A wave leaves a shell behind on the wet sand');}
 }
@@ -321,11 +319,9 @@ function update(dt){
     wtx.fillStyle=gg;wtx.globalAlpha=.06;wtx.fillRect(0,0,wet.width,wet.height);wtx.globalAlpha=1;}
 }
 function logWave(w){
-  let near=1e9,hit=0;for(const p of people)for(const f of p.feet){const g=frontAt(f.px)-f.py;near=Math.min(near,-g);if(g>0)hit++;}
-  const mx=Math.max(...w.max);
-  if(!hit){stats.short++;NightCity.log(pick([`A wave runs up and stops ${cm(near)} cm short of the toes`,`The water slides up and falls ${cm(near)} cm short`,`A wave stops a hand's width from the toes and slips back`].slice(0,near<L*.4?3:2)));}
-  else{stats.reached++;const past=mx>ankleY+L*.15;
-    NightCity.log(past?`A bigger wave runs past ${feetWord()} and up the beach`:hit>=2*people.length?pick([`A wave washes over ${feetWord()} and pulls back`,`Cold water swirls around ${feetWord()}`]):'A wave just reaches the toes of one foot');}
+  if(w.kind==='past'){stats.far++;NightCity.log(pick(['A bigger wave runs a long way up the sand','A wave races far up the beach, foam hissing']));}
+  else if(w.kind==='touch')NightCity.log(pick(['A wave runs up the sand and slides back','Foam spreads up the beach and drains away']));
+  else NightCity.log(pick(['A small wave laps at the wet sand','A wave folds over and barely reaches the beach']));
 }
 // After a wave drains: tiny holes where air escapes the sand, and sometimes coquina clams surface and dig back in.
 function backwashLife(w){
@@ -333,7 +329,7 @@ function backwashLife(w){
   if(holes.length>140)holes.splice(0,holes.length-140);
   if(chance(.22)){const cx=CW*rr(.1,.9),cy=lerp(SEA.y*CH+CH*.25,Math.min(toeY,Math.max(...w.max))-L*.1,R());
     for(let i=ri(3,11);i>0;i--)clams.push({x:cx+rr(-L*.8,L*.8),y:cy+rr(-L*.3,L*.3),a:rr(0,6.3),s:L*rr(.04,.065),col:pick(COQ),age:-rr(0,1.2),life:rr(2.5,5)});
-    NightCity.log('Coquina clams surface in the backwash and dig straight back in');}
+    stats.sights++;NightCity.log('Coquina clams surface in the backwash and dig straight back in');}
   for(const s of shells)if(Math.max(...w.max)>s.y+s.s&&chance(.5))s.moving=1;
 }
 const COQ=[[236,190,200],[212,170,226],[244,222,150],[240,236,226],[230,170,120],[170,190,230]];
@@ -508,8 +504,8 @@ if(DEBUG)window.SH={get tiles(){return foamTiles;},makeFoam,get sand(){return sa
 build();
 // Start a little way into the night, mid-swash, so the first frame already has water and foam on the sand.
 for(let i=0;i<30*14;i++)update(1/30);
-stats.waves=stats.reached=stats.short=0;
-NightCity.log(`${MOON.name[0].toUpperCase()+MOON.name.slice(1)} moonlight on ${SAND.name} sand. ${people.length>1?'Two pairs':'A pair'} of bare feet at the water's edge`);
+stats.waves=stats.far=stats.sights=0;
+NightCity.log(`${MOON.name[0].toUpperCase()+MOON.name.slice(1)} moonlight on ${SAND.name} sand at the water's edge`);
 NightCity.run({step:1/60,update,draw,ui:()=>NightCity.stats(stats)});
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();lastFront=frontAt(CW/2);draw();},200);});
 })();
