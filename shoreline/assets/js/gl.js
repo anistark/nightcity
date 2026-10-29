@@ -30,6 +30,8 @@ const SEA={y:rr(5.8,6.8),energy:rr(.8,1.2),tide:rr(-1,1),tideO:rr(0,500),
 SEA.cityAz=-Math.sign(SEA.moonAz)*rr(.1,.4);
 const NEON=[[1,.12,.6],[.1,.85,1],[.65,.2,1],[1,.35,.15]];
 const neonA=pick(NEON),neonB=pick(NEON.filter(c=>c!==neonA));
+// About one night in 28 has no moon: only the city and the stars light the beach. Stars are faint, and some nights clearer.
+SEA.moon=chance(1/28)?0:1;SEA.stars=SEA.moon?rr(.3,1):1.7;
 
 /* ---------- shaders ---------- */
 const VS=`#version 300 es
@@ -56,39 +58,55 @@ float gfbm(vec2 p,float f){float a=.5,s=0.;mat2 m=mat2(.8,-.6,.6,.8);p=mat2(.866
 float front(int row,float x){float u=clamp((x-X0)/(X1-X0),0.,1.)*(NX-1.);int i=int(floor(u));
   float a=texelFetch(uFront,ivec2(i,row),0).r,b=texelFetch(uFront,ivec2(min(i+1,255),row),0).r;return mix(a,b,fract(u));}
 `;
-// The wet sand map, in beach coordinates: covered by water now means wet, otherwise it slowly dries.
+// The sand map, in beach coordinates. Red is wet: covered by water now, otherwise slowly drying.
+// Green is how freshly the water has smoothed and combed the sand, fading over minutes as it dries out.
+// Blue is the swash mark, a thin line of grit left where a wave stopped, until another wave washes it off.
+// Green and blue fade slower than a step of the 8-bit texture, so they fade at random, a little at a time.
 const STATE_FS=COMMON+`
-in vec2 v;out vec4 o;uniform sampler2D uPrev;uniform float uDecay;
-void main(){vec2 p=vec2(mix(-7.,7.,v.x),mix(0.,12.,v.y));float w=texture(uPrev,v).r;
-  if(p.y>front(0,p.x)-.01)w=1.;else w=max(0.,w-uDecay);o=vec4(w,0,0,1);}`;
+in vec2 v;out vec4 o;uniform sampler2D uPrev;uniform float uDecay,uT;
+void main(){vec2 p=vec2(mix(-7.,7.,v.x),mix(0.,12.,v.y));vec4 c=texture(uPrev,v);float w=c.r,g=c.g,b=c.b,f0=front(0,p.x);
+  float r=hash(p*37.+fract(uT*.731)*91.);
+  if(p.y>f0-.01){w=1.;g=1.;b*=.6;}
+  else{w=max(0.,w-uDecay);g=max(0.,g-uDecay*step(r,.12));b=max(0.,b-uDecay*step(r,.25));
+    for(int i=0;i<3;i++){float m=front(4+i,p.x);if(m>50.||f0<m+.04)continue;b=max(b,1.-smoothstep(.006,.022,abs(p.y-m-.008)));}}
+  o=vec4(w,g,b,1);}`;
 const MAIN_FS=COMMON+`
 in vec2 v;out vec4 o;
 uniform float uT;uniform vec3 uCam,uFwd,uRight,uUp;uniform vec2 uTan;
 uniform sampler2D uWet;uniform vec4 uWave[3];uniform vec2 uStrand[3];uniform vec4 uSeed[3];uniform float uRip;
 uniform vec3 uMoonDir,uSand,uNeonA,uNeonB;uniform float uBright,uSeaY,uCityAz,uCityW,uCitySeed,uNeonFlick,uBio;
-uniform vec4 uJel[2],uFish,uFin,uCar[2];
+uniform vec4 uJel[2],uFish,uFin,uCar[2];uniform float uMoon,uStars,uPx;
 const float PI=3.14159265;
 
 /* ---- the sky and the city across the bay ---- */
 // Directions are turned into an angle around the horizon (az, 0 straight out to sea) and an angle up (el).
-vec3 moonCol(){return vec3(.62,.7,.86)*uBright;}
+// With no moon, the light is a dim glow from the sky and the stars.
+vec3 moonCol(){return vec3(.62,.7,.86)*uBright*mix(.16,1.,uMoon);}
+// Highlights are the moon's mirror image, so a moonless night has none.
+vec3 moonSpec(){return moonCol()*uMoon;}
 float cityMask(float az){return smoothstep(uCityW,uCityW*.6,abs(az-uCityAz));}
 // The skyline: blocks of towers, now and then a tall one, lower toward the ends of the city.
 float towerH(float az,out float bi){bi=floor(az*55.+uCitySeed);float h=.004+.024*pow(hash(vec2(bi,1.)),1.5);
   if(hash(vec2(bi,2.))>.86)h+=.035*hash(vec2(bi,3.));return h*cityMask(az);}
+// DISC is 0 while the water samples the sky, so the moon's disc is only ever drawn once, in the sky itself.
+float DISC=1.;
 vec3 sky(vec3 d){
   float el=asin(clamp(d.z,-1.,1.)),az=atan(d.x,d.y);
   vec3 c=mix(vec3(.0045,.006,.012),vec3(.0012,.0016,.0035),smoothstep(0.,.5,el))*uBright;
   // The city lights the haze above it in neon tints.
   float cm=cityMask(az),haze=exp(-max(el,0.)/.05)*cm;
   c+=mix(uNeonA,uNeonB,vnoise(vec2(az*6.,3.)))*.03*haze+vec3(.03,.02,.02)*.35*haze;
-  // Faint stars, fewer near the glow.
-  vec2 sc=vec2(az*700.,el*700.);float st=hash(floor(sc));if(st>.996&&el>.05)c+=vec3(.5,.55,.7)*.04*(st-.996)/.004*(1.-cm)*smoothstep(.05,.2,el)*(1.-smoothstep(.05,.3,length(fract(sc)-.5)));
-  // The moon: a soft halo and a bright disc.
-  float ma=acos(clamp(dot(d,uMoonDir),-1.,1.));c+=moonCol()*(exp(-ma/.03)*.04+exp(-ma/.2)*.012);c+=moonCol()*1.6*(1.-smoothstep(.0085,.0095,ma));
-  // Flying cars: small lights crossing above the towers, blinking.
+  // Stars: a few faint ones, fewer near the city's glow, and more on a moonless night. Each is drawn about a pixel wide.
+  if(el>.04){vec2 sc=vec2(az*cos(el),el)*250.,si=floor(sc);float sh=hash(si+.5);
+    if(sh<.012*uStars){vec2 so=hash2(si+7.)*.8+.1;float d=length(fract(sc)-so)/250.,sg=uPx*.7;
+      float b=(.04+.5*pow(hash(si+3.),4.))*(.8+.2*sin(uT*2.3+sh*500.));
+      c+=mix(vec3(.6,.65,.85),vec3(.85,.8,.7),hash(si+11.))*b*exp(-d*d/(2.*sg*sg))*(1.-cm)*smoothstep(.04,.15,el);}}
+  // The moon, the only disc in the sky: a soft halo and a bright disc.
+  float ma=acos(clamp(dot(d,uMoonDir),-1.,1.));c+=moonCol()*uMoon*((exp(-ma/.03)*.04+exp(-ma/.2)*.012)+1.6*DISC*(1.-smoothstep(.0085,.0095,ma)));
+  // Flying cars: a pinpoint headlight and a blinking tail light crossing above the towers. Kept small and dim, so none can pass for a moon.
   for(int i=0;i<2;i++){vec4 C=uCar[i];if(C.z<=0.)continue;float dd=length(vec2((az-C.x)*cos(el),el-C.y));
-    vec3 lc=C.w<.5?vec3(1.,.85,.6):uNeonB;c+=lc*C.z*(exp(-dd/.0012)*.9+exp(-dd/.006)*.05)*(.6+.4*step(.5,fract(uT*1.7+float(i)*.3)));}
+    float dt2=length(vec2((az-C.x+(C.w>1.5?.004:-.004))*cos(el),el-C.y));
+    vec3 lc=mod(C.w,2.)<.5?vec3(1.,.85,.6):uNeonB;c+=lc*C.z*exp(-dd/.0005)*.3+vec3(1.,.1,.08)*C.z*exp(-dt2/.0005)*.25*step(.5,fract(uT*1.7+float(i)*.3));}
   // Towers: dark silhouettes, lit windows, neon strips on some, and red lights blinking on the tall ones.
   float bi,h=towerH(az,bi);
   if(el>-.002&&el<h){
@@ -106,7 +124,9 @@ vec3 sky(vec3 d){
   return c;}
 
 /* ---- the beach: sand, water, foam ---- */
-float sandH(vec2 p){return vnoise(p*90.)*.25*lod(90.,FW)+vnoise(p*260.)*.12*lod(260.,FW)+fbm(p*14.)*.6+sin(p.y*30.+vnoise(p*4.)*6.)*.08;}
+// cmb is how freshly the water has run over the sand: it flattens the bumps and ripples and combs fine lines down the slope.
+float sandH(vec2 p,float cmb){return (vnoise(p*90.)*.25*lod(90.,FW)+vnoise(p*260.)*.12*lod(260.,FW))*(1.-.65*cmb)+fbm(p*14.)*.6*(1.-.35*cmb)
+  +sin(p.y*30.+vnoise(p*4.)*6.)*.08*(1.-.8*cmb)+(cmb>.01?(vnoise(vec2(p.x*70.,p.y*4.))-.5)*.22*cmb*lod(70.,FW):0.);}
 vec4 bits(vec2 p,float cell,float seed){vec2 g=p/cell,i=floor(g),f=fract(g);vec4 r=vec4(0);
   for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),h=hash2(i+o+seed);float k=hash(i+o+seed+4.);
     float rad=(.08+.26*pow(hash(i+o+seed+8.),3.))*step(.86,k);float d=length(o+h-f);
@@ -118,7 +138,8 @@ vec3 sandAlbedo(vec2 p){float n=fbm(p*5.),g=(vnoise(p*900.)-.5)*lod(900.,FW);
     bc*=1.-.35*b.y;c=mix(c,bc,b.w*.9);}
   return c;}
 // How deep the water is, in metres: a film at the edge of the swash, deepening toward the sea.
-float waterDepth(vec2 p){float f=front(0,p.x),s=p.y-f;if(s<0.)return 0.;return .004+min(s,1.5)*.03+max(0.,p.y-uSeaY)*.08;}
+float waterDepth(vec2 p){float f=front(0,p.x),s=p.y-f;if(s<0.)return 0.;
+  return .004+min(s,1.5)*.03+max(0.,p.y-uSeaY)*.08;}
 float rippleH(vec2 p,float drain){
   float h=gfbm(p*vec2(5.,8.)+vec2(0,uRip),8.)*.0018+(gnoise(p*vec2(19.,28.)+vec2(uT*.3,uRip*2.3))-.5)*.0006*lod(28.,FW);
   h+=(gnoise(vec2(p.x*22.,p.y*2.+uRip*1.5))-.5)*.0003*drain*lod(22.,FW)*smoothstep(.35,.7,gnoise(p*3.+3.));
@@ -137,13 +158,19 @@ float foamCover(vec2 p,out float edge,out vec2 q,out float bore,out float drain)
     if(W.y>1.5&&s>0.)backWater=1.;
     if(W.y<.5&&s<0.)SPRAY=max(SPRAY,(1.-smoothstep(0.,.07,-s))*pow(1.-W.x,1.5));
     float up=W.y<.5?1.:0.,b=up>0.?0.:clamp(1.-W.x,0.,1.),k=up>0.?1.:pow(max(W.x,0.),1.4);
-    float dense=W.w*(up>0.?1.:.85*k)*(1.-smoothstep(.0,.08+.15*(1.-W.x)*up,s))*step(-.004,s);
-    float lace=W.z*(up>0.?1.:.8*k)*(1.-smoothstep(.2,.7+.6*W.x,s))*step(0.,s);
-    float ci=max(dense,lace*.8);
-    if(W.y<1.5)edge=max(edge,(1.-smoothstep(0.,.012,abs(s-.003)))*(up>0.?1.:.5));
+    // The white roll along the front is thicker in places and breaks up in others, never one even ribbon.
+    float brk=s>-.05&&s<.45?fbm(vec2(p.x*2.2+uSeed[i].x,uT*.15+float(i))):.5;
+    float dense=W.w*(up>0.?1.:.85*k)*(1.-smoothstep(.0,(.08+.15*(1.-W.x)*up)*(.4+1.3*brk),s))*step(-.004,s)*mix(.3,1.,smoothstep(.3,.6,brk));
+    // Behind the front the foam spreads out across the swash, thinning into patches.
+    float lace=W.z*(up>0.?1.:.8*k)*(1.-smoothstep(.15,.9+1.5*W.x,s))*step(0.,s);
+    if(lace>.01&&s>.15)lace*=mix(1.,.35+.65*smoothstep(.3,.6,fbm(vec2(p.x+uSeed[i].x,s*.8+uSeed[i].y)*1.4)),smoothstep(.15,1.,s));
+    float ci=max(dense,lace*.75);
+    if(W.y<1.5)edge=max(edge,(1.-smoothstep(0.,.012,abs(s-.003)))*(up>0.?1.:.5)*smoothstep(.25,.6,brk));
     if(up>0.)bore=max(bore,.012*exp(-max(s,0.)/.06)*step(0.,s)*(1.-W.x*.7));
     vec2 sd=uSeed[i].xy;float lag=min(uSeed[i].z,6.)*.05*smoothstep(0.,1.8,s);
-    if(ci>best){best=ci;drain=b*step(0.,s);q=up>0.?vec2(p.x+sd.x,s-lag+sd.y):vec2(p.x+sd.x,(p.y-m)*mix(1.,.62,b)-lag+sd.y);
+    // Running up, foam near the front rides with it while foam further back slows toward the sand, so the lace stretches.
+    float ride=1.-.45*smoothstep(.1,1.6,s);
+    if(ci>best){best=ci;drain=b*step(0.,s);q=up>0.?vec2(p.x+sd.x,mix(p.y-m,s,ride)-lag+sd.y):vec2(p.x+sd.x,(p.y-m)*mix(1.,.62,b)-lag+sd.y);
       CHURN=up>0.?exp(-max(s,0.)/.36)*(1.-W.x*.6):.25*(1.-b);}
     c=max(c,ci);}
   float hit=backWater*exp(-upS/.07)*step(upS,8.)*smoothstep(.25,.75,gnoise(vec2(p.x*3.5,uT*.6))+gnoise(vec2(p.x*11.,uT*1.3))*.4);
@@ -161,14 +188,19 @@ float holeField(vec2 g,float seed){vec2 i=floor(g),f=fract(g);float best=9.;
 vec3 foamAt(vec2 q,float c,float fw,out vec2 bub){
   vec2 w=vec2(fbm(q*3.3),fbm(q*3.3+5.2))-.5;w+=(vec2(vnoise(q*19.),vnoise(q*19.+3.))-.5)*.35;
   w+=(vec2(gnoise(q*6.5+vec2(0,uT*.9)),gnoise(q*6.5+vec2(7.,uT*.9)))-.5)*.9*CHURN;
-  float h1=holeField(q/.065+w*1.8,1.),h2=holeField(q/.024+w*2.6,7.),h3=holeField(q/.01+w*3.,13.);
+  float h0=holeField(q/.18+w*1.1,31.),h1=holeField(q/.065+w*1.8,1.),h2=holeField(q/.024+w*2.6,7.),h3=holeField(q/.01+w*3.,13.);
   float d1=1.-smoothstep(.15,.45,fw/.065),d2=1.-smoothstep(.15,.45,fw/.024),d3=1.-smoothstep(.15,.45,fw/.01);
   float clump=(fbm(q*3.5+11.)-.5)*(1.5-c);
   float t1=(h1-mix(.45,-.3,c)-clump+(gnoise(q*5.+uT*.35)-.5)*.25*(.3+CHURN))*d1+(c-.5)*(1.-d1);
   float t2=(h2-mix(.4,-.3,c))*d2+1.*(1.-d2),t3=(h3-mix(.3,-.35,c))*d3+1.*(1.-d3);
-  float thick=min(t1,min(t2*.55,t3*.3));
+  // Where the foam has spread thin, big holes open and it breaks into patches.
+  float t0=(h0-mix(.45,-.6,smoothstep(.05,.85,c)))*2.77;
+  float thick=min(min(t0,t1),min(t2*.55,t3*.3));
   float aa=max(fw/.065*1.5,.03);
   float f=smoothstep(0.,aa,thick);
+  // Loose bubbles scattered between the patches.
+  vec2 sg=q/.007+w*4.,si=floor(sg),so=hash2(si+51.)*.6+.2;
+  f=max(f,(1.-smoothstep(.15,.32,length(fract(sg)-so)))*step(.9,hash(si+57.))*smoothstep(.04,.35,c)*(1.-smoothstep(.15,.45,fw/.007))*.85);
   vec2 g=q/.011,ci=floor(g),cf=fract(g);float bd=9.;bub=vec2(0);
   for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),h=hash2(ci+o+21.);float r=.35+.3*hash(ci+o+29.);vec2 dv=(cf-(o+.2+.6*h))/r;float dd=dot(dv,dv);if(dd<bd){bd=dd;bub=dv;}}
   bub*=(1.-smoothstep(.2,.6,fw/.011))*step(bd,1.);
@@ -179,8 +211,10 @@ float ggx(vec3 n,vec3 h,float r){float a=r*r,a2=a*a,d=max(dot(n,h),0.);float k=d
 // Light on the beach: the moon, the dark sky, and the faint neon glow of the city across the water.
 vec3 ambient(vec3 n){return sky(normalize(vec3(n.xy*.6,max(n.z,.2))))*2.+mix(uNeonA,uNeonB,.5)*.0012;}
 // The water's mirror: the sky, smeared up and down where the surface is rougher, so lights stretch into streaks.
-vec3 reflSky(vec3 r,float smear){r.z=abs(r.z);vec3 c=vec3(0);float wsum=0.;
-  for(int i=-3;i<=3;i++){float k=float(i)/3.,w=1.-abs(k)*.6;c+=sky(normalize(r+vec3(0,0,smear*k*2.)))*w;wsum+=w;}c/=wsum;
+vec3 reflSky(vec3 r,float smear){r.z=abs(r.z);vec3 c=vec3(0);float wsum=0.;DISC=0.;
+  for(int i=-3;i<=3;i++){float k=float(i)/3.,w=1.-abs(k)*.6;c+=sky(normalize(r+vec3(0,0,smear*k*2.)))*w;wsum+=w;}c/=wsum;DISC=1.;
+  // In place of the disc, a soft glow where the moon would be mirrored. The glitter of its path comes from the ripples.
+  float mr=acos(clamp(dot(normalize(r),uMoonDir),-1.,1.));c+=moonCol()*uMoon*exp(-mr/(.03+smear*3.))*.06;
   // The city's lights blur into a broad shimmer on the water below it.
   float az=atan(r.x,r.y),el=asin(clamp(r.z,0.,1.));c+=mix(uNeonA,uNeonB,vnoise(vec2(az*14.,1.)))*cityMask(az)*exp(-el/(.015+smear))*.03*(.5+1.*vnoise(vec2(az*90.,uT*.5)));
   c+=vec3(1.,.75,.5)*cityMask(az)*exp(-el/(.01+smear))*.014*(.4+1.2*vnoise(vec2(az*260.,uT*.8)));
@@ -194,26 +228,34 @@ void main(){
   else{
   float tg=-ro.z/rd.z;vec2 p=(ro+rd*tg).xy;FW=length(fwidth(p));float dist=tg;
   float wd=waterDepth(p);
-  float wet=max(texture(uWet,vec2((p.x+7.)/14.,p.y/12.)).r,smoothstep(uSeaY-1.,uSeaY,p.y));
-  float fresh=smoothstep(.9,1.,wet);
+  vec4 SM=texture(uWet,vec2((p.x+7.)/14.,p.y/12.));float cmb=SM.g*(1.-smoothstep(uSeaY-1.,uSeaY,p.y));
+  float wet=max(SM.r,smoothstep(uSeaY-1.,uSeaY,p.y));
+  float fresh=wet>.85?smoothstep(.9,1.,wet+(fbm(p*7.)-.5)*.07):0.;
   wet=smoothstep(.0,.6,wet+(fbm(p*11.)-.5)*.45+(vnoise(p*45.)-.5)*.16);
   float edge,bore,drain;vec2 fq;float cov=foamCover(p,edge,fq,bore,drain);
   // Sand: grains and ripples, darker and shinier where wet, glittering where the water has only just left.
-  vec2 e=vec2(.003,0);float h0=sandH(p),hx=sandH(p+e.xy),hy=sandH(p+e.yx);vec3 n=normalize(vec3(-(hx-h0)/e.x*.004,-(hy-h0)/e.x*.004,1.));
+  vec2 e=vec2(.003,0);float h0=sandH(p,cmb),hx=sandH(p+e.xy,cmb),hy=sandH(p+e.yx,cmb);vec3 n=normalize(vec3(-(hx-h0)/e.x*.004,-(hy-h0)/e.x*.004,1.));
   vec3 alb=sandAlbedo(p);
   vec3 H=normalize(L+vdir);
   vec3 dry=alb*(moonCol()*max(dot(n,L),0.)+ambient(n));
   vec3 wa=alb*vec3(.55,.56,.6);vec3 wn=normalize(mix(n,vec3(0,0,1),.6));
-  vec3 wetC=wa*(moonCol()*max(dot(wn,L),0.)+ambient(wn))+moonCol()*ggx(wn,H,.3)*.04;
+  vec3 wetC=wa*(moonCol()*max(dot(wn,L),0.)+ambient(wn))+moonSpec()*ggx(wn,H,mix(.3,.16,cmb))*mix(.04,.07,cmb);
   col=mix(dry,wetC,wet);
+  // The swash mark: a thin wavy line of dark grit and shell bits where a wave stopped.
+  float mk=smoothstep(.2,.6,SM.b)*smoothstep(.25,.6,fbm(vec2(p.x*9.,5.))+.15);
+  if(mk>0.){vec4 sb=bits(p,.006,61.);col*=1.-.45*mk;col+=moonCol()*uSand*sb.w*step(.6,sb.x)*mk*.5*lod(1./.006,FW*.6);}
+  // Air pushed out of the sand once the water has gone: pinholes that open in the fresh wet sand.
+  float ph=smoothstep(.75,.85,SM.r)*(1.-smoothstep(.97,.99,SM.r))*SM.g;
+  if(ph>0.){vec4 hb=bits(p,.03,77.);col*=1.-.7*ph*hb.w*step(hb.x,.55)*smoothstep(.3,.9,1.-hb.y)*lod(1./.03,FW*.4);}
   if(fresh>0.){vec3 fn0=normalize(mix(n,vec3(0,0,1),.85));float F0=.02+.98*pow(1.-max(dot(fn0,vdir),0.),5.);
     col=mix(col,col*.85+reflSky(reflect(rd,fn0),.02)*F0*1.4,fresh*.85);
-    vec4 gl0=bits(p,.008,41.);col+=moonCol()*step(.93,gl0.x)*gl0.w*lod(1./.008,FW*.6)*fresh*.25;}
+    vec4 gl0=bits(p,.008,41.);col+=moonSpec()*step(.93,gl0.x)*gl0.w*lod(1./.008,FW*.6)*fresh*.25;}
   float ahead=front(0,p.x)-p.y;if(ahead>0.)col*=1.-.3*exp(-ahead/.025);
   if(wd>0.){
     // Water: the lip of an incoming wave, ripples near shore and swells further out, which bend the view of the sand,
     // focus faint caustics on it and mirror the sky, the moon and the city in long broken streaks.
-    float dr=drain;wd=wd*mix(1.,.45,dr)+bore;
+    // The sheet is deeper in some places than others, and the pattern drifts with the flow.
+    float dr=drain;if(p.y<uSeaY+.5)wd=(wd-.004)*mix(.55+.9*gnoise(p*vec2(1.4,1.9)+vec2(0,uRip*.8)),1.,smoothstep(uSeaY-1.,uSeaY+.5,p.y))+.004;wd=wd*mix(1.,.45,dr)+bore;
     float amp=smoothstep(.0,.015,wd)*(1.-smoothstep(12.,30.,dist));
     vec2 e2=vec2(.006,0);
     float R0=rippleH(p,dr),Rxp=rippleH(p+e2.xy,dr),Rxm=rippleH(p-e2.xy,dr),Ryp=rippleH(p+e2.yx,dr),Rym=rippleH(p-e2.yx,dr);
@@ -223,9 +265,18 @@ void main(){
     vec3 wn2=normalize(vec3(-gx,-gy,1.));
     vec2 rp=p-wn2.xy*min(wd,.08)*.8;vec3 ra=sandAlbedo(rp)*vec3(.55,.56,.6);
     float caust=clamp(1.-(Rxp+Rxm+Ryp+Rym-4.*R0)*amp*1.5e3,.8,1.3);
-    vec3 under=ra*(moonCol()*max(L.z,0.)*caust+ambient(vec3(0,0,1)));
-    // At night the water over sand reads dark and close to grey: it soaks up light, and the sand's colour fades.
-    under=mix(vec3(dot(under,vec3(.3,.5,.2))),under,.45)*.55;
+    vec3 under=ra*(moonCol()*max(dot(wn,L),0.)*caust+ambient(wn));
+    // A thin sheet is clear, so the wet sand shows through it. Deeper, the water reads dark and close to grey
+    // at night: it soaks up light, and the sand's colour fades.
+    under=mix(under,mix(vec3(dot(under,vec3(.3,.5,.2))),under,.45)*.55,smoothstep(.006,.06,wd));
+    // Sand stirred up by the water: clouds of it behind the front as it runs up, and streaks dragged back down the slope
+    // as it drains. They drift with the flow, up the beach and then back.
+    float sf=p.y-front(0,p.x),near=exp(-sf/.9)*(1.-smoothstep(uSeaY-1.,uSeaY+.5,p.y));
+    float sed=0.;
+    if(near>.03){float cl=smoothstep(.45,.85,gfbm(p*vec2(2.2,3.)+vec2(0,uRip*1.6),2.2))*(CHURN*.9+.15);
+      float sk=dr>.01?smoothstep(.55,.9,gnoise(vec2(p.x*9.,p.y*.9+uRip*3.5)))*dr*smoothstep(0.,.25,sf):0.;
+      sed=clamp((cl+sk*.7)*near,0.,1.)*(1.-exp(-wd*60.));}vec3 sedC=ra*1.2*(moonCol()*.5+ambient(vec3(0,0,1))*1.3);
+    under=mix(under,sedC,sed*.55);
     under*=exp(-wd*vec3(40.,22.,15.));under+=vec3(.0008,.0016,.002)*(1.-exp(-wd*4.));
     // Creatures in the water: a jellyfish's glowing bell, a school of fish.
     for(int i=0;i<2;i++){vec4 J=uJel[i];if(J.w<=0.)continue;float jd=length((p-J.xy)/vec2(1.,1.25))/J.z;
@@ -238,7 +289,11 @@ void main(){
         under*=1.-body*.45*uFish.w;under+=moonCol()*body*.03*uFish.w*step(.92,fract(uT*.7+float(i)*.37));}}
     float F=.02+.98*pow(1.-max(dot(wn2,vdir),0.),5.);
     vec3 refl=reflSky(reflect(rd,wn2),.004+.0012*dist+.012*sw);
-    col=mix(under,refl,F)+moonCol()*ggx(wn2,normalize(L+vdir),.05)*.03;
+    vec3 spec=moonSpec()*ggx(wn2,normalize(L+vdir),.05)*.03;
+    // A thin sheet looks like the glossy wet sand it covers, with ripples catching the light, so its edge barely shows.
+    // Only deeper water turns into a dark mirror.
+    vec3 thinC=mix(col,sedC,sed*.4)*(1.-F*.5)+refl*F+spec*.6;
+    col=mix(thinC,mix(under,refl,F)+spec,smoothstep(.004,.045,wd));
     col+=moonCol()*(edge*.05+smoothstep(.004,.012,bore)*.015);
   }
   if(cov>.01){vec2 bub;vec3 fa=foamAt(fq,cov,FW,bub);float f=fa.x,th=fa.y;
@@ -246,7 +301,7 @@ void main(){
     vec3 fn=normalize(vec3(bub*.9+(vec2(vnoise(fq*150.),vnoise(fq*150.+4.))-.5)*.5,1.));
     float ring=length(bub);float bubShade=1.-.28*smoothstep(.55,1.,ring)*step(.001,ring);
     vec3 fc=vec3(.86,.88,.92)*mix(.68,1.12,th)*bubShade;
-    vec3 lit=fc*(moonCol()*(max(dot(fn,L),0.)*.6+.16)+ambient(fn)*1.3)+moonCol()*ggx(fn,normalize(L+vdir),.12)*.1*(.3+th);
+    vec3 lit=fc*(moonCol()*(max(dot(fn,L),0.)*.6+.16)+ambient(fn)*1.3)+moonSpec()*ggx(fn,normalize(L+vdir),.12)*.1*(.3+th);
     col=mix(col,lit,f*mix(.3,.92,th));
     // Plankton: where the foam churns, specks of it glow blue for a moment.
     vec2 bc=floor(fq*60.);float bio=step(.986,hash(bc+floor(uT*5.)*.17))*f*(.25+CHURN)*uBio*lod(60.,FW);
@@ -292,22 +347,28 @@ const waves=[],stats={waves:0,far:0,sights:0};
 const xAt=i=>-7+i*14/(NX-1);
 // Where a wave stops, in metres from the camera: most well down the sand, some further, a few a long way up.
 const REACH={short:[3.5,4.7],mid:[2.6,3.5],far:[1.8,2.6]};
-function phase(w,tt){const x=tt-w.t0;if(x<0)return[0,0];if(x<w.up){const k=x/w.up;return[1-Math.pow(1-k,2.3),0];}
-  if(x<w.up+w.hold)return[1,1];const k=(x-w.up-w.hold)/w.down;return k>=1?[0,3]:[1-Math.pow(k,1.7)*(1-.15*Math.sin(k*Math.PI)),2];}
+// us and ds stretch the run up and the drain, so each stretch of the front keeps its own time.
+function phase(w,tt,us=1,ds=1){const x=tt-w.t0,up=w.up*us,down=w.down*ds;if(x<0)return[0,0];if(x<up){const k=x/up;return[1-Math.pow(1-k,2.3),0];}
+  if(x<up+w.hold)return[1,1];const k=(x-up-w.hold)/down;return k>=1?[0,3]:[1-Math.pow(k,1.7)*(1-.15*Math.sin(k*Math.PI)),2];}
 function tide(){return(fbm(t*.0015+SEA.tideO)-.5)*.6+SEA.tide*Math.min(1,t/1800)*.4;}
 function newWave(kind){
   kind=kind||wpick([['short',.45],['mid',.38],['far',.17]]);
   const[a,b]=REACH[kind];
   waves.push({kind,t0:t,up:rr(2.8,4.2),hold:rr(.2,.7),down:rr(4.5,7),reach:clamp(rr(a,b)-tide()*SEA.energy*.6,1.6,SEA.y-.8),
     a1:rr(.08,.2),l1:rr(.25,.55),p1:rr(0,6.3),a2:rr(.03,.08),l2:rr(.8,1.6),p2:rr(0,6.3),nO:rr(0,500),obl:rr(-.5,.5),
-    lace:rr(.55,1),dense:rr(.7,1),sx:rr(0,50),sy:rr(0,50),front:new Float32Array(NX),max:new Float32Array(NX).fill(99),st:0,logged:false,strand:0,strandLife:rr(6,14)});
+    dl:rr(.4,.9),uv:rr(.15,.3),dv:rr(.4,.8),lace:rr(.55,1),dense:rr(.7,1),sx:rr(0,50),sy:rr(0,50),front:new Float32Array(NX),max:new Float32Array(NX).fill(99),st:0,logged:false,strand:0,strandLife:rr(6,14)});
   stats.waves++;
 }
 function waveFront(w){const top=SEA.y+.6;let st=0;
-  for(let i=0;i<NX;i++){const x=xAt(i),[p,s]=phase(w,t-w.obl*(x/7)*.6);st=Math.max(st,s);
+  for(let i=0;i<NX;i++){const x=xAt(i);
+    // Each stretch of the front arrives a little earlier or later, runs up faster or slower and drains at its own pace,
+    // so the edge keeps changing shape instead of sliding as one curve.
+    const[p,s]=phase(w,t-w.obl*(x/7)*.6-(fbm(x*.32+w.nO+70)-.5)*w.dl,1+(fbm(x*.55+w.nO+90)-.5)*w.uv*2,1+(fbm(x*.9+w.nO+120)-.5)*w.dv*2);st=Math.max(st,s);
     const lobe=w.a1*Math.sin(x*Math.PI*w.l1+w.p1)+w.a2*Math.sin(x*Math.PI*w.l2+w.p2)+.14*(fbm(x*.9+w.nO)-.5)+.05*(fbm(x*3+w.nO+40)-.5);
     // While it runs up, the front pushes ahead in shifting fingers that settle as it slows.
-    const finger=s===0?(fbm(x*4+t*.9+w.nO)-.5)*.07*(1-p*.7):0;
+    // While it drains, it pulls back in tongues, faster down the hollows.
+    const finger=s===0?(fbm(x*2.6+t*.6+w.nO)-.5)*.16*(1-p*.6)+(fbm(x*7+t*1.4+w.nO)-.5)*.04*(1-p*.5):
+      s===2?(fbm(x*1.8+w.nO+200)-.5)*.4*(1-p)+(fbm(x*5+w.nO+230)-.5)*.08*(1-p):0;
     w.front[i]=top-(top-(w.reach+lobe))*p+finger;if(w.front[i]<w.max[i])w.max[i]=w.front[i];}
   return st;}
 const frontAt=(row,x)=>{const u=clamp((x+7)/14,0,1)*(NX-1),i=Math.floor(u),j=Math.min(NX-1,i+1);return lerp(FRONT[row*NX+i],FRONT[row*NX+j],u-i);};
@@ -325,12 +386,12 @@ function fire(k){
   else if(k==='fish'){if(fish)return;const dir=chance(.5)?1:-1;fish={x:-dir*4,y:rr(SEA.y-2.5,SEA.y-.5),h:dir>0?0:Math.PI,v:dir*rr(.6,1.2),a:0};
     stats.sights++;NightCity.log('A small school of fish flickers through the shallows');}
   else if(k==='fin'){if(fin)return;fin={x:Math.tan(SEA.moonAz)*rr(35,60)+rr(-3,3),y:rr(35,60),ph:0,dur:rr(2.5,4),n:ri(1,3)};
-    stats.sights++;NightCity.log(fin.n>1?'Fins break the moon\'s path far out, then slip under':'A fin breaks the moon\'s path far out, then slips under');}
+    stats.sights++;const where=SEA.moon?'the moon\'s path':'the dark water';NightCity.log(fin.n>1?`Fins break ${where} far out, then slip under`:`A fin breaks ${where} far out, then slips under`);}
   else if(k==='car'){if(cars.length>=2)return;const dir=chance(.5)?1:-1;cars.push({az:SEA.cityAz-dir*SEA.cityW,el:rr(.02,.06),v:dir*rr(.01,.03),a:0,c:chance(.6)?0:1});
     NightCity.log(pick(['A flying car crosses above the towers across the bay','Lights drift across the skyline, a car on its way somewhere']));}
   else if(k==='bloom'){bioTo=rr(.8,1);bloomEnd=t+rr(40,90);NightCity.log('The breaking foam starts to glow blue: plankton in the surf');}
   else if(k==='neon'){flickEnd=t+rr(1.5,4);NightCity.log('A neon sign across the bay stutters');}
-  else if(k==='cloud'){if(brightTo<1)return;brightTo=rr(.45,.65);cloudEnd=t+rr(30,80);NightCity.log('A cloud slides over the moon and the beach goes darker');}
+  else if(k==='cloud'){if(brightTo<1||!SEA.moon)return;brightTo=rr(.45,.65);cloudEnd=t+rr(30,80);NightCity.log('A cloud slides over the moon and the beach goes darker');}
 }
 
 function update(dt){
@@ -341,7 +402,8 @@ function update(dt){
   if(bloomEnd&&t>bloomEnd){bioTo=.35;bloomEnd=0;}
   bright+=(brightTo-bright)*ease(dt,6);bio+=(bioTo-bio)*ease(dt,8);
   neonFlick=t<flickEnd?(Math.sin(t*40)>.2?1:.1):1;
-  for(let i=0;i<NX;i++)FRONT[i]=SEA.y+.04*Math.sin(xAt(i)*1.2+t*.7);
+  // Between waves the sea's edge rests in an uneven line that shifts slowly with the water.
+  for(let i=0;i<NX;i++){const x=xAt(i);FRONT[i]=SEA.y+.04*Math.sin(x*1.2+t*.7)+(fbm(x*.35+t*.02+SEA.tideO)-.5)*.5+(fbm(x*1.3+t*.08+40)-.5)*.12;}
   for(const w of waves){w.st=waveFront(w);for(let i=0;i<NX;i++)FRONT[i]=Math.min(FRONT[i],w.front[i]);
     if(w.st>=1&&!w.logged){w.logged=true;logWave(w);}
     if(w.st>=2&&!w.strand)w.strand=t;}
@@ -362,10 +424,15 @@ function logWave(w){
 /* ---------- drawing ---------- */
 let CW=0,CH=0,DPR=1;
 const SCALE=parseFloat(new URLSearchParams(location.search).get('glq'))||1;
+// If frames keep running long, the render resolution steps down, at most a few times.
+// Embeds run at about 30 fps on purpose, and hidden pages are throttled, so neither counts.
+let dyn=1,perfLast=0,perfAcc=0,perfN=0;
+function watchPace(){if(LOWQ||document.hidden){perfLast=0;return;}const now=performance.now(),d=now-perfLast;perfLast=now;if(d>0&&d<120){perfAcc+=d;perfN++;}
+  if(perfN>=120){if(perfAcc/perfN>19&&dyn>.6){dyn*=.85;build();}perfAcc=perfN=0;}}
 function build(){
   CW=Math.max(240,innerWidth);CH=Math.max(240,innerHeight);
-  DPR=(LOWQ?.55:Math.min(1.25,devicePixelRatio||1)*.85)*SCALE;
-  const maxPx=LOWQ?6e5:1.3e6;if(CW*CH*DPR*DPR>maxPx)DPR=Math.sqrt(maxPx/(CW*CH));
+  DPR=(LOWQ?.55:Math.min(1.25,devicePixelRatio||1)*.85)*SCALE*dyn;
+  const maxPx=(LOWQ?6e5:1.3e6)*dyn*dyn;if(CW*CH*DPR*DPR>maxPx)DPR=Math.sqrt(maxPx/(CW*CH));
   cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);
 }
 // The camera stands on the sand at eye height, looking out to sea and a little down at the swash.
@@ -377,7 +444,7 @@ const MOON_DIR=[Math.sin(SEA.moonAz)*Math.cos(SEA.moonEl),Math.cos(SEA.moonAz)*M
 // Wet sand: mark what the water covers and let the rest dry. Runs a few times a second, reading the fronts already uploaded.
 function wetPass(){gl.useProgram(STATE.p);gl.bindFramebuffer(gl.FRAMEBUFFER,wetFb[1-wetI]);gl.viewport(0,0,WS,WS);
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,frontTex);gl.uniform1i(STATE.u.uFront,0);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,wetTex[wetI]);gl.uniform1i(STATE.u.uPrev,1);gl.uniform1f(STATE.u.uDecay,1/255);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,wetTex[wetI]);gl.uniform1i(STATE.u.uPrev,1);gl.uniform1f(STATE.u.uDecay,1/255);gl.uniform1f(STATE.u.uT,t);
   gl.drawArrays(gl.TRIANGLES,0,3);wetI=1-wetI;gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
 // Rows 1 to 6 of the front texture: each recent wave's front and the furthest it reached. Empty slots sit far behind the camera.
 function uploadFronts(){const slots=waves.slice(-3);
@@ -389,7 +456,7 @@ function draw(){
   gl.viewport(0,0,cv.width,cv.height);gl.useProgram(MAIN.p);const U=MAIN.u;
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,frontTex);gl.uniform1i(U.uFront,0);
   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,wetTex[wetI]);gl.uniform1i(U.uWet,1);
-  const C=camera();gl.uniform3fv(U.uCam,C.cam);gl.uniform3fv(U.uFwd,C.f);gl.uniform3fv(U.uRight,C.r);gl.uniform3fv(U.uUp,C.u);gl.uniform2f(U.uTan,C.tanX,C.tanY);
+  const C=camera();gl.uniform3fv(U.uCam,C.cam);gl.uniform3fv(U.uFwd,C.f);gl.uniform3fv(U.uRight,C.r);gl.uniform3fv(U.uUp,C.u);gl.uniform2f(U.uTan,C.tanX,C.tanY);gl.uniform1f(U.uPx,2*C.tanY/cv.height);
   gl.uniform1f(U.uT,t);
   const W=[],S=[];for(let s=0;s<3;s++){const w=slots[s];if(!w){W.push(0,3,0,0);S.push(0,0);continue;}const[p,st]=phase(w,t);W.push(p,w.st===3?3:st,w.lace,w.dense);
     S.push(0,w.strand?Math.max(0,1-(t-w.strand)/w.strandLife)*w.lace:0);}
@@ -397,21 +464,21 @@ function draw(){
   gl.uniform4fv(U.uWave,W);gl.uniform2fv(U.uStrand,S);
   gl.uniform3fv(U.uMoonDir,MOON_DIR);gl.uniform3fv(U.uSand,lin(SAND.c));gl.uniform3fv(U.uNeonA,neonA);gl.uniform3fv(U.uNeonB,neonB);
   gl.uniform1f(U.uBright,bright);gl.uniform1f(U.uSeaY,SEA.y);gl.uniform1f(U.uCityAz,SEA.cityAz);gl.uniform1f(U.uCityW,SEA.cityW);gl.uniform1f(U.uCitySeed,SEA.seed);
-  gl.uniform1f(U.uNeonFlick,neonFlick);gl.uniform1f(U.uBio,bio);
+  gl.uniform1f(U.uNeonFlick,neonFlick);gl.uniform1f(U.uMoon,SEA.moon);gl.uniform1f(U.uStars,SEA.stars);gl.uniform1f(U.uBio,bio);
   const J=[];for(let i=0;i<2;i++){const j=jellies[i];J.push(...(j?[j.x,j.y,j.r,j.a]:[0,0,1,0]));}gl.uniform4fv(U.uJel,J);
   gl.uniform4fv(U.uFish,fish?[fish.x,fish.y,fish.h,fish.a*.8]:[0,0,0,0]);
   gl.uniform4fv(U.uFin,fin?[fin.x,fin.y,fin.ph%1,1]:[0,0,0,0]);
-  const Cr=[];for(let i=0;i<2;i++){const c=cars[i];Cr.push(...(c?[c.az,c.el,c.a,c.c]:[0,0,0,0]));}gl.uniform4fv(U.uCar,Cr);
+  const Cr=[];for(let i=0;i<2;i++){const c=cars[i];Cr.push(...(c?[c.az,c.el,c.a,c.c+(c.v>0?2:0)]:[0,0,0,0]));}gl.uniform4fv(U.uCar,Cr);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
 /* ---------- start ---------- */
-if(DEBUG)window.SH={gl:true,cars,waves,jellies,stats,newWave,fire,get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},
+if(DEBUG)window.SH={gl:true,SEA,cars,waves,jellies,stats,newWave,fire,get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},
   draw:()=>draw(),step:dt=>update(dt),run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();NightCity.refresh();}};
 build();
 for(let i=0;i<30*14;i++){update(1/30);if(i%6===5){uploadFronts();wetPass();}}
 stats.waves=stats.far=stats.sights=0;
-NightCity.log(`Moonlight on the water, and Night City glowing across the bay to the ${SEA.cityAz<0?'left':'right'}`);
-NightCity.run({step:1/60,update,draw,ui:()=>NightCity.stats(stats)});
+NightCity.log(`${SEA.moon?'Moonlight on the water':'No moon tonight, only stars'}, and Night City glowing across the bay to the ${SEA.cityAz<0?'left':'right'}`);
+NightCity.run({step:1/60,update,draw:()=>{watchPace();draw();},ui:()=>NightCity.stats(stats)});
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();draw();},200);});
 })();

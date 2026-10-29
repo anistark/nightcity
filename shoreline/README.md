@@ -37,16 +37,16 @@ There are no libraries. The shader is plain WebGL 2 and the fallback plain Canva
 
 ### One seed, from the clock
 
-The seed is the moment the page opened, hashed into one random generator shared with the other scenes. It picks the sand, how lively the surf is, which way the tide is drifting, where the moon hangs, where the city sits on the far shore, how wide it spreads and its two neon colours.
+The seed is the moment the page opened, hashed into one random generator shared with the other scenes. It picks the sand, how lively the surf is, which way the tide is drifting, where the moon hangs, where the city sits on the far shore, how wide it spreads, its two neon colours and how clear the sky is. About one night in 28 has no moon at all, only the city's glow and more stars.
 
 ### The picture
 
 The scene aims to look like a photograph. A camera at standing height looks out over the beach in real perspective, and a fragment shader works out every pixel:
 
-- **Sand** has grain-level relief from noise, round pebbles and shell bits, and turns darker and shinier where a wet-sand map, kept on the GPU, says water has been.
-- **Water** has a surface: the raised lip of an incoming wave, the sheet thinning as it drains, swell further out, and ripples that drift up the beach with the uprush and back with the drain. It bends the view of the sand beneath it, focuses moonlight into faint caustics on it, soaks up red light first as it deepens, and mirrors the sky. Sand the water has only just left keeps a film that glitters, and a soaked darker band runs just ahead of the edge. Out past the swash, broken lines of surf roll in.
-- **Foam** is a sheet of bubbles cut by holes of three sizes, thick along its strands and translucent where it thins, lit dimly by the moon so it never glares. It rides up with each wave's front, churning as it goes, then stays where the wave reached and stretches into streaks as the water drains. Where a new wave runs into water still draining from the last, the meeting line churns white, and spray flickers just ahead of a fast front. Fine detail fades out once it gets smaller than a pixel, so nothing shimmers.
-- **Sky and city** are a dark night sky with stars, the moon and a faint glow around it. Across the bay, Night City is a low line of towers with lit windows, bands of neon in two colours and a haze of light above it. The water smears all of it into long vertical streaks, with a soft shimmer of the city's glow far out.
+- **Sand** has grain-level relief from noise, round pebbles and shell bits. A map of the beach, kept on the GPU, records where water has been: that sand turns darker and shinier, loses its small bumps and ripples, and shows fine lines combed down the slope, all fading over minutes as it dries. Pinholes open where air escapes once the water has gone, and a thin line of dark grit and shell bits marks where each wave stopped, until the next one washes it off.
+- **Water** has a surface: the raised lip of an incoming wave, a sheet that is deeper in some places than others, swell further out, and ripples that drift up the beach with the uprush and back with the drain. A thin sheet is clear and looks like the glossy wet sand it covers, so its edge barely shows. Deeper, it bends the view of the sand, focuses moonlight into faint caustics, soaks up red light first and turns into a dark mirror. Sand churned up by the water clouds it behind the front and streaks back down the slope as it drains. Sand the water has only just left keeps a film that glitters, and a soaked darker band runs just ahead of the edge. Out past the swash, broken lines of surf roll in.
+- **Foam** is a sheet of bubbles cut by holes of four sizes, thick along its strands and translucent where it thins, lit dimly by the moon so it never glares. The white roll along the front is thicker in places and broken in others. Behind it the foam spreads wide across the swash, opening into patches with loose bubbles between them, and lags behind the front so the lace stretches. It stays where the wave reached and pulls into streaks as the water drains. Where a new wave runs into water still draining from the last, the meeting line churns white, and spray flickers just ahead of a fast front. Fine detail fades out once it gets smaller than a pixel, so nothing shimmers.
+- **Sky and city** are a dark night sky with a few stars, the moon and a faint glow around it. The moon's disc is drawn only in the sky: the water and wet sand mirror it as a soft glow and glitter, never a second disc. Across the bay, Night City is a low line of towers with lit windows, bands of neon in two colours and a haze of light above it. The water smears all of it into long vertical streaks, with a soft shimmer of the city's glow far out.
 
 ### Events
 
@@ -66,7 +66,9 @@ You can tune these in `assets/js/gl.js`: the `SCHED` table holds the average gap
 
 ### Waves
 
-A new wave arrives every 5 to 20 seconds or so, as a fixed wait plus an exponentially distributed one, so waves come in sets and lulls. Each runs a short, middling or long way up the sand, and the tide nudges that over minutes. The waves, tide and log run in JavaScript, in metres, and reach the shader through a small data texture each frame.
+A new wave arrives every 5 to 20 seconds or so, as a fixed wait plus an exponentially distributed one, so waves come in sets and lulls. Each runs a short, middling or long way up the sand, and the tide nudges that over minutes. Along its front, each stretch arrives a little earlier or later, runs up faster or slower and drains at its own pace, so the edge pushes ahead in fingers and pulls back in tongues instead of sliding as one curve. Between waves, the sea's edge rests in an uneven line that shifts slowly. The waves, tide and log run in JavaScript, in metres, and reach the shader through a small data texture each frame.
+
+If frames keep running long, the render resolution steps down a little, at most a few times.
 
 ## Canvas 2D fallback
 
