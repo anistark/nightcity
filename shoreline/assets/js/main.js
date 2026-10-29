@@ -1,12 +1,13 @@
-/* Shoreline: looking down at bare feet on wet sand at night, while waves run up the beach under the moon.
-   Each wave picks how far it reaches, so some wash over the toes, some run past and some fall just short.
+/* Shoreline, Canvas 2D version: a dark beach at night, while waves run up the sand under the moon.
+   Each wave picks how far it reaches, so some only lap at the wet edge and some run far up the beach.
    Foam laces the water and dissolves, the sand darkens where it has been wet and dries again, and now and then
-   a crab scuttles by or small clams surface in the backwash. Sand, foam and skin are generated pixel by pixel once,
-   and every frame composites them through masks that follow the water. No libraries, no image files. */
+   a crab scuttles by or small clams surface in the backwash. Sand and foam are generated pixel by pixel once,
+   and every frame composites them through masks that follow the water. No libraries, no image files.
+   The WebGL version in gl.js is the default. This one runs when WebGL 2 or its shaders fail, or with ?2d. */
 (()=>{
 'use strict';
-// ?gl runs the WebGL prototype in gl.js instead. It must start before this file takes a 2D context on the canvas.
-if(new URLSearchParams(location.search).has('gl')&&!window.SHORELINE_2D){const s=document.createElement('script');s.src=document.currentScript.src.replace(/main\.js(\?.*)?$/,'gl.js');document.body.append(s);return;}
+// The WebGL version in gl.js runs first, unless ?2d asks for this one. It must start before this file takes a 2D context on the canvas.
+if(!new URLSearchParams(location.search).has('2d')&&!window.SHORELINE_2D){const s=document.createElement('script');s.src=document.currentScript.src.replace(/main\.js(\?.*)?$/,'gl.js');document.body.append(s);return;}
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
 // Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.

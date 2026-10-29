@@ -53,7 +53,7 @@ Notes on the pieces:
 - **Share previews:** `assets/images/og.jpg` and each scene's `assets/images/og.jpg` are 1200x630, referenced by the Open Graph and Twitter tags that `head.njk` writes from each page's data. Rebuild them with the private `plan/og-compose.html` and headless Chrome. A new scene needs its own `og.jpg`.
 - **Half Court debugging:** `?speed=8`, and `?debug` exposes `window.HC` with `run()`, `step()` and `testShot()`.
 - **Shoreline debugging:** `?speed=8`, and `?debug` exposes `window.SH` with `run()`, `step()`, `draw()`, `newWave()` and `fire()`.
-- **Shoreline WebGL prototype:** `?gl` runs `shoreline/assets/js/gl.js`, a WebGL 2 renderer the owner asked for to get closer to a photograph. It shows the beach with no feet, Night City across the bay and faint sea creatures, darker than the Canvas version. It is opt-in and the one exception to the Canvas 2D rule. Canvas 2D stays the default, and `gl.js` falls back to it when WebGL 2 or a shader fails.
+- **Shoreline WebGL:** `shoreline/assets/js/main.js` starts `gl.js`, a WebGL 2 renderer the owner asked for to get closer to a photograph, and the one exception to the Canvas 2D rule. It shows a dark beach with no feet, Night City across the bay and faint sea creatures. `main.js` keeps a simpler Canvas 2D beach as the fallback when WebGL 2 or a shader fails. `?2d` forces the fallback, `?glfail` makes WebGL fail on purpose, and `?glq=0.7` lowers its resolution.
 - **Rain Window debugging:** `?speed=8`, and `?debug` exposes `window.RW` with `run()`, `step()`, `draw()` and `fire()`.
 - **Embed mode:** every scene has an `embed/` page with only the canvas and its scripts, which `embed.js` and the share snippets use. `?embed` on the full page still works for older embeds. Either way: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `q=high`. `nightcity.js` listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings.
 
@@ -67,7 +67,7 @@ Contributors follow [CONTRIBUTING.md](CONTRIBUTING.md). Each scene's author is c
 
 ## Rules for scenes
 
-- **No libraries in scenes.** Plain JavaScript, CSS and Canvas 2D, and no image files beyond logos and avatars. Eleventy builds the pages, never the scene code.
+- **No libraries in scenes.** Plain JavaScript, CSS and Canvas 2D, and no image files beyond logos and avatars. Shoreline's WebGL 2 shader, with its Canvas 2D fallback, is the one exception to Canvas 2D. Eleventy builds the pages, never the scene code.
 - **One folder per scene,** laid out as above, with a `logo.svg` in `assets/images`. Scene logos are 16×16 pixel art in the scene palette, written as one SVG path per colour with `shape-rendering="crispEdges"`. Only the umbrella Night City logo is an illustration. The landing page card comes from its data file. Add it to the table in the root README, with its author in the By column, and to `SCENES` in `embed.js`.
 - **One seed from the clock.** `nightcity.js` hashes the page-open time, formatted `YYYY-MM-DD HH:MM:SS.mmm`, with `cyrb128` into `sfc32`. Every choice in a scene comes from that generator, never from `Math.random`. The overlay shows the seed in the log.
 - **Events on independent timers** with exponentially distributed gaps, so there are bursts and lulls instead of a beat.

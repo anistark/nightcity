@@ -1,4 +1,4 @@
-/* Shoreline, WebGL version. Open the scene with ?gl to run it.
+/* Shoreline, WebGL version, the default. main.js loads this first unless the page has ?2d.
    Standing on a dark beach at night, looking out across the water. Waves run up the sand in front of you and drain
    back, surf lines roll in further out, and across the bay Night City glows: lit towers, neon, a haze of light, the odd
    flying car. The moon and the city lights stretch into long reflections on the water. Now and then something lives
