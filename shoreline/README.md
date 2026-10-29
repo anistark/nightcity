@@ -55,7 +55,7 @@ Things that happen out there, each on its own timer, with exponentially distribu
 | Event | When |
 |---|---|
 | A flying car crosses above the towers | ~45 s |
-| A speedboat crosses the bay, lights streaking on the water and a white wake behind it. A while later the wake reaches the beach as a few small waves | ~130 s |
+| A speedboat idles slowly across the bay, drifting a little closer and further, lights streaking on the water and a faint wake behind it. A while later the wake reaches the beach as a small wave or two | ~150 s |
 | A neon sign across the bay stutters | ~80 s |
 | A small school of fish flickers through the shallows | ~110 s |
 | The breaking foam glows blue with plankton for a minute or so | ~240 s |

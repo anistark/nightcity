@@ -372,7 +372,7 @@ void main(){
   // of water is less than a pixel tall, so the lines are spread over the pixel instead of flickering.
   if(uBoat.w>0.&&p.y>uBoat.y-40.&&p.y<uBoat.y+40.){float a=(uBoat.x-p.x)*uBoat.z,l=p.y-uBoat.y;
     if(a>-3.&&a<90.){float sy=max(.5+a*.06,FW*.6),cov=min(1.,(.5+a*.06)/sy);
-      float wk=exp(-l*l/(2.*sy*sy))*exp(-max(a,0.)/22.)*cov+exp(-pow(abs(l)-a*.35,2.)/(2.*max(.35,FW*.6)*max(.35,FW*.6)))*exp(-max(a,0.)/45.)*.5*min(1.,.35/max(.35,FW*.6));
+      float wk=exp(-l*l/(2.*sy*sy))*exp(-max(a,0.)/14.)*cov*.6+exp(-pow(abs(l)-a*.35,2.)/(2.*max(.35,FW*.6)*max(.35,FW*.6)))*exp(-max(a,0.)/30.)*.35*min(1.,.35/max(.35,FW*.6));
       wk*=smoothstep(-3.,0.,a)*(.6+.4*gnoise(vec2(p.x*.3+uT*.4,l*.5)))*uBoat.w;
       col=mix(col,vec3(.7,.74,.8)*(moonCol()*.35+ambient(vec3(0,0,1))*1.5)+uBoatC*.004,clamp(wk,0.,1.)*.75);}}
   // Haze toward the horizon.
@@ -458,12 +458,14 @@ let nextWave=0;
 /* ---------- life ---------- */
 const cars=[];let fish=null,fin=null,boat=null,wakeAt=0,wakeN=0,wakeLog=false;
 // Each kind of event waits its own exponentially distributed gap. m is the average gap in seconds, f the first wait.
-const SCHED={boat:{m:130,f:35},fish:{m:110,f:25},fin:{m:300,f:120},car:{m:45,f:10},bloom:{m:240,f:90},neon:{m:80,f:30},cloud:{m:240,f:100}};
+const SCHED={boat:{m:150,f:35},fish:{m:110,f:25},fin:{m:300,f:120},car:{m:45,f:10},bloom:{m:240,f:90},neon:{m:80,f:30},cloud:{m:240,f:100}};
 const nextEv={};for(const k in SCHED)nextEv[k]=expo(SCHED[k].f);
 const side=x=>x<-.5?'left':x>.5?'right':'middle';
 function fire(k){
-  if(k==='boat'){if(boat)return;const dir=chance(.5)?1:-1,y=rr(50,220);boat={y,x:-dir*(y*.95+20),v:dir*rr(9,20),dir,neon:pick(NEON),wake:false};
-    stats.sights++;NightCity.log(pick(['A speedboat cuts across the bay, its lights skimming the water','A speedboat races past far out, a white wake behind it']));}
+  // A speedboat idles slowly across the bay, drifting a little closer and further as it goes.
+  if(k==='boat'){if(boat)return;const dir=chance(.5)?1:-1,y0=rr(80,220);
+    boat={y0,y:y0,x:-dir*(y0*.8+12),v:dir*rr(1.6,3.2),dir,mA:rr(4,16),mW:rr(.025,.06),mP:rr(0,6.3),neon:pick(NEON),wake:false};
+    stats.sights++;NightCity.log(pick(['A speedboat idles slowly across the bay, its lights trailing on the water','A speedboat cruises along the far water, in no hurry']));}
   else if(k==='fish'){if(fish)return;const dir=chance(.5)?1:-1;fish={x:-dir*4,y:rr(SEA.y-2.5,SEA.y-.5),h:dir>0?0:Math.PI,v:dir*rr(.6,1.2),a:0};
     stats.sights++;NightCity.log('A small school of fish flickers through the shallows');}
   else if(k==='fin'){if(fin)return;fin={x:Math.tan(SEA.moonAz)*rr(35,60)+rr(-3,3),y:rr(35,60),ph:0,dur:rr(2.5,4),n:ri(1,3)};
@@ -493,10 +495,11 @@ function update(dt){
   const lead=waves.filter(w=>w.st<3).slice(-1)[0];rip+=dt*(lead&&lead.st===0?.35:-.14);
   if(fish){fish.x+=fish.v*dt;fish.a=Math.min(1,fish.a+dt/1.5)*clamp(4.5-Math.abs(fish.x),0,1);fish.y+=Math.sin(t*.8)*.1*dt;if(Math.abs(fish.x)>4.6&&Math.sign(fish.x)===Math.sign(fish.v))fish=null;}
   if(fin){fin.ph+=dt/fin.dur;if(fin.ph>=fin.n)fin=null;}
-  // A speedboat crosses the bay. Its wake reaches the beach a while later as a few small waves.
-  if(boat){boat.x+=boat.v*dt;if(!boat.wake&&Math.abs(boat.x)<6){boat.wake=true;wakeAt=t+boat.y/rr(5,7);wakeN=ri(2,4);wakeLog=true;}
-    if(Math.abs(boat.x)>boat.y*.95+25&&Math.sign(boat.x)===Math.sign(boat.v))boat=null;}
-  if(wakeN&&t>=wakeAt){if(wakeLog){wakeLog=false;NightCity.log('The speedboat\'s wake reaches the shore in a few small waves');}newWave('short');wakeN--;wakeAt=t+rr(1.4,2.4);}
+  // A speedboat crosses the bay slowly. Its wake reaches the beach a while later as a small wave or two.
+  if(boat){boat.x+=boat.v*dt;boat.y=boat.y0+boat.mA*Math.sin(t*boat.mW+boat.mP);
+    if(!boat.wake&&Math.abs(boat.x)<6){boat.wake=true;wakeAt=t+boat.y/rr(5,7);wakeN=ri(1,3);wakeLog=true;}
+    if(Math.abs(boat.x)>boat.y*.8+16&&Math.sign(boat.x)===Math.sign(boat.v))boat=null;}
+  if(wakeN&&t>=wakeAt){if(wakeLog){wakeLog=false;NightCity.log('The speedboat\'s wake reaches the shore as a small wave or two');}newWave('short');wakeN--;wakeAt=t+rr(1.4,2.4);}
   for(let i=cars.length-1;i>=0;i--){const c=cars[i];c.az+=c.v*dt;c.a=clamp(SEA.cityW*1.15-Math.abs(c.az-SEA.cityAz),0,.15)/.15;if(Math.abs(c.az-SEA.cityAz)>SEA.cityW*1.2&&Math.sign(c.az-SEA.cityAz)===Math.sign(c.v))cars.splice(i,1);}
 }
 function logWave(w){
