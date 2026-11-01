@@ -28,7 +28,7 @@ The title, clock and score sit in the top-left corner.
 | `assets/images/logo.svg` | 16×16 pixel logo for the favicon |
 | `assets/images/og.jpg` | 1200x630 share preview |
 
-There are no libraries. Everything, including the avatars, is drawn with plain Canvas 2D at the screen's full resolution. The only outside request is the Pixelspace font for the overlay. The seed, frame loop and embed mode come from `assets/js/nightcity.js` in the project root, and the overlay and its controls from the shared scene layout, `scene-ui.js` and `scene-ui.css`.
+There are no libraries. Everything, including the avatars, is drawn with plain Canvas 2D at the screen's full resolution. The only outside request is the Pixelspace font for the overlay. The seed, frame loop and embed mode come from `assets/js/nightcity.js` in the project root, and the overlay and its controls from the shared scene layout, `scene-ui.js` and `scene-ui.css`. The articulated person renderer, joint solver and pose easing live in `assets/js/people.js`.
 
 ## How it works
 

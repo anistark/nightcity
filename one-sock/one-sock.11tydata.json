@@ -1,0 +1,16 @@
+{
+  "tags": "scene",
+  "order": 6,
+  "hideLog": true,
+  "title": "One Sock",
+  "description": "A vending machine outside a closed laundromat at 4am. Every selection sells one sock. Never a pair.",
+  "ogTitle": "One Sock | Night City",
+  "ogImage": "one-sock/assets/images/og.jpg",
+  "ogPath": "one-sock/",
+  "ogAlt": "A glowing cyan vending machine selling individual socks outside a shuttered laundromat at 4am",
+  "canvasLabel": "Animated pixel-art vending machine outside a closed laundromat at 4am, under a starry sky. No people, just occasional flickers and a visiting cat.",
+  "share": "A vending machine at 4am that only sells one sock. Never a pair. Mine was seeded at {seed}.",
+  "stats": [["flickers", "light flickers."], ["cats", "cat visits."], ["cars", "passing lights."], ["meteors", "shooting stars."]],
+  "footTail": ". Tap the scene to hide this",
+  "card": "An unattended vending machine outside a closed laundromat at 4am. Stars overhead, a flickering light and an occasional cat. Every selection offers one sock. Never a pair."
+}

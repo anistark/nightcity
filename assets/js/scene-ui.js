@@ -6,10 +6,10 @@
    Load it after the scene, with data-text set to the share message. {seed} in the message becomes the scene's seed. */
 (()=>{
   const me=document.currentScript,hud=document.getElementById('hud'),logBtn=document.getElementById('logBtn'),NC=window.NightCity;
-  if(!hud||!logBtn||!NC||NC.EMBED)return;
+  if(!hud||!NC||NC.EMBED)return;
   const $=id=>document.getElementById(id);
-  const panel=$('log'),list=$('logList'),clock=$('clock'),LOG_HTML=logBtn.innerHTML;
-  $('seed').textContent=NC.seed;
+  const panel=$('log'),list=$('logList'),clock=$('clock'),LOG_HTML=logBtn?.innerHTML||'';
+  if($('seed'))$('seed').textContent=NC.seed;
 
   // The clock's colon shows for the first half of every second, like a bedside clock. Checked each frame, redrawn only on change.
   clock.innerHTML='<span></span><span class="colon">:</span><span></span>';
@@ -22,7 +22,7 @@
   const refresh=()=>{
     tickClock(!NC.RM);
     for(const el of hud.querySelectorAll('[data-stat]'))el.textContent=NC.counts[el.dataset.stat]??0;
-    if(!panel.hidden&&shown!==NC.logVersion){
+    if(panel&&!panel.hidden&&shown!==NC.logVersion){
       shown=NC.logVersion;list.textContent='';
       for(const e of NC.entries.slice(0,40)){const li=document.createElement('li'),tm=document.createElement('time'),sp=document.createElement('span');tm.textContent=e.time;sp.textContent=e.text;li.append(tm,sp);list.append(li);}
     }
@@ -31,8 +31,8 @@
   refresh();
 
   const CLOSE_HTML='<svg viewBox="0 0 7 7" width="16" height="16" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM6 0h1v1H6zM5 1h1v1H5zM4 2h1v1H4zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z"/></svg>';
-  const toggleLog=()=>{panel.hidden=!panel.hidden;logBtn.setAttribute('aria-expanded',String(!panel.hidden));logBtn.innerHTML=panel.hidden?LOG_HTML:CLOSE_HTML;logBtn.setAttribute('aria-label',panel.hidden?'Open log':'Close log');shown=-1;NC.refresh();};
-  logBtn.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
+  const toggleLog=()=>{if(!panel||!logBtn)return;panel.hidden=!panel.hidden;logBtn.setAttribute('aria-expanded',String(!panel.hidden));logBtn.innerHTML=panel.hidden?LOG_HTML:CLOSE_HTML;logBtn.setAttribute('aria-label',panel.hidden?'Open log':'Close log');shown=-1;NC.refresh();};
+  logBtn?.addEventListener('click',e=>{e.stopPropagation();toggleLog();});
   const cv=$('scene');if(cv)cv.addEventListener('click',()=>hud.classList.toggle('off'));
   addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||document.querySelector('dialog[open]'))return;if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')hud.classList.toggle('off');});
 
@@ -78,7 +78,7 @@
   const shareBtn=el('button',{type:'button',class:'ctl','aria-label':'Share','aria-haspopup':'dialog',title:'Share'},ICON.share);
   top.prepend(shareBtn);
   const url=/^https?:$/.test(location.protocol)&&!/^(localhost|127\.|\[::1\])/.test(location.hostname)?location.origin+location.pathname:'https://github.com/anistark/nightcity';
-  const message=()=>{const seed=(document.getElementById('seed')||{}).textContent||'';return(me.dataset.text||document.title).replace('{seed}',seed.trim());};
+  const message=()=>{const seed=(document.getElementById('seed')||{}).textContent||NC.seed||'';return(me.dataset.text||document.title).replace('{seed}',seed.trim());};
   const dlg=el('dialog',{class:'share-dlg','aria-labelledby':'share-h'});
   dlg.innerHTML=`<div class="share-head"><h2 id="share-h">Share ${document.title}</h2><button type="button" class="ctl share-close" aria-label="Close">${ICON.close}</button></div>
     <p class="share-text"></p>
