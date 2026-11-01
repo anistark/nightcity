@@ -53,6 +53,8 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
 @media (min-width:1200px){
   .scenes{grid-template-columns:repeat(3,1fr)}
   .scenes>li:nth-child(5n+1) .preview{aspect-ratio:auto;flex:1 1 0;min-height:0}
+  /* An unpaired wide card needs its own height instead of borrowing its neighbour's. */
+  .scenes>li:nth-child(5n+1):last-child .preview{aspect-ratio:2.4/1;flex:1 0 auto}
 }
 .preview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 .info{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 20px;padding:20px}
