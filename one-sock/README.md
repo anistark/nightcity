@@ -2,7 +2,7 @@
 
 An unattended vending machine outside a closed laundromat at 4am. Every selection offers one sock, never a pair. No customers arrive. A cat sometimes investigates the warm cabinet while lights flicker, glass mists and lint moves across the pavement.
 
-Open `/one-sock/` with the local server running. The scene on its own is at `/one-sock/embed/`. The shared overlay provides the clock, sharing, fullscreen and embed snippets, without an on-screen log. Click the canvas or press H to hide it and F for fullscreen.
+Open `/one-sock/` with the local server running. The scene on its own is at `/one-sock/embed/`. The shared overlay provides the log, clock, sharing, fullscreen and embed snippets. Click the log button or press L to toggle the log, click the canvas or press H to hide the overlay and press F for fullscreen.
 
 The clock ticks from 04:00:00 to 04:00:59, then resets to 04:00:00. It follows scene time, including accelerated playback, and freezes in reduced motion or paused embeds. The overlay shows the real local time, and sharing includes the page-open seed.
 

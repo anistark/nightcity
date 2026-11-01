@@ -14,7 +14,7 @@ Each scene is a small set of rules fed by one random generator. Nothing is a sto
 | [Rain Window](rain-window/) | Slow rain on a window at night in front of a city out of focus: drops land, join, run down the glass and wipe clear trails, while cars, windows, showers and lightning come and go behind | [@anistark](https://github.com/anistark) |
 | [Shoreline](shoreline/) | A dark beach under the moon, as waves run up the sand and drain away, with footprints in the sand, Night City glowing across the bay, and speedboats and sea creatures passing in the dark | [@anistark](https://github.com/anistark) |
 | [Bus Stop](bus-stop/) | A late-night bus stop across an empty street, painted like an anime film: long quiet stretches, buses that go by without stopping, and now and then one person who waits, checks the road and finally gets on | [@anistark](https://github.com/anistark) |
-| [One Sock](one-sock/) | An unattended sock vending machine at 4am, under a starry sky, with flickering lights and an occasional cat | [@anistark](https://github.com/anistark) |
+| [One Sock](one-sock/) | An unattended sock vending machine at 4am, under a starry sky, with flickering lights and an occasional cat | [@pratik-anurag](https://github.com/pratik-anurag) |
 
 ## The approach
 
