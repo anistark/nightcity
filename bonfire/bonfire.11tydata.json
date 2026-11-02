@@ -1,0 +1,29 @@
+{
+  "tags": "scene",
+  "order": 9,
+  "author": "anistark",
+  "title": "Bonfire",
+  "description": "A pixel-art bonfire in a forest clearing deep in the mountains, with sparks rising into the stars and Night City glowing far away. It never burns the same way twice.",
+  "ogTitle": "Bonfire | Night City",
+  "ogImage": "bonfire/assets/images/og.jpg",
+  "ogPath": "bonfire/",
+  "ogAlt": "Bonfire: a pixel-art campfire in a pine forest at night, sparks rising, with a distant city glowing between the mountains",
+  "canvasLabel": "Animated pixel-art bonfire in a mountain forest at night, sparks and smoke rising, with a distant city and planes coming and going",
+  "share": "A bonfire deep in the mountains, Night City glowing far away. It never burns the same way twice. Mine was lit at {seed}.",
+  "stats": [
+    [
+      "sparks",
+      "sparks."
+    ],
+    [
+      "flights",
+      "flights."
+    ],
+    [
+      "events",
+      "events."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A bonfire in a clearing deep in the mountains. Flames lick and lean in the wind, sparks drift up into the stars, smoke climbs above, and far away between the ridges a city glows while planes come and go."
+}
