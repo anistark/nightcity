@@ -1,5 +1,6 @@
 /* Shared scene controls: back link, fullscreen toggle, share button and dialog.
    Uses each scene's own colour tokens and fonts. */
+.hud.preview .clock,.hud.preview .dock{display:none}
 .ctl{pointer-events:auto;display:inline-grid;place-items:center;line-height:0;padding:8px;background:var(--panel);color:var(--ink);border:1px solid var(--edge);border-radius:0;cursor:pointer;text-decoration:none}
 .ctl:hover{border-color:var(--amber);color:var(--amber)}
 .ctl:focus-visible{outline:2px solid var(--amber);outline-offset:2px}

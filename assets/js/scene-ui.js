@@ -36,8 +36,8 @@
   const cv=$('scene');if(cv)cv.addEventListener('click',()=>hud.classList.toggle('off'));
   addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||document.querySelector('dialog[open]'))return;if(e.key==='l'||e.key==='L')toggleLog();if(e.key==='h'||e.key==='H')hud.classList.toggle('off');});
 
-  // The rest are controls for a scene opened on its own, not inside the landing page's live previews.
-  if(window.self!==window.top)return;
+  // The rest are controls for a scene opened on its own. The landing page's live previews keep only the title.
+  if(window.self!==window.top){hud.classList.add('preview');return;}
   // Pixel icons drawn from small grids, like the log's close button.
   const icon=(rows,size)=>{let d='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++)if(r[x]==='#')d+=`M${x} ${y}h1v1H${x}z`;});
     return`<svg viewBox="0 0 ${rows[0].length} ${rows.length}" width="${size||16}" height="${size||16}" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="${d}"/></svg>`;};

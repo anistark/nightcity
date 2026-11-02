@@ -59,13 +59,21 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
 .preview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 .info{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 20px;padding:20px}
 .info h3{margin:0;font-weight:400;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
-.info p{margin:6px 0 0;max-width:62ch;color:var(--dim)}
+.info p{margin:6px 0 0;color:var(--dim)}
 
 /* How it works */
 .rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}
 .rules li{border-top:1px solid var(--edge);padding-top:12px}
 .rules b{display:block;margin-bottom:6px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
 .rules span{color:var(--dim)}
+
+/* Request a scene */
+.request{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px 48px;padding:32px;border:1px solid var(--edge);background:var(--panel)}
+.request h2{margin:0;font-weight:400;font-size:24px;line-height:1.5;letter-spacing:.04em;text-transform:uppercase;color:var(--amber)}
+.request>div{flex:1 1 320px}
+.request p{margin:8px 0 0;color:var(--dim)}
+.cta{margin-left:auto;display:inline-flex;align-items:center;gap:12px;padding:12px 20px;border:1px solid var(--amber);color:var(--amber);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.cta:hover{background:var(--amber);color:var(--night)}
 
 /* Footer */
 .foot{font-size:16px;border-top:1px solid var(--edge);padding:36px 0 calc(36px + env(safe-area-inset-bottom,0px));color:var(--dim)}
@@ -83,7 +91,7 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
 
 @media (min-width:640px){h1{font-size:48px}.lead{font-size:24px}}
 @media (min-width:1200px){h1{font-size:64px}}
-@media (max-width:640px){.preview{aspect-ratio:4/5}main{padding:36px 0}section{margin-top:64px}}
+@media (max-width:640px){.preview{aspect-ratio:4/5}main{padding:36px 0}section{margin-top:64px}.request{padding:20px}}
 #sky{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
