@@ -19,10 +19,13 @@ index.njk             landing page: the scenes, each with a live preview, cards 
 license.njk           renders LICENSE in the theme at build time, built at /license/
 404.njk               catch-all page with a procedural moonlit beach, built at /404.html
 redirect.njk          a forwarding page for each entry in _data/redirects.json (license.html goes to license/)
+sitemap.njk           sitemap.xml, every page except the 404, embeds and forwarding pages
+llms.njk              llms.txt, a map of the site for agents and language models, built from the scenes collection
+llms-full.njk         llms-full.txt, the project README and every scene's README in one file
 _includes/layouts/    site.njk (root pages), scene.njk (scene page with the overlay), embed.njk (scene alone)
-_includes/partials/   head.njk (meta and share tags), nav.njk, footer.njk
-_data/                site.json (name, URL, share defaults), license.js, redirects.json
-eleventy.config.js    passthrough copies, the root filter, the scenes collection, and writing sw.js's file list after each build
+_includes/partials/   head.njk (meta, share tags and structured data), analytics.njk (Google Analytics), nav.njk, footer.njk
+_data/                site.json (name, URL, author, share defaults, analytics ID), license.js, redirects.json
+eleventy.config.js    passthrough copies, the root filter, the scenes collection, the structuredData shortcode, and writing sw.js's file list after each build
 scripts/check-links.js  fails on broken internal links and on links to .html pages, run by `just check` and CI
 manifest.webmanifest  PWA manifest
 sw.js                 service worker source: the build fills in CORE and CACHE (stays at the root so it can cache the whole site)
@@ -64,7 +67,10 @@ Notes on the pieces:
 - **Tennis Court debugging:** `?speed=8`, and `?debug` exposes `window.GC` with `run()`, `step()`, `draw()`, `testShot()`, `testServe()` and `closeup()`, which draws the scene around a point at a larger scale for checking poses. `?debug&grass`, `?debug&clay` and `?debug&hard` force a surface.
 - **Embed mode:** every scene has an `embed/` page with only the canvas and its scripts, which `embed.js` and the share snippets use. `?embed` on the full page still works for older embeds. Either way: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `q=high`. `nightcity.js` listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings.
 
-The head tags, nav and footer live once in `_includes/partials/` and appear on every root page.
+The head tags, nav and footer live once in `_includes/partials/` and appear on every root page. The head also goes on every scene page.
+
+- **Analytics:** Google Analytics, with the ID from `site.ga` in `_data/site.json`, loads from `analytics.njk` in the head. It skips local builds and pages inside a frame, so the landing page's live previews don't count each scene again, and embed pages never include it.
+- **Search and agents:** each page gets a title ending in `| Night City`, a canonical link, share tags and schema.org JSON-LD from the `structuredData` shortcode: the site and an item list of scenes on the landing page, and each scene as a `CreativeWork` by its author with a breadcrumb. `sitemap.xml`, `llms.txt` and `llms-full.txt` are built from the scenes collection, so a new scene shows up in all of them without any edits. The service worker leaves those three files out of its offline cache.
 
 The site is a PWA. `sw.js` fetches from the network first and falls back to its cache, so changes show up without a hard reload, and the site opens offline. After each build, `eleventy.config.js` fills `CORE` with every built file (folder URLs for pages, skipping share images and forwarding pages) and sets `CACHE` from a hash of their contents, so there is nothing to update by hand. Root pages link the manifest and load `assets/js/pwa.js`.
 

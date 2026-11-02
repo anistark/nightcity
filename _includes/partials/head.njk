@@ -1,7 +1,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ title }}</title>
+<title>{% if title == site.name or '|' in title %}{{ title }}{% else %}{{ title }} | {{ site.name }}{% endif %}</title>
 <meta name="description" content="{{ description }}">
+<meta name="author" content="{{ site.author }}">
+<meta name="robots" content="max-image-preview:large">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ site.name }}">
 <meta property="og:title" content="{{ ogTitle or title }}">
@@ -15,3 +17,6 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{{ site.url }}{{ ogImage or site.image }}">
 <meta name="twitter:creator" content="{{ site.creator }}">
+<link rel="sitemap" type="application/xml" href="{{ site.url }}sitemap.xml">
+{% structuredData %}
+{% include "partials/analytics.njk" %}

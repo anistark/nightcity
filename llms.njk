@@ -1,0 +1,29 @@
+---
+permalink: llms.txt
+eleventyExcludeFromCollections: true
+---
+# {{ site.name }}
+
+> {{ site.description | safe }} Each scene is a small set of rules fed by one random generator seeded from the moment the page opens, drawn live in the browser with plain JavaScript and Canvas 2D. Nothing is a stored clip and nothing loops, so no two runs play the same way.
+
+Every scene runs full screen in any modern browser, installs as an app and opens offline. Any scene can also run as the live background of another site with one script tag. The code is MIT licensed, by {{ site.author }}, and new scenes are welcome.
+
+## Scenes
+{% for s in collections.scenes %}
+- [{{ s.data.title }}]({{ site.url }}{{ s.data.ogPath }}): {{ s.data.card | safe }} How it works: [README]({{ site.repo }}/blob/main/{{ s.data.ogPath }}README.md)
+{%- endfor %}
+
+## Embed a scene
+
+- [Embed guide]({{ site.repo }}#embed-a-scene): paste `<script src="{{ site.url }}embed.js" data-scene="pixel-city" async></script>` before `</body>`, with `data-scene` set to {% for s in collections.scenes %}`{{ s.data.ogPath | replace('/', '') }}`{{ ', ' if not loop.last }}{% endfor %}
+
+## Docs
+
+- [README]({{ site.repo }}/blob/main/README.md): what Night City is and how its scenes avoid repetition
+- [Contributing]({{ site.repo }}/blob/main/CONTRIBUTING.md): how to add a scene
+- [Source code]({{ site.repo }})
+
+## Optional
+
+- [Full text]({{ site.url }}llms-full.txt): the project README and every scene's README in one file
+- [License]({{ site.url }}license/): MIT

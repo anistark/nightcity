@@ -1,0 +1,15 @@
+{#- Google Analytics, only for pages opened on their own. The landing page's live previews run inside frames, so they
+    would count every scene again on each visit, and local builds would count the developer. Embeds use their own
+    layout and never load this. -#}
+{%- if site.ga %}
+<script>
+(()=>{
+  if(window.self!==window.top||location.protocol==='file:'||/^(localhost|127\.0\.0\.1|\[::1\])$|\.localhost$/.test(location.hostname))return;
+  const s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id={{ site.ga }}';document.head.append(s);
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('config','{{ site.ga }}');
+})();
+</script>
+{%- endif %}

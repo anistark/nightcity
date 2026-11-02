@@ -6,5 +6,13 @@
   "image": "assets/images/og.jpg",
   "imageAlt": "Night City: the hooded logo over a pixel-art night skyline, with a basketball court inset",
   "creator": "@kranirudha",
-  "theme": "#07081a"
+  "theme": "#07081a",
+  "author": "Kumar Anirudha",
+  "authorUrl": "https://github.com/anistark",
+  "sameAs": [
+    "https://github.com/anistark",
+    "https://x.com/kranirudha"
+  ],
+  "repo": "https://github.com/anistark/nightcity",
+  "ga": "G-YTBCTQGJ4T"
 }

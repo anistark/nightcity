@@ -56,6 +56,10 @@ Each scene's share dialog has an **Embed** option with snippets for HTML, a plai
 
 These scenes are just the start. New scenes, fixes and ideas are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how the project is laid out and how to add a scene, including how to credit yourself in the table above.
 
+## Privacy
+
+The site counts visits with Google Analytics. Embedded scenes, the landing page's live previews and local builds don't load it.
+
 ## License
 
 [MIT](LICENSE) © 2026 Kumar Anirudha. The landing page is set in [Pixelspace](https://pixelspace.anirudha.dev). The Pixel City overlay uses Silkscreen and VT323 from Google Fonts. All three are under the SIL Open Font License.

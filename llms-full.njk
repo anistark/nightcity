@@ -1,0 +1,18 @@
+---
+permalink: llms-full.txt
+eleventyExcludeFromCollections: true
+---
+# {{ site.name }}: full text
+
+> {{ site.description | safe }} This file gathers the project README and the README of every scene, for agents and language models. Live site: {{ site.url }} Source: {{ site.repo }}
+
+{{ 'README.md' | readText | safe }}
+{% for s in collections.scenes %}
+
+---
+
+Live scene: {{ site.url }}{{ s.data.ogPath }}
+Source: {{ site.repo }}/tree/main/{{ s.data.ogPath }}
+
+{{ s.inputPath | readmeOf | safe }}
+{%- endfor %}
