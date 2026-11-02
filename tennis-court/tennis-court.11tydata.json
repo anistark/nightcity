@@ -1,0 +1,33 @@
+{
+  "tags": "scene",
+  "order": 7,
+  "author": "anistark",
+  "title": "Tennis Court",
+  "description": "A singles match under the floodlights at night, on grass, clay or a hard court, best of three sets, that never plays the same point twice.",
+  "ogTitle": "Tennis Court | Night City",
+  "ogImage": "tennis-court/assets/images/og.jpg",
+  "ogPath": "tennis-court/",
+  "ogAlt": "Tennis Court: two players in a rally on a floodlit grass tennis court at night, seen from above at an angle",
+  "canvasLabel": "Animated tennis court at night under floodlights, two players playing a singles match",
+  "share": "A singles match under the floodlights, where no point plays the same way twice. This match was seeded at {seed}.",
+  "stats": [
+    [
+      "events",
+      "events."
+    ],
+    [
+      "distinct",
+      "distinct."
+    ],
+    [
+      "points",
+      "points,"
+    ],
+    [
+      "aces",
+      "aces"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A singles match under the floodlights on grass, clay or a hard court, best of three sets with tiebreaks. The ball flies with drag and spin and bounces the way each surface makes it, every shot is aimed rather than scripted, a cat paws at the fence trying to get in, and a raven sometimes perches on the umpire's chair."
+}
