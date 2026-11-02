@@ -4,6 +4,10 @@
 .ctl:hover{border-color:var(--amber);color:var(--amber)}
 .ctl:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .ctl-back{position:absolute;left:calc(env(safe-area-inset-left,0px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
+.ctl-by{position:absolute;left:calc(env(safe-area-inset-left,0px) + 54px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);padding:4px}
+.ctl-by img{width:24px;height:24px;background:var(--edge)}
+.by-tip{position:absolute;left:-1px;bottom:calc(100% + 8px);max-width:calc(100vw - 80px);display:none;padding:8px 12px;background:var(--panel-solid,var(--panel));color:var(--ink);border:1px solid var(--edge);font-family:var(--font,var(--f-pixel,monospace));font-size:16px;line-height:24px;width:max-content;pointer-events:none}
+.ctl-by:hover .by-tip,.ctl-by:focus-visible .by-tip{display:block}
 .ctl-top{position:absolute;right:calc(env(safe-area-inset-right,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;gap:8px}
 
 .share-dlg{box-sizing:border-box;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;overflow-x:hidden;padding:32px;background:var(--panel-solid,#0b0a1e);color:var(--ink);border:1px solid var(--edge);border-radius:0;font-family:var(--font,var(--f-term,monospace));font-size:var(--share-size,16px);line-height:1.5}

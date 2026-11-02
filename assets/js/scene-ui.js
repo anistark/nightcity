@@ -63,6 +63,18 @@
   // Back to the landing page.
   hud.append(el('a',{class:'ctl ctl-back',href:'../','aria-label':'Back to Night City',title:'Back to Night City'},ICON.back));
 
+  // Beside it, the scene author's GitHub avatar, linking to their profile. Hover or focus shows who made it.
+  // Offline, a pixel person stands in for the avatar.
+  const author=me.dataset.author;
+  if(author){
+    const gh='https://github.com/'+encodeURIComponent(author);
+    const by=el('a',{class:'ctl ctl-by',href:gh,target:'_blank',rel:'noopener','aria-label':`Created by @${author} on GitHub`});
+    const img=el('img',{src:gh+'.png?size=48',alt:'',width:'24',height:'24'});
+    img.addEventListener('error',()=>img.outerHTML=icon(['..###..','..###..','..###..','.......','.#####.','#######','#######'],24));
+    const tip=el('span',{class:'by-tip','aria-hidden':'true'});tip.textContent=`Created by @${author}`;
+    by.append(img,tip);hud.append(by);
+  }
+
   // Top-right corner: share, then fullscreen where the browser allows it.
   const top=el('div',{class:'ctl-top'});hud.append(top);
   if(document.fullscreenEnabled){
