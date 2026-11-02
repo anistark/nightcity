@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Coffee Window">
+  <title>Coffee Window</title>
+  <path fill="#1c0b40" d="M0 0h16v1h-16zM0 1h7v1h-7zM8 1h8v1h-8zM0 2h2v1h-2zM3 2h4v1h-4zM8 2h3v1h-3zM12 2h4v1h-4zM0 3h2v1h-2zM3 3h4v1h-4zM8 3h3v1h-3zM12 3h4v1h-4z"/>
+  <path fill="#ff2a7a" d="M2 2h1v1h-1zM2 3h1v1h-1z"/>
+  <path fill="#2af0ff" d="M11 2h1v1h-1zM11 3h1v1h-1z"/>
+  <path fill="#5e1a62" d="M0 4h2v1h-2zM3 4h4v1h-4zM8 4h1v1h-1zM12 4h4v1h-4zM0 5h1v1h-1zM4 5h3v1h-3zM8 5h2v1h-2zM13 5h3v1h-3z"/>
+  <path fill="#251a36" d="M2 4h1v1h-1zM1 5h3v1h-3zM9 4h3v1h-3zM10 5h3v1h-3zM0 6h7v1h-7zM8 6h8v1h-8zM0 7h7v1h-7zM8 7h8v1h-8z"/>
+  <path fill="#f3e600" d="M1 6h1v1h-1zM5 6h1v1h-1zM9 6h1v1h-1zM14 7h1v1h-1z"/>
+  <path fill="#18121c" d="M7 1h1v1h-1zM7 2h1v1h-1zM7 3h1v1h-1zM7 4h1v1h-1zM7 5h1v1h-1zM7 6h1v1h-1zM7 7h1v1h-1zM7 8h1v1h-1zM0 9h16v1h-16z"/>
+  <path fill="#11121e" d="M0 8h7v1h-7zM8 8h8v1h-8z"/>
+  <path fill="#e8e0f0" d="M9 5h1v1h-1zM10 3h1v1h-1z"/>
+  <path fill="#7a4224" d="M0 10h16v1h-16zM0 11h4v1h-4zM12 11h4v1h-4zM0 12h3v1h-3zM13 12h3v1h-3z"/>
+  <path fill="#4a2614" d="M0 13h3v1h-3zM13 13h3v1h-3zM0 14h16v1h-16zM0 15h16v1h-16z"/>
+  <path fill="#f2ece6" d="M4 11h7v1h-7zM4 12h1v1h-1zM10 12h1v1h-1zM5 13h5v1h-5zM3 14h10v1h-10z"/>
+  <path fill="#2e160a" d="M5 12h5v1h-5z"/>
+  <path fill="#b8aab4" d="M11 12h1v1h-1zM12 11h1v1h-1z"/>
+  <path fill="#ffcf7a" d="M6 10h1v1h-1zM8 9h1v1h-1z"/>
+</svg>

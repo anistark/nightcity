@@ -1,0 +1,33 @@
+{
+  "tags": "scene",
+  "order": 7,
+  "author": "anistark",
+  "title": "Coffee Window",
+  "description": "A window seat in a late-night cafe in Night City. Your coffee steams on the counter while cars, people and the odd dog pass under the neon outside. It never plays the same way twice.",
+  "ogTitle": "Coffee Window | Night City",
+  "ogImage": "coffee-window/assets/images/og.jpg",
+  "ogPath": "coffee-window/",
+  "ogAlt": "Coffee Window: a steaming cup on a wooden counter by a cafe window, with a neon-lit cyberpunk street outside at night",
+  "canvasLabel": "Animated view from a window seat in a late-night cafe, a cup of coffee steaming on a wooden counter while cars and people pass a neon-lit street, out of focus beyond the glass",
+  "share": "A window seat in a late-night cafe in Night City, with a coffee that never goes the same way twice. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "sips",
+      "sips."
+    ],
+    [
+      "refills",
+      "refills."
+    ],
+    [
+      "cars",
+      "cars."
+    ],
+    [
+      "people",
+      "people passed"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A window seat in a late-night cafe, with the neon street softly out of focus beyond the glass. Your coffee steams on the counter beside a daisy and a few books, you sip now and then, a little robot rises out of the counter to refill it, and sometimes a cat curls up to sleep."
+}
