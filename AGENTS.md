@@ -37,7 +37,7 @@ rain-window/          Rain Window, same layout
 shoreline/            Shoreline, same layout
 bus-stop/             Bus Stop, same layout
 one-sock/             One Sock, same layout
-coffee-window/        Coffee Window, same layout
+coffee-window/        Coffee Window, same layout, plus assets/library.json, the books its shelf picks from
 .github/              pages.yml (build and deploy on push to main), check.yml (build and link check on pull requests), dependabot.yml
 README.md  CONTRIBUTING.md  AGENTS.md  CLAUDE.md  LICENSE  justfile  package.json  .nvmrc
 plan/                 private planning notes and tools, gitignored
@@ -59,7 +59,7 @@ Notes on the pieces:
 - **Shoreline WebGL:** `shoreline/assets/js/main.js` starts `gl.js`, a WebGL 2 renderer the owner asked for to get closer to a photograph, and the one exception to the Canvas 2D rule. It shows a dark beach with no feet, Night City across the bay and faint sea creatures. `main.js` keeps a simpler Canvas 2D beach as the fallback when WebGL 2 or a shader fails. `?2d` forces the fallback, `?glfail` makes WebGL fail on purpose, and `?glq=0.7` lowers its resolution.
 - **Rain Window debugging:** `?speed=8`, and `?debug` exposes `window.RW` with `run()`, `step()`, `draw()` and `fire()`.
 - **Bus Stop debugging:** `?speed=8`, and `?debug` exposes `window.BS` with `run()`, `step()`, `draw()`, `fire()`, `people()` and `veh()`.
-- **Coffee Window debugging:** `?speed=8`, and `?debug` exposes `window.CF` with `run()`, `step()`, `draw()`, `fire()`, `startSip()`, `refill()`, `cars()`, `walkers()`, `PROPS`, `SHELF` and `LIBRARY`. `?debug&dark` forces the rare lights-out night.
+- **Coffee Window debugging:** `?speed=8`, and `?debug` exposes `window.CF` with `run()`, `step()`, `draw()`, `fire()`, `startSip()`, `refill()`, `rebuild()`, `NIGHT`, `cars()`, `walkers()`, `PROPS`, `SHELF` and `LIBRARY`. `?debug&dark` forces the rare lights-out night, `?debug&iced` the iced coffee and `?debug&hot` a hot one.
 - **Embed mode:** every scene has an `embed/` page with only the canvas and its scripts, which `embed.js` and the share snippets use. `?embed` on the full page still works for older embeds. Either way: no overlay or controls, no wake lock, lower resolution and about 30 fps unless `q=high`. `nightcity.js` listens for `postMessage({nightcity:'pause'})` and `{nightcity:'play'}`, and exposes `window.nightcity.step(dt)` for frame-exact recordings.
 
 The head tags, nav and footer live once in `_includes/partials/` and appear on every root page.

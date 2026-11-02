@@ -1,11 +1,12 @@
 /* Coffee Window: a window seat in a late-night cafe in Night City. The inside of the cafe is painted as realistically as
    a Canvas allows, and the neon street outside, drawn in the flat look of a cyberpunk anime, sits softly out of focus
    beyond the glass. A cup of coffee steams on the counter. Outside, cars and people pass under the signs, flyers cross the sky and now and
-   then a dog trots by. Inside, you pick up the cup and drink, a little robot rolls out of the counter to refill it, and sometimes a
+   then a dog trots by. Inside, the coffee goes down a sip at a time, a little robot rolls out of the counter to refill it, and sometimes a
    cat climbs onto the counter and curls up to sleep. Every choice comes from one generator seeded with the moment the
    page opens, so no two nights play the same way. No libraries, no image files: everything is drawn to a Canvas. */
-(()=>{
+(async()=>{
 'use strict';
+const SRC=document.currentScript.src;
 const cv=document.getElementById('scene');
 const ctx=cv.getContext('2d');
 // Seed, frame loop, embed mode and overlay come from the shared runtime, ../assets/js/nightcity.js.
@@ -42,6 +43,8 @@ function limb(g,pts,w,col,lw){g.lineCap='round';g.lineJoin='round';
 
 // Points along a chain of cubic curves, so a shape's outline can be walked as well as filled.
 function bez(a,b,c,d,n,out){for(let i=out.length?1:0;i<=n;i++){const s=i/n,u=1-s;out.push([u*u*u*a[0]+3*u*u*s*b[0]+3*u*s*s*c[0]+s*s*s*d[0],u*u*u*a[1]+3*u*u*s*b[1]+3*u*s*s*c[1]+s*s*s*d[1]]);}return out;}
+// Smooth 2D value noise from the fixed hash, for textures painted once.
+function vn2(x,y,sd){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),a=h3(xi,yi,sd),b=h3(xi+1,yi,sd),c=h3(xi,yi+1,sd),e=h3(xi+1,yi+1,sd);return a+(b-a)*u+(c-a)*v+(a-b-c+e)*u*v;}
 function chain(segs,n){const out=[];for(const q of segs)bez(q[0],q[1],q[2],q[3],n||8,out);return out;}
 function ptsPath(pts){const p=new Path2D();p.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)p.lineTo(pts[i][0],pts[i][1]);p.closePath();return p;}
 // The outline of a tube round a centre line, tapering from w0 to w1, with a rounded tip.
@@ -62,9 +65,18 @@ const MOOD=wpick(MOODS);
 const CAFE=pick(['COFFEE','CAFE','ESPRESSO','OPEN LATE','LAST CUP','NIGHT OWL','BEANS','CAFE 24']);
 const CAFECOL=pick(['#ff2a7a','#2af0ff','#f3e600']);
 // The cup, the arm you reach with, and the barista on tonight.
-// The cup, the arm you reach with, and the robot that refills the cup.
-const CUP=pick([{name:'white cup',body:'#ece6de',saucer:true},{name:'black cup',body:'#2c292e',saucer:true},{name:'cream mug',body:'#e6d8bc',saucer:false},{name:'sage mug',body:'#8ea597',saucer:false},{name:'terracotta mug',body:'#b0613c',saucer:false},{name:'blue cup',body:'#3f5b7a',saucer:true}]);
-const ARM=wpick([[{kind:'sleeve',col:'#24222a',trim:'#2af0ff',skin:pick(['#e3b391','#c08660','#8a5a3a','#ecc6a6'])},3],[{kind:'chrome',col:'#b8c2d0',trim:'#2af0ff',skin:'#c8d0dc'},2],[{kind:'sleeve',col:'#5a4430',trim:'#ff2a7a',skin:pick(['#e3b391','#c08660','#6a4430','#ecc6a6'])},2],[{kind:'sleeve',col:'#8a8e96',trim:'#f3e600',skin:pick(['#e3b391','#a8704c','#ecc6a6'])},1]]);
+// The cup, and the robot that refills it.
+// About three nights in ten it's iced coffee in a tall glass instead: cold brew, an iced latte, an iced americano or an
+// espresso tonic.
+// With ?debug, ?iced forces it and ?hot rules it out, for checking.
+const ICED=(chance(.3)||(DEBUG&&new URLSearchParams(location.search).has('iced')))&&!(DEBUG&&new URLSearchParams(location.search).has('hot'));
+// Hot coffee comes in one of three cups, each a real kind of modern cup: a double-walled titanium cup coloured by
+// its oxide, a faceted porcelain cup in a matte glaze over a raw clay foot, or a double-walled glass cup in which the
+// coffee seems to float. Iced coffee comes in a heavy, wide tumbler whose thick cut base splits the neon outside into
+// colours, with a big ice sphere or two large cubes.
+const CUP=ICED?pick([{name:'cold brew',tint:['#050200','#120702','#221005']},{name:'iced latte',milk:true,tint:['#1e0f06','#3e2210','#5a341a']},{name:'iced americano',tint:['#060301','#160803','#281206']},{name:'espresso tonic',tonic:true,tint:['#060301','#1a0b04','#2e1608']}])
+  :pick([{name:'titanium cup',kind:'ti'},{name:'faceted porcelain cup',kind:'facet',body:pick(['#2b2b31','#e2ded6','#3c434c','#4e2626'])},{name:'double-walled glass cup',kind:'dwg'}]);
+if(ICED){CUP.kind='rocks';CUP.sphere=chance(.5);CUP.straw=chance(.4);}
 const BOT={body:pick(['#e8c21a','#e8e4dc','#d8345a','#3a9ab0','#e07a2a']),eye:pick(['#2af0ff','#ff2a7a','#3bff9a','#f3e600']),name:pick(['little robot','tiny robot','pour bot','robot'])};
 
 /* ---------- the street, generated once ---------- */
@@ -75,15 +87,23 @@ const WORLDW=360,HZ=50,BB=44.5,FWK=43.7,FKERB=42.8,FLN=41.5,LANE=39.9,NLN=38.1,K
 const upm=g=>(HZ-g)/1.2; // units per metre at a ground line, seen from a seat 1.2 m up
 // A big screen high on a tower in the distance.
 const BILL={x:rr(10,30),w:rr(22,30),y:rr(70,80),h:rr(26,34),mode:pick(['koi','text','bars']),t:0,word:pick(['SYNTH 9','NEW YOU','DREAM ON','CHROME SALE','NIGHT AIR','SLEEP IS OPTIONAL']),col:pick(NEON),col2:pick(NEON)};
+// The skyline: a far layer of slim towers fading into the smog, and a nearer layer of taller ones with their own
+// rooftops (stepped, spired, slanted or crowned in neon). Both rise past the top of the window.
+const FARL=[];
+{let x=ri(-20,-4);while(x<WORLDW){const w=ri(7,20);FARL.push({x,w,top:rr(70,250)*(chance(.25)?1.3:1),col:pick(['#1a1838','#201a3a','#16203a','#241a34']),lit:rr(.03,.12),s:ri(1,99999)});x+=w+ri(-3,3);}}
 const TOW=[];
-{let x=ri(-24,-4);while(x<WORLDW){const w=ri(16,42);TOW.push({x,w,top:rr(96,200),col:pick(['#141a34','#1e1434','#10222e','#22182c']),strip:chance(.45)?pick(NEON):null,ant:chance(.35),lit:rr(.08,.3),s:ri(1,99999)});x+=w+ri(-6,12);}
-  TOW.push({x:BILL.x-5,w:BILL.w+10,top:BILL.y+BILL.h+rr(14,50),col:'#160f2a',strip:null,ant:true,lit:.12,s:ri(1,99999)});}
+{let x=ri(-24,-4);while(x<WORLDW){const w=ri(14,38);TOW.push({x,w,top:rr(95,240),col:pick(['#141a34','#1e1434','#10222e','#22182c']),strip:chance(.4)?pick(NEON):null,ant:chance(.35),lit:rr(.1,.32),s:ri(1,99999),
+    roof:wpick([['flat',3],['step',2],['spire',1.2],['crown',1],['slant',1]]),rh:rr(8,30),crown:pick(NEON)});x+=w+ri(-8,6);}
+  TOW.push({x:BILL.x-5,w:BILL.w+10,top:BILL.y+BILL.h+rr(14,50),col:'#160f2a',strip:null,ant:true,lit:.12,s:ri(1,99999),roof:'flat',rh:0,crown:null,bill:true});}
+// Some nights the moon hangs in a corner of the window, and some nights the sky is full of stars, more often when
+// it's clear. On a smoggy night the moon looks warm.
+const NIGHT={moon:chance(MOOD.smog<.5?.6:.4),moonLeft:chance(.5),phase:rr(.15,1),moonR:rr(3.4,4.8),moonCol:MOOD.smog>.6?'#ffd59a':'#f1ede2',stars:chance(MOOD.rain<.5?.8:.35)};
 const FACADES=['#1a2436','#251a36','#162a30','#2e2034','#1e2238','#30221e','#202a26','#2a1a26'];
 const SHOPS=shuffle([['RAMEN','#ff6a2a'],['BAR','#ff2a7a'],['24/7','#2af0ff'],['NOODLES','#f3e600'],['CLINIC','#3bff9a'],['ARCADE','#b14bff'],['PHARMACY','#3bff9a'],['DUMPLINGS','#ff4a3a'],['KARAOKE','#ff2a7a'],['TATTOO','#2af0ff'],['PAWN','#f3e600'],['IMPLANTS','#2af0ff'],['SUSHI','#ff4a3a'],['LAUNDRY','#c8e0ff']]);
 const BLD=[],SIGNS=[],WINS=[];
 {let x=ri(-30,-8),si=0;
   while(x<WORLDW){
-    const w=ri(30,64),fh=rr(12,13.5),gh=15;let fl=wpick([[1,3],[2,3],[3,1.6],[4,.8],[6,.4]]);
+    const w=ri(30,64),fh=rr(12,13.5),gh=15;let fl=wpick([[1,4],[2,2.5],[3,.7],[4,.3],[6,.15]]);
     // Keep the building in front of the big screen low enough to show it.
     if(x<BILL.x+BILL.w&&x+w>BILL.x)fl=Math.max(1,Math.min(fl,Math.floor((BILL.y-3-BB-gh)/fh)));
     const b={x,w,fl,fh,gh,col:pick(FACADES),s:ri(1,99999),kind:wpick([['shop',6],['shutter',1.5],['dark',1.2]]),shop:SHOPS[si++%SHOPS.length],fire:chance(.4),ac:ri(0,3),tag:chance(.5)?pick(NEON):null};
@@ -94,7 +114,7 @@ const BLD=[],SIGNS=[],WINS=[];
     if(b.kind==='shop')SIGNS.push({kind:'board',x:x+w/2,y:BB+gh-3.6,word:b.shop[0],col:b.shop[1],size:3.2});
     if(fl>=3&&chance(.5)){const word=pick(['HOTEL','BAR','LIVE','CLUB','RAMEN','OPEN','LOVE','DOLLS']);if(word.length*3.9<fl*fh-6)SIGNS.push({kind:'blade',x:x+(chance(.5)?2.5:w-2.5),y:BB+gh+4,word,col:pick(NEON),size:3.2});}
     if(fl>=2&&chance(.3))SIGNS.push({kind:'roof',x:x+w/2,y:b.top+1.6,word:pick(['MOTEL','NOODLES','24H','DRINK','CHROME','NO VACANCY']),col:pick(NEON),size:4.2});
-    x+=w+(chance(.32)?ri(5,18):0);}}
+    x+=w+(chance(.38)?ri(6,20):0);}}
 for(const s of SIGNS){s.on=1;s.flick=null;s.bad=chance(.15)?ri(0,s.word.length-1):-1;}
 const FLOORS=['first','second','third','fourth','fifth','sixth'];
 
@@ -111,28 +131,12 @@ const PROPS={candle:DARK,vase:true,flowerLeft:chance(.5),extra:wpick([['none',3]
 // The bookshelf's books, left to right: width and height in centimetres, colour, and a band or two on the spine.
 const BOOKCOLS=['#6a1e22','#1e3a52','#2a4a32','#c8b48a','#3a2a4a','#8a5a2a','#1a1a1e','#a8442a','#4a5a6a','#d8d0c0','#5a3a1a','#2a5a5a'];
 const SHELF={wood:pick(['#5a3420','#3a2414','#7a5232']),books:[]};
-// Classics on the shelf, each in its own language and script: title, author, and how the spine is set. Japanese and
-// Chinese spines stack their characters top to bottom (v). The rest run down the spine in their own typeface.
-const LIBRARY=[
-  ['The Hobbit','Tolkien','l'],['The Lord of the Rings','Tolkien','l'],['Foundation','Asimov','l'],['I, Robot','Asimov','l'],['Kane and Abel','Archer','l'],
-  ['Pride and Prejudice','Austen','l'],['Nineteen Eighty-Four','Orwell','l'],['Great Expectations','Dickens','l'],['Hamlet','Shakespeare','l'],['Leaves of Grass','Whitman','l'],
-  ['The Old Man and the Sea','Hemingway','l'],['Neuromancer','Gibson','l'],['Do Androids Dream of Electric Sheep?','Philip K. Dick','l'],['Dune','Herbert','l'],
-  ['Murder on the Orient Express','Christie','l'],['The Prophet','Gibran','l'],['Cien a\u00f1os de soledad','Garc\u00eda M\u00e1rquez','l'],['Don Quijote','Cervantes','l'],
-  ['Les Mis\u00e9rables','Victor Hugo','l'],['Le Petit Prince','Saint-Exup\u00e9ry','l'],['Die Verwandlung','Kafka','l'],['Faust','Goethe','l'],['La Divina Commedia','Dante','l'],
-  ['Il nome della rosa','Umberto Eco','l'],['Veinte poemas de amor','Neruda','l'],['Duineser Elegien','Rilke','l'],
-  ['\u041f\u0440\u0435\u0441\u0442\u0443\u043f\u043b\u0435\u043d\u0438\u0435 \u0438 \u043d\u0430\u043a\u0430\u0437\u0430\u043d\u0438\u0435','\u0414\u043e\u0441\u0442\u043e\u0435\u0432\u0441\u043a\u0438\u0439','l'],
-  ['\u0412\u043e\u0439\u043d\u0430 \u0438 \u043c\u0438\u0440','\u0422\u043e\u043b\u0441\u0442\u043e\u0439','l'],['\u039f\u03b4\u03cd\u03c3\u03c3\u03b5\u03b9\u03b1','\u038c\u03bc\u03b7\u03c1\u03bf\u03c2','l'],
-  ['\u0917\u094b\u0926\u093e\u0928','\u092a\u094d\u0930\u0947\u092e\u091a\u0902\u0926','deva'],['\u092e\u0927\u0941\u0936\u093e\u0932\u093e','\u0939\u0930\u093f\u0935\u0902\u0936\u0930\u093e\u092f \u092c\u091a\u094d\u091a\u0928','deva'],
-  ['\u0930\u0936\u094d\u092e\u093f\u0930\u0925\u0940','\u0926\u093f\u0928\u0915\u0930','deva'],['\u0917\u0941\u0928\u093e\u0939\u094b\u0902 \u0915\u093e \u0926\u0947\u0935\u0924\u093e','\u0927\u0930\u094d\u092e\u0935\u0940\u0930 \u092d\u093e\u0930\u0924\u0940','deva'],
-  ['\u0915\u093e\u092e\u093e\u092f\u0928\u0940','\u091c\u092f\u0936\u0902\u0915\u0930 \u092a\u094d\u0930\u0938\u093e\u0926','deva'],
-  ['\u0997\u09c0\u09a4\u09be\u099e\u09cd\u099c\u09b2\u09bf','\u09b0\u09ac\u09c0\u09a8\u09cd\u09a6\u09cd\u09b0\u09a8\u09be\u09a5 \u09a0\u09be\u0995\u09c1\u09b0','beng'],['\u09aa\u09a5\u09c7\u09b0 \u09aa\u09be\u0981\u099a\u09be\u09b2\u09c0','\u09ac\u09bf\u09ad\u09c2\u09a4\u09bf\u09ad\u09c2\u09b7\u09a3','beng'],
-  ['\u09a6\u09c7\u09ac\u09a6\u09be\u09b8','\u09b6\u09b0\u09ce\u099a\u09a8\u09cd\u09a6\u09cd\u09b0','beng'],['\u09ab\u09c7\u09b2\u09c1\u09a6\u09be \u09b8\u09ae\u0997\u09cd\u09b0','\u09b8\u09a4\u09cd\u09af\u099c\u09bf\u09ce \u09b0\u09be\u09af\u09bc','beng'],
-  ['\u543e\u8f29\u306f\u732b\u3067\u3042\u308b','\u590f\u76ee\u6f31\u77f3','v'],['\u3053\u3053\u308d','\u590f\u76ee\u6f31\u77f3','v'],['\u96ea\u56fd','\u5ddd\u7aef\u5eb7\u6210','v'],['\u4eba\u9593\u5931\u683c','\u592a\u5bb0\u6cbb','v'],
-  ['\u30ce\u30eb\u30a6\u30a7\u30a4\u306e\u68ee','\u6751\u4e0a\u6625\u6a39','v'],['\u5965\u306e\u7d30\u9053','\u677e\u5c3e\u82ad\u8549','v'],['\u9280\u6cb3\u9244\u9053\u306e\u591c','\u5bae\u6ca2\u8ce2\u6cbb','v'],['\u7d05\u6a13\u5922','\u66f9\u96ea\u82b9','v'],
-  ['\u0ba4\u0bbf\u0bb0\u0bc1\u0b95\u0bcd\u0b95\u0bc1\u0bb1\u0bb3\u0bcd','\u0ba4\u0bbf\u0bb0\u0bc1\u0bb5\u0bb3\u0bcd\u0bb3\u0bc1\u0bb5\u0bb0\u0bcd','taml'],['\u062f\u06cc\u0648\u0627\u0646\u0650 \u063a\u0627\u0644\u0628','\u063a\u0627\u0644\u0628','ar']
-];
-const BFONT={l:'Georgia,"Times New Roman",serif',deva:'"Kohinoor Devanagari","Noto Serif Devanagari","Noto Sans Devanagari",Mangal,serif',beng:'"Kohinoor Bangla","Noto Serif Bengali","Noto Sans Bengali",Vrinda,serif',
-  taml:'"Tamil Sangam MN","Noto Serif Tamil","Noto Sans Tamil",Latha,serif',v:'"Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP","Songti SC",serif',ar:'"Geeza Pro","Noto Naskh Arabic",serif'};
+// Classics on the shelf, from ../library.json: each title and author in its own language and script, with English
+// names beside the rest. Japanese and Chinese spines stack their characters top to bottom. The rest run down the spine
+// in their own typeface. If the list can't be loaded, the books stand untitled.
+const LIBRARY=await fetch(new URL('../library.json',SRC)).then(r=>r.ok?r.json():[]).catch(()=>[]);
+const SERIF='Georgia,"Times New Roman",serif',BFONT={latin:SERIF,cyrillic:SERIF,greek:SERIF,devanagari:'"Kohinoor Devanagari","Noto Serif Devanagari","Noto Sans Devanagari",Mangal,serif',bengali:'"Kohinoor Bangla","Noto Serif Bengali","Noto Sans Bengali",Vrinda,serif',
+  tamil:'"Tamil Sangam MN","Noto Serif Tamil","Noto Sans Tamil",Latha,serif',japanese:'"Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP",serif',chinese:'"Songti TC","Songti SC","Noto Serif CJK TC",serif',arabic:'"Geeza Pro","Noto Naskh Arabic",serif'};
 // Between two and four books, and sometimes the last one leans over. The shelf is as wide as its books need.
 {const n=ri(2,4),lib=shuffle(LIBRARY.slice());for(let i=0;i<n;i++)SHELF.books.push({w:rr(2.4,4.2),h:rr(16,21.5),col:pick(BOOKCOLS),bands:ri(0,2),book:lib[i],s:ri(1,9999)});
   if(n>=3&&chance(.5))SHELF.lean=SHELF.books.pop();
@@ -141,8 +145,9 @@ const BFONT={l:'Georgia,"Times New Roman",serif',deva:'"Kohinoor Devanagari","No
 /* ---------- state ---------- */
 let t=0,warming=false,raining=false,rainK=0,wet=0;
 const stats={sips:0,refills:0,cars:0,people:0};
-const coffee={level:rr(.5,.95),temp:rr(.7,1)};
-const hand={state:'off',k:0,dur:0,sipT:0,amount:0};
+const coffee={level:rr(.5,.95),temp:ICED?0:rr(.7,1),ice:rr(.75,1)};
+// A sip in progress: how much is still to go, and how fast it goes down.
+const sip={left:0,rate:0};
 const bot={state:'off',k:0,dur:0,x:0,arm:0,tank:1};
 let cat=null,refillAt=-1;
 const cars=[],walkers=[],flyers=[],glassDrops=[],runners=[],streaks=[];
@@ -161,23 +166,64 @@ const Y=yu=>VH-yu;
 const sc=yu=>1.3-yu/42; // how big things on the counter look at a depth: near the screen's bottom edge or by the glass
 
 /* ---------- painting the far city ---------- */
+// How high the city stands at a point across the street, the tallest of anything there.
+function skyAt(x,r,only){let top=0;for(const L of only||[FARL,TOW,BLD])for(const b of L)if(x+r>b.x&&x-r<b.x+b.w){const h=topOf(b)+(b.roof==='spire'||b.roof==='step'?b.rh:0);if(h>top)top=h;}return top;}
+// A skyline tower right under the moon is drawn a little shorter, so the moon always shows clear in its corner.
+// The big screen's tower can be shortened too, but never below the screen itself.
+function topOf(b){if(!MOONAT||!b.roof)return b.top;const[mx,my]=MOONAT,r=NIGHT.moonR;if(!(b.x<mx+r+6&&b.x+b.w>mx-r-6))return b.top;const cut=Math.min(b.top,my-r-5-(b.roof==='spire'||b.roof==='step'?b.rh:0));return b.bill?Math.max(cut,BILL.y+BILL.h+4):cut;}
+let MOONAT=null,TWK=[];
 function paintFar(g){
   g.setTransform(OS,0,0,OS,0,0);
   const[s0,s1,s2,s3]=MOOD.sky;
   g.fillStyle=lin(g,0,0,0,Y(HZ-4),[[0,s0],[.45,s1],[.8,s2],[1,s3]]);g.fillRect(0,0,VW,VH);
-  for(let i=0;i<70;i++){const x=h3(i,1,7)*VW,y=h3(i,2,7)*Y(110);if(y>0){g.fillStyle=`rgba(255,240,255,${.15+h3(i,3,7)*.4})`;g.fillRect(x,y,.25,.25);}}
-  // Towers far away, hazed by the smog toward their feet.
+  // Stars, a few of them tinted, the brightest with a little glow.
+  const n=NIGHT.stars?260:40;
+  for(let i=0;i<n;i++){const x=h3(i,1,7)*VW,yu=HZ+12+h3(i,2,7)*(VH-HZ),a=(NIGHT.stars?.2:.1)+h3(i,3,7)*(NIGHT.stars?.65:.3),r=.14+h3(i,4,7)*.26;
+    g.fillStyle=h3(i,5,7)<.15?`rgba(200,220,255,${a.toFixed(2)})`:h3(i,5,7)<.25?`rgba(255,220,200,${a.toFixed(2)})`:`rgba(255,248,255,${a.toFixed(2)})`;g.beginPath();g.arc(x,Y(yu),r,0,TAU);g.fill();
+    if(NIGHT.stars&&h3(i,6,7)<.06){g.globalCompositeOperation='lighter';glow(g,x,Y(yu),r*6,'#dfe8ff',.25);g.globalCompositeOperation='source-over';}}
+  // The moon, in a top corner of the window where no tower stands in front of it.
+  MOONAT=null;
+  if(NIGHT.moon){const r=NIGHT.moonR,yu=WTOP-4.5-r,fixed=[BLD,[{x:BILL.x-5,w:BILL.w+10,top:BILL.y+BILL.h+4}]];
+    // On a narrow screen the title sits in the top-left corner, so the moon prefers the right there.
+    for(const left of VW<100?[false,true]:[NIGHT.moonLeft,!NIGHT.moonLeft]){const x0=left?r+5:VW-r-5;for(let d=0;d<=30&&!MOONAT;d+=2){const x=x0+(left?d:-d);if(skyAt(x,r+6,fixed)<yu-r-2)MOONAT=[x,yu];}if(MOONAT)break;}
+    if(MOONAT){const[x,yu]=MOONAT,y=Y(yu),c=NIGHT.moonCol;
+      // The sun has set, so the lit side faces down and to one side, 45 degrees below level. A crescent's horns point up.
+      const f=NIGHT.phase,sd=NIGHT.moonLeft?-1:1,dx=sd*Math.SQRT1_2,dy=Math.SQRT1_2;
+      // The glow comes from the lit part, so a thin crescent glows less and off to its side.
+      {const o=r*(1-f)*.6;g.globalCompositeOperation='lighter';glow(g,x+dx*o,y+dy*o,r*7,c,.06+.1*f);glow(g,x+dx*o,y+dy*o,r*2.4,c,.08+.17*f);g.globalCompositeOperation='source-over';}
+      // Only the lit part is drawn: the limb on the sunny side, closed by the terminator, an ellipse whose width follows
+      // the phase. The unlit part is left as sky.
+      const lit=new Path2D(),tp=new Path2D();
+      tp.moveTo(0,-r);tp.arc(0,0,r,-Math.PI/2,Math.PI/2);tp.ellipse(0,0,r*Math.abs(1-2*f),r,0,Math.PI/2,-Math.PI/2,f<.5);tp.closePath();
+      lit.addPath(tp,new DOMMatrix([dx,dy,-sd*dy,sd*dx,x,y]));
+      g.save();g.clip(lit);
+      g.fillStyle=rad(g,x-r*.3,y-r*.3,0,r*1.2,[[0,shade(c,.15)],[.7,c],[1,shade(c,-.15)]]);g.fillRect(x-r,y-r,r*2,r*2);
+      g.fillStyle=rgba(shade(c,-.35),.35);for(let i=0;i<7;i++){const a=h3(i,1,31)*TAU,d=h3(i,2,31)*r*.7;g.beginPath();g.ellipse(x+Math.cos(a)*d,y+Math.sin(a)*d,r*(.12+h3(i,3,31)*.2),r*(.1+h3(i,4,31)*.15),a,0,TAU);g.fill();}
+      // The light falls off toward the terminator.
+      g.fillStyle=lin(g,x+dx*r,y+dy*r,x-dx*r,y-dy*r,[[0,'rgba(0,0,0,0)'],[Math.max(.05,f*.85),'rgba(0,0,0,0)'],[Math.min(1,f*1.05+.05),`rgba(0,0,0,${(.35-.25*f).toFixed(3)})`],[1,`rgba(0,0,0,${(.35-.25*f).toFixed(3)})`]]);g.fillRect(x-r,y-r,r*2,r*2);
+      g.restore();}}
+  // The far layer, faded toward the sky by the distance and the smog.
+  for(const tw of FARL){if(tw.x>VW+10||tw.x+tw.w<-10)continue;const top=topOf({...tw,roof:'flat'}),y0=Y(top),y1=Y(BB+4);
+    g.fillStyle=mixC(tw.col,s2,.3);g.fillRect(tw.x,y0,tw.w,y1-y0);g.fillStyle=lin(g,0,y0,0,y1,[[0,rgba(s2,.15)],[1,rgba(MOOD.haze,.35*MOOD.smog+.12)]]);g.fillRect(tw.x,y0,tw.w,y1-y0);
+    for(let yy=top-2;yy>BB+8;yy-=2.2)for(let xx=tw.x+1;xx<tw.x+tw.w-1;xx+=1.8){const hsh=h3(xx*2.3,yy*1.3,tw.s);if(hsh<tw.lit){g.fillStyle=hsh<tw.lit*.4?'rgba(255,200,140,.45)':'rgba(170,220,255,.4)';g.fillRect(xx,Y(yy),.7,.9);}}}
+  // The nearer towers, with their rooftops.
   for(const tw of TOW){if(tw.x>VW+10||tw.x+tw.w<-10)continue;
-    const y0=Y(tw.top),y1=Y(BB+4);g.fillStyle=tw.col;g.fillRect(tw.x,y0,tw.w,y1-y0);
+    const top=topOf(tw),y0=Y(top),y1=Y(BB+4),rh=tw.rh;g.fillStyle=tw.col;g.fillRect(tw.x,y0,tw.w,y1-y0);
+    if(tw.roof==='step'){g.fillRect(tw.x+tw.w*.18,Y(top+rh*.5),tw.w*.64,rh*.5);g.fillRect(tw.x+tw.w*.34,Y(top+rh),tw.w*.32,rh*.5);}
+    else if(tw.roof==='spire'){poly(g,[[tw.x+tw.w*.35,y0],[tw.x+tw.w*.65,y0],[tw.x+tw.w*.5,Y(top+rh)]]);g.fill();}
+    else if(tw.roof==='slant'){poly(g,[[tw.x,y0],[tw.x+tw.w,y0],[tw.x+tw.w,Y(top+rh*.4)]]);g.fill();}
     g.fillStyle=shade(tw.col,.12);g.fillRect(tw.x,y0,tw.w*.18,y1-y0);
     g.fillStyle=lin(g,0,y0,0,y1,[[0,rgba(MOOD.haze,0)],[1,rgba(MOOD.haze,.28*MOOD.smog+.08)]]);g.fillRect(tw.x,y0,tw.w,y1-y0);
-    for(let yy=tw.top-3;yy>BB+8;yy-=2.8)for(let xx=tw.x+1.4;xx<tw.x+tw.w-1.4;xx+=2.4){const hsh=h3(xx*3.1,yy*1.7,tw.s);if(hsh<tw.lit){g.fillStyle=hsh<tw.lit*.25?'#ff7ab0':hsh<tw.lit*.5?'#7af0ff':'#ffcf7a';g.globalAlpha=.55+h3(xx,yy,3)*.4;g.fillRect(xx,Y(yy),1,1.3);g.globalAlpha=1;}}
+    for(let yy=top-3;yy>BB+8;yy-=2.8)for(let xx=tw.x+1.4;xx<tw.x+tw.w-1.4;xx+=2.4){const hsh=h3(xx*3.1,yy*1.7,tw.s);if(hsh<tw.lit){g.fillStyle=hsh<tw.lit*.25?'#ff7ab0':hsh<tw.lit*.5?'#7af0ff':'#ffcf7a';g.globalAlpha=.55+h3(xx,yy,3)*.4;g.fillRect(xx,Y(yy),1,1.3);g.globalAlpha=1;}}
     if(tw.strip){g.fillStyle=tw.strip;g.fillRect(tw.x+tw.w-1.2,y0+2,.5,y1-y0-2);g.globalCompositeOperation='lighter';g.fillStyle=lin(g,tw.x+tw.w-4,0,tw.x+tw.w+3,0,[[0,rgba(tw.strip,0)],[.5,rgba(tw.strip,.25)],[1,rgba(tw.strip,0)]]);g.fillRect(tw.x+tw.w-4,y0,7,y1-y0);g.globalCompositeOperation='source-over';}
+    if(tw.roof==='crown'){g.globalCompositeOperation='lighter';g.fillStyle=rgba(tw.crown,.85);g.fillRect(tw.x,y0,tw.w,.5);g.fillRect(tw.x,y0+2.2,tw.w,.4);g.fillStyle=lin(g,0,y0-3,0,y0+5,[[0,rgba(tw.crown,0)],[.5,rgba(tw.crown,.22)],[1,rgba(tw.crown,0)]]);g.fillRect(tw.x-2,y0-3,tw.w+4,8);g.globalCompositeOperation='source-over';}
     if(tw.ant){g.strokeStyle='#0c0a18';g.lineWidth=.5;g.beginPath();g.moveTo(tw.x+tw.w*.5,y0);g.lineTo(tw.x+tw.w*.5,y0-8);g.stroke();}}
   // The screen's frame. What it shows is drawn each frame.
   g.fillStyle='#08060e';g.fillRect(BILL.x-1,Y(BILL.y+BILL.h)-1,BILL.w+2,BILL.h+2);
   // City glow at the horizon.
   g.globalCompositeOperation='lighter';g.fillStyle=lin(g,0,Y(HZ+40),0,Y(HZ-4),[[0,rgba(MOOD.haze,0)],[1,rgba(MOOD.haze,.22)]]);g.fillRect(0,Y(HZ+40),VW,44);g.globalCompositeOperation='source-over';
+  // A few stars in the open sky twinkle. Pick them now that the skyline is known.
+  TWK=[];if(NIGHT.stars)for(let i=0;i<260&&TWK.length<26;i++){const x=h3(i,1,7)*VW,yu=HZ+12+h3(i,2,7)*(VH-HZ);if(h3(i,8,7)<.3&&yu<VH-2&&skyAt(x,.5)<yu-1)TWK.push([x,yu,h3(i,9,7)*50]);}
 }
 
 /* ---------- painting the street across the road ---------- */
@@ -270,18 +316,27 @@ function paintIn(g){
   g.restore();
   // The sill: a rounded wooden ledge.
   g.fillStyle=lin(g,0,Y(SILL+.9),0,Y(SILL-1.6),[[0,'#1e1008'],[.3,'#6a3e22'],[.45,'#a8704a'],[.6,'#5a3018'],[1,'#2a160a']]);g.fillRect(0,Y(SILL+.9),VW,2.5);
-  // The counter: walnut boards running along the window, wider apart as they come toward you.
-  const cTop=Y(SILL-1.6);
-  g.fillStyle=lin(g,0,cTop,0,VH,[[0,'#5a3018'],[.25,'#6e3c1e'],[.6,'#4e2a14'],[1,'#2e180c']]);g.fillRect(0,cTop,VW,VH-cTop);
-  const seams=[];for(let yy=SILL-1.6,k=2.2;yy>-2;yy-=k,k*=1.28)seams.push(yy);
-  for(let j=0;j<seams.length;j++){const y0=Y(seams[j]),y1=j+1<seams.length?Y(seams[j+1]):VH,ph=h3(j,3,1)*50;
-    // Each board a slightly different tone, with long grain lines that wander.
-    g.fillStyle=`rgba(${h3(j,1,2)<.5?'40,20,8':'120,70,40'},${(.06+h3(j,2,2)*.1).toFixed(3)})`;g.fillRect(0,y0,VW,y1-y0);
-    const lines=Math.ceil((y1-y0)*3.2);
-    for(let i=0;i<lines;i++){const yy=y0+(i+.5)/lines*(y1-y0),dark=h3(i,j,4)<.55;g.strokeStyle=dark?`rgba(30,14,6,${(.1+h3(i,j,5)*.22).toFixed(3)})`:`rgba(170,110,70,${(.05+h3(i,j,6)*.12).toFixed(3)})`;g.lineWidth=.06+h3(i,j,7)*.18*(y1-y0)/6;
-      g.beginPath();for(let x=-2;x<=VW+2;x+=2)g.lineTo(x,yy+(noise(x*.03+i*1.7+ph)-.5)*(y1-y0)*.35);g.stroke();}
-    if(h3(j,9,9)<.6){const kx=h3(j,8,8)*VW,ky=(y0+y1)/2,kr=(y1-y0)*.22;for(let r=0;r<5;r++){g.strokeStyle=`rgba(30,14,6,${(.25-r*.04).toFixed(3)})`;g.lineWidth=.1;g.beginPath();g.ellipse(kx,ky,kr*(1+r*.9),kr*(.35+r*.3),0,0,TAU);g.stroke();}}
-    g.fillStyle='rgba(15,6,2,.7)';g.fillRect(0,y0-.06,VW,.12+(y1-y0)*.01);g.fillStyle='rgba(200,140,90,.18)';g.fillRect(0,y0+.08,VW,.08);}
+  // The counter: walnut boards running along the window, wider apart as they come toward you. Every pixel of the wood
+  // is worked out from the board it falls on: long wandering streaks of grain, fine fibre, open pores, a tone of its
+  // own for each board, and bevelled seams. The grain stretches as it comes toward you, as it would in perspective.
+  const cTop=Y(SILL-1.6),seams=[];for(let yy=SILL-1.6,k=2.2;yy>-3;yy-=k,k*=1.28)seams.push(yy);
+  {const y0=Math.floor(cTop*S),H=CH-y0,sc2=Math.min(1,Math.sqrt(1.4e6/(CW*H))),tw=Math.ceil(CW*sc2),th=Math.ceil(H*sc2);
+    const[wc,wx]=mk(tw,th),id=wx.createImageData(tw,th),d=id.data,DK=[38,19,9],MD=[94,52,26],LT=[140,86,46];
+    for(let py=0;py<th;py++){
+      const yu=VH-(y0+py/sc2)/S;let j=0;while(j+1<seams.length&&yu<seams[j+1])j++;
+      const ya=seams[j],yb=j+1<seams.length?seams[j+1]:ya-6,v=clamp((ya-yu)/(ya-yb),0,1),w=v*6,per=1/Math.max(.35,sc(Math.max(0,yu)));
+      const tone=.84+h3(j,1,2)*.3,warm=h3(j,2,2)*.12,edge=Math.min(v,1-v)*(ya-yb)*S*sc2,lum=.5+.55*sstep(-2,SILL*.7,yu);
+      for(let px=0;px<tw;px++){
+        const ux=(px/sc2/S-VW/2)*per+j*37.3,dist=vn2(ux*.035,w*.55,j)*2.4+vn2(ux*.12,w*1.3,j+7)*.7;
+        let k=.5+.5*Math.sin((w*1.9+dist)*TAU*.8);k=k*k*(3-2*k);
+        const fib=vn2(ux*.8,w*13,j+3)-.5,pore=vn2(ux*2.4,w*34,j+11);
+        let m=(.35+.55*k)*tone+fib*.12;if(pore>.8)m-=(pore-.8)*1.6;
+        let r,gg,b;if(m<.5){const f=m/.5;r=DK[0]+(MD[0]-DK[0])*f;gg=DK[1]+(MD[1]-DK[1])*f;b=DK[2]+(MD[2]-DK[2])*f;}else{const f=Math.min(1,(m-.5)/.5);r=MD[0]+(LT[0]-MD[0])*f;gg=MD[1]+(LT[1]-MD[1])*f;b=MD[2]+(LT[2]-MD[2])*f;}
+        let L=lum*(1+warm);
+        // Seams: a dark gap, then the bevel of the nearer board catching the light.
+        if(edge<1.1)L*=.35;else if(edge<2.4&&v<.5)L*=1.25;
+        const o=(py*tw+px)*4;d[o]=r*L;d[o+1]=gg*L*(1-warm*.3);d[o+2]=b*L*(1-warm*.5);d[o+3]=255;}}
+    wx.putImageData(id,0,0);g.save();g.setTransform(1,0,0,1,0,0);g.imageSmoothingQuality='high';g.drawImage(wc,0,y0,CW,H);g.restore();}
   // Varnish: the window's glow along the back of the counter, and the bulbs' reflections.
   g.globalCompositeOperation='lighter';
   g.fillStyle=lin(g,0,cTop,0,Y(SILL-12),[[0,'rgba(170,190,230,.14)'],[1,'rgba(170,190,230,0)']]);g.fillRect(0,cTop,VW,10.4);
@@ -334,7 +389,7 @@ function newWalker(near,dog){
   const p={kind:'person',near,lane,u,dir,mode,run,h:rr(1.58,1.92)*u,sp:rr(PACES[mode][0],PACES[mode][1])*u,ph:rr(0,TAU),coat:pick(COATS),pants:pick(['#141218','#1e1e2a','#2a2420','#0e1218']),skin:pick(SKINS),hair:pick(HAIRS),trim:pick(NEON),rim:pick(NEON),
     long:!run&&chance(.35),hood:chance(run?.5:.22),visor:chance(.2),implant:chance(.3),bag:!run&&chance(.25),phone:!run&&chance(mode==='stand'?.6:.22),umb:!run&&raining&&chance(.7),umbCol:pick(NEON),stop:0,look:0};
   p.x=dir>0?-p.h*.6-4:VW+p.h*.6+4;
-  if(mode==='stand'){p.standAt=rr(VW*.15,VW*.85);p.standFor=rr(8,45);}
+  if(mode==='stand'){p.standAt=rr(VW*.15,VW*.85);p.standFor=rr(6,25);}
   if(dog&&!run)p.dog=makeDog(u,p.sp/u);
   walkers.push(p);stats.people++;return p;}
 function newDog(near){
@@ -474,7 +529,7 @@ function newCar(){
   // Each kind keeps its own pace in metres a second. A taxi in the near lane sometimes pulls over outside.
   const PACE={sedan:[5,11],taxi:[3.5,8],sport:[9,16],van:[5,9],bike:[8,17],truck:[4,7.5]}[kind];
   v.L=KINDS[kind].L*u;v.vmax=rr(PACE[0],PACE[1])*u;v.cur=v.vmax;
-  if(kind==='taxi'&&!far&&chance(.35))v.stopAt=rr(VW*.3,VW*.8);
+  if(kind==='taxi'&&!far&&chance(.25))v.stopAt=rr(VW*.3,VW*.8);
   v.x=dir>0?-v.L-6:VW+6;v.spr=carSprite(v);
   // Keep a gap behind whatever is ahead in the lane.
   for(const c of cars){if(c.lane!==lane)continue;const gap=dir>0?c.x-(v.x+v.L):v.x-(c.x+c.L);if(gap<8*u)v.cur=Math.min(v.cur,c.cur);}
@@ -534,57 +589,184 @@ function drawBill(g){
 }
 
 /* ---------- the counter ---------- */
-// The cup sits on its saucer, or on the bare counter. (x, yu) is the middle of its base. A lift scales it up as it
-// comes toward you.
-function cupGeom(x,y,k){const m=CUP.saucer?1:1.08;return{x,y,k,rx:4.6*k*m,h:(CUP.saucer?6.8:8.4)*k,ry:1.5*k,bx:3.6*k*m};}
+// (x, yu) is the middle of the cup's base on the counter. Each cup has its own proportions: top radius, height, the
+// depth of its ellipse, and the radius at its foot.
+function cupGeom(x,y,k){const G={ti:[4,8.6,1.3,3.6],facet:[4.2,7.4,1.35,3.3],dwg:[4.3,8.8,1.35,4],rocks:[4.9,7.4,1.5,4.7]}[CUP.kind];return{x,y,k,rx:G[0]*k,h:G[1]*k,ry:G[2]*k,bx:G[3]*k};}
 // A soft shadow on the counter, an ellipse that fades out.
 function softShadow(g,x,y,rx,ry,a){g.save();g.translate(x,y);g.scale(1,ry/rx);g.fillStyle=rad(g,0,0,0,rx,[[0,`rgba(12,5,2,${a})`],[.6,`rgba(12,5,2,${a*.45})`],[1,'rgba(12,5,2,0)']]);g.fillRect(-rx,-rx,rx*2,rx*2);g.restore();}
-function drawSaucer(g,x,yu,k){
-  const y=Y(yu),B=CUP.body;
-  softShadow(g,x+.6*k,y+.6*k,11*k,3*k,.55);
-  g.fillStyle=shade(B,-.5);g.beginPath();g.ellipse(x,y+.4*k,8.5*k,2.3*k,0,0,TAU);g.fill();
-  g.fillStyle=lin(g,x-9*k,0,x+9*k,0,[[0,shade(B,-.3)],[.35,shade(B,.12)],[.6,B],[1,shade(B,-.35)]]);g.beginPath();g.ellipse(x,y,8.8*k,2.4*k,0,0,TAU);g.fill();
-  g.fillStyle=rad(g,x-1.5*k,y-.7*k,0,6.4*k,[[0,shade(B,.06)],[1,shade(B,-.2)]]);g.beginPath();g.ellipse(x,y-.25*k,5.9*k,1.5*k,0,0,TAU);g.fill();
-  g.lineWidth=.22*k;g.strokeStyle='rgba(255,250,240,.45)';g.beginPath();g.ellipse(x,y,8.4*k,2.15*k,0,Math.PI*1.05,Math.PI*1.7);g.stroke();
-  g.strokeStyle=rgba(RIM,.35);g.beginPath();g.ellipse(x,y,8.4*k,2.15*k,0,Math.PI*1.75,Math.PI*1.97);g.stroke();
-  // A teaspoon beside the cup.
-  g.save();g.translate(x+5.8*k,y+.9*k);g.rotate(.14);
-  g.fillStyle=lin(g,0,-.6*k,0,.6*k,[[0,'#f4f6fa'],[.45,'#a8aeb8'],[1,'#4a505a']]);g.beginPath();g.ellipse(0,0,1.35*k,.56*k,0,0,TAU);g.fill();
-  g.beginPath();g.moveTo(1.1*k,-.16*k);g.quadraticCurveTo(3*k,-.2*k,5.8*k,-.12*k);g.lineTo(5.8*k,.16*k);g.quadraticCurveTo(3*k,.14*k,1.1*k,.18*k);g.closePath();g.fill();
-  g.fillStyle='rgba(255,255,255,.75)';g.fillRect(1.8*k,-.1*k,3.4*k,.07*k);g.fillStyle='rgba(255,240,220,.6)';g.beginPath();g.ellipse(-.3*k,-.2*k,.5*k,.16*k,0,0,TAU);g.fill();g.restore();
+// The bulbs (or, on a dark night, the candle) as reflections, placed by where each light is.
+function glints(cx){if(DARK)return PROPS.candle?[[CANDX,'#ffb060',.7]]:[];return BULBS.map(b=>[b.f*VW,'#fff2d8',.85*b.on]).sort((a,b)=>Math.abs(a[0]-cx)-Math.abs(b[0]-cx)).slice(0,2);}
+// What's behind a glass, seen squeezed through its curve: copied from what's already drawn and laid back in narrower.
+function seeThrough(g,x,y,x0,y0,w,h,sq,a){const sx=Math.round((x+x0-w*(sq-1)/2)*S),sy=Math.round((y+y0)*S),sw=Math.round(w*sq*S),sh=Math.round(h*S);
+  if(sw>2&&sh>2&&sx>=0&&sy>=0&&sx+sw<=CW&&sy+sh<=CH){g.globalAlpha=a;g.drawImage(g.canvas,sx,sy,sw,sh,x0,y0,w,h);g.globalAlpha=1;}}
+// Hot coffee seen from a little above: dark at the heart, a crema toward the wall with fine bubbles, a bright
+// meniscus where it meets the cup, and one soft reflection of the nearest light.
+function hotCoffee(g,cy,cr,cry,k,x){
+  g.fillStyle=rad(g,-cr*.1,cy,0,cr,[[0,'#1c0c04'],[.55,'#2a1307'],[.82,'#4e2a12'],[.95,'#7a4a24'],[1,'#94603a']]);g.beginPath();g.ellipse(0,cy,cr,cry,0,0,TAU);g.fill();
+  g.fillStyle='rgba(190,140,96,.18)';for(let i=0;i<60;i++){const a=h3(i,1,43)*TAU,d=Math.sqrt(h3(i,2,43))*.95;g.fillRect(Math.cos(a)*d*cr,cy+Math.sin(a)*d*cry,.06*k,.05*k);}
+  g.strokeStyle='rgba(200,150,105,.55)';g.lineWidth=.1*k;g.beginPath();g.ellipse(0,cy,cr*.985,cry*.97,0,0,TAU);g.stroke();
+  const gl0=glints(x)[0];if(gl0){const[lx,col,a]=gl0,gx=clamp((lx-x)/(VW*.35),-1,1)*cr*.45;g.save();g.translate(gx,cy-cry*.3);g.scale(1,.42);g.fillStyle=rad(g,0,0,0,cr*.28,[[0,rgba(col,a*.5)],[.3,rgba(col,a*.2)],[1,rgba(col,0)]]);g.fillRect(-cr*.28,-cr*.28,cr*.56,cr*.56);g.restore();}}
+// The rim and the inside of an open cup, then the coffee, lower as it goes down. lip is the rim's colour, wall the
+// inside's.
+function cupMouth(g,c,level,lip,wall){
+  const{rx,h,ry,bx,k}=c,iw=rx*.9,ir=ry*.82;
+  g.fillStyle=lin(g,-rx,0,rx,0,[[0,shade(lip,-.2)],[.45,shade(lip,.12)],[1,shade(lip,-.12)]]);g.beginPath();g.ellipse(0,-h,rx,ry,0,0,TAU);g.fill();
+  g.fillStyle=lin(g,0,-h-ry,0,-h+ry,[[0,shade(wall,-.55)],[.6,shade(wall,-.3)],[1,shade(wall,-.08)]]);g.beginPath();g.ellipse(0,-h+.08*k,iw,ir,0,0,TAU);g.fill();
+  if(level>.01){g.save();g.beginPath();g.ellipse(0,-h+.08*k,iw,ir,0,0,TAU);g.clip();
+    const drop=(1-level)*h*.78,cr=lerp(iw,bx*.92,(1-level)*.85),cy=-h+drop,cry=ry*.82*(cr/rx);
+    g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(0,cy-cry*.6,cr,cry,0,Math.PI,TAU);g.fill();
+    hotCoffee(g,cy,cr,cry,k,c.x);g.restore();}
+  g.strokeStyle='rgba(255,252,245,.22)';g.lineWidth=.1*k;g.beginPath();g.ellipse(0,-h+.04*k,rx-.1*k,ry-.07*k,0,Math.PI*.08,Math.PI*.92);g.stroke();}
+// The radius of a cup at a height up its side, between its foot and its rim.
+const rAt=(c,yy)=>lerp(c.bx,c.rx,clamp(-yy/c.h,0,1));
+// A band round a cup at a height is not a straight line but the front half of an ellipse, dipping toward you in the
+// middle, because we look down on the cup a little.
+function bandArc(g,c,yy){g.ellipse(0,yy,rAt(c,yy),c.ry*.9,0,0,Math.PI);}
+// Handles, one for each kind of cup, all on the right.
+function cupHandle(g,c){
+  const{rx,h,bx,k}=c;
+  if(CUP.kind==='ti'){
+    // A flat strap of titanium, bent into a D and riveted on, coloured by the same oxide as the cup.
+    const hc=[];bez([rx*.96,-h*.8],[rx+3.4*k,-h*.82],[rx+3.3*k,-h*.22],[bx*.98,-h*.24],14,hc);const hp=ptsPath(tube(hc,1.05*k,1.05*k));
+    g.fillStyle=lin(g,0,-h*.85,0,-h*.2,[[0,'#3a4a92'],[.5,'#6a3e7e'],[1,'#9a7444']]);g.fill(hp);
+    g.save();g.clip(hp);g.fillStyle=lin(g,rx,0,rx+3.6*k,0,[[0,'rgba(0,0,0,.45)'],[.6,'rgba(255,255,255,.08)'],[1,'rgba(0,0,0,.3)']]);g.fillRect(rx-k,-h,5*k,h);g.restore();
+    g.strokeStyle='rgba(220,226,236,.35)';g.lineWidth=.08*k;g.beginPath();for(let i=1;i<13;i++){const q=hc[i];g.lineTo(q[0],q[1]-.42*k);}g.stroke();
+    for(const q of[hc[1],hc[13]]){g.fillStyle=rad(g,q[0]-.1*k,q[1]-.1*k,0,.32*k,[[0,'#d8dce4'],[1,'#5a5e66']]);g.beginPath();g.arc(q[0]-.3*k,q[1],.28*k,0,TAU);g.fill();}}
+  else if(CUP.kind==='facet'){
+    // A squared handle, flat-sided like the facets, in the same matte glaze: lit on top, darker on its side.
+    const B=CUP.body,pts=[[rx*.92,-h*.78],[rx+2.6*k,-h*.82],[rx+3.1*k,-h*.7],[rx+3.1*k,-h*.36],[rx+2.5*k,-h*.26],[bx*.98,-h*.26]];
+    const hp=ptsPath(tube(pts,1.35*k,1.25*k));g.fillStyle=lin(g,0,-h*.85,0,-h*.2,[[0,shade(B,.05)],[1,shade(B,-.3)]]);g.fill(hp);
+    g.save();g.clip(hp);g.fillStyle=lin(g,rx+2.4*k,0,rx+3.6*k,0,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.35)']]);g.fillRect(rx,-h,5*k,h);g.restore();
+    g.strokeStyle=rgba(mixC(B,'#e8dcc8',.55),.45);g.lineWidth=.08*k;g.beginPath();for(const q of pts.slice(0,4))g.lineTo(q[0],q[1]-.6*k);g.stroke();}
+  else{
+    // A clear glass loop, seen through, its edges catching the light.
+    const hc=[];bez([rx*.97,-h*.78],[rx+3.5*k,-h*.84],[rx+3.4*k,-h*.2],[bx*.99,-h*.22],14,hc);const tp=tube(hc,1.3*k,1.15*k),hp=ptsPath(tp);
+    g.fillStyle='rgba(205,225,235,.1)';g.fill(hp);g.strokeStyle='rgba(235,245,250,.35)';g.lineWidth=.08*k;g.stroke(hp);
+    g.strokeStyle='rgba(255,255,255,.45)';g.lineWidth=.1*k;g.beginPath();for(let i=2;i<12;i++){const q=hc[i];g.lineTo(q[0]-.1*k,q[1]-.38*k);}g.stroke();}
 }
-function drawCup(g,c,level,tilt){
-  const{x,rx,h,ry,bx,k}=c,y=Y(c.y)-(CUP.saucer?.55*k:0),B=CUP.body;
-  g.save();g.translate(x,y);g.rotate(tilt||0);
-  // The handle, a glazed loop: darker underneath, a highlight along the top.
-  const hp=new Path2D();hp.moveTo(rx*.9,-h*.8);hp.bezierCurveTo(rx+3.6*k,-h*.86,rx+3.4*k,-h*.2,bx*.97,-h*.22);
-  g.lineCap='round';g.strokeStyle=shade(B,-.45);g.lineWidth=1.6*k;g.stroke(hp);g.strokeStyle=shade(B,-.08);g.lineWidth=1.1*k;g.stroke(hp);
-  g.save();g.translate(-.18*k,-.25*k);g.strokeStyle='rgba(255,252,245,.4)';g.lineWidth=.3*k;g.stroke(hp);g.restore();
-  // The body, a glazed cylinder lit from above and to the left.
-  const body=new Path2D();body.moveTo(-rx,-h);body.bezierCurveTo(-rx,-h*.45,-bx*1.05,-h*.15,-bx,0);body.ellipse(0,0,bx,ry*.8,0,Math.PI,0,true);body.bezierCurveTo(bx*1.05,-h*.15,rx,-h*.45,rx,-h);body.closePath();
-  g.fillStyle=lin(g,-rx,0,rx,0,[[0,shade(B,-.55)],[.15,shade(B,-.28)],[.36,shade(B,.06)],[.46,shade(B,.2)],[.6,B],[.86,shade(B,-.32)],[1,shade(B,-.5)]]);g.fill(body);
-  g.save();g.clip(body);
-  g.fillStyle=lin(g,-rx*.28,0,rx*.12,0,[[0,'rgba(255,248,236,0)'],[.5,'rgba(255,248,236,.42)'],[1,'rgba(255,248,236,0)']]);g.fillRect(-rx*.28,-h,rx*.4,h+ry);
-  g.fillStyle=lin(g,rx*.7,0,rx,0,[[0,rgba(RIM,0)],[1,rgba(RIM,.38)]]);g.fillRect(rx*.7,-h,rx*.32,h+ry);
-  g.fillStyle=lin(g,0,-h*.45,0,ry,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.34)']]);g.fillRect(-rx,-h*.45,rx*2,h*.45+ry);
-  g.fillStyle=lin(g,0,-h*.2,0,ry,[[0,'rgba(255,150,70,0)'],[1,'rgba(255,150,70,.16)']]);g.fillRect(-rx,-h*.2,rx*2,h*.2+ry);
-  g.restore();
-  // The lip, then the inside: the far wall in shadow, the coffee lower as it goes down.
-  g.fillStyle=lin(g,-rx,0,rx,0,[[0,shade(B,-.12)],[.45,shade(B,.22)],[1,shade(B,-.08)]]);g.beginPath();g.ellipse(0,-h,rx,ry,0,0,TAU);g.fill();
-  g.fillStyle=lin(g,0,-h-ry,0,-h+ry,[[0,shade(B,-.5)],[1,shade(B,-.12)]]);g.beginPath();g.ellipse(0,-h,rx*.93,ry*.86,0,0,TAU);g.fill();
-  if(level>.01){g.save();g.beginPath();g.ellipse(0,-h,rx*.93,ry*.86,0,0,TAU);g.clip();
-    const drop=(1-level)*h*.78,cr=lerp(rx*.93,bx*.95,(1-level)*.85),cy=-h+drop,cry=ry*.82*(cr/rx);
-    g.fillStyle=rad(g,-cr*.15,cy-cry*.1,0,cr,[[0,'#3a1c0c'],[.7,'#28130a'],[.9,'#5e3418'],[1,'#86532e']]);g.beginPath();g.ellipse(0,cy,cr,cry,0,0,TAU);g.fill();
-    g.fillStyle=rad(g,cr*.25,cy-cry*.2,0,cr*.4,[[0,'rgba(255,228,186,.55)'],[1,'rgba(255,228,186,0)']]);g.beginPath();g.ellipse(cr*.25,cy-cry*.2,cr*.4,cry*.32,0,0,TAU);g.fill();
-    g.fillStyle=rgba(RIM,.14);g.beginPath();g.ellipse(-cr*.32,cy-cry*.35,cr*.3,cry*.2,0,0,TAU);g.fill();
-    // Crema turning slowly, and a few small bubbles caught at the rim.
-    g.save();g.translate(0,cy);g.scale(1,cry/cr);g.rotate(t*.06);g.lineCap='round';
-    for(let i=0;i<5;i++){const r0=cr*(.25+i*.13),a0=i*1.7;g.strokeStyle=`rgba(170,110,64,${(.16-i*.015).toFixed(3)})`;g.lineWidth=cr*.05;g.beginPath();g.arc(0,0,r0,a0,a0+1.4+i*.3);g.stroke();}
-    g.fillStyle='rgba(210,160,110,.45)';for(let i=0;i<9;i++){const a=i*.71+h3(i,2,7),d=cr*(.84+h3(i,3,7)*.1);g.beginPath();g.arc(Math.cos(a)*d,Math.sin(a)*d,cr*(.012+h3(i,4,7)*.02),0,TAU);g.fill();}
+function drawCup(g,c,level){
+  if(ICED)return drawRocks(g,c,level);
+  const{x,rx,h,ry,bx,k}=c,y=Y(c.y);g.save();g.translate(x,y);
+  const body=new Path2D();body.moveTo(-rx,-h);body.lineTo(-bx,0);body.ellipse(0,0,bx,ry*.85,0,Math.PI,0,true);body.lineTo(rx,-h);body.closePath();
+  cupHandle(g,c);
+  if(CUP.kind==='ti'){
+    // Titanium, coloured by the oxide on it: bare metal at the foot, then bronze, violet and blue toward the lip.
+    // Brushed round its circumference, so the lights spread into soft vertical sheens rather than points.
+    // The oxide is laid on in thin rings from the foot up, each ring an ellipse, so the colour bands curve round.
+    const OX=[[0,'#7c7e86'],[.1,'#9a7444'],[.32,'#8a5a3a'],[.48,'#6a3e7e'],[.68,'#3a4892'],[.86,'#2a5a8e'],[1,'#7e828c']],oxAt=f=>{for(let i=1;i<OX.length;i++)if(f<=OX[i][0])return mixC(OX[i-1][1],OX[i][1],(f-OX[i-1][0])/(OX[i][0]-OX[i-1][0]));return OX[OX.length-1][1];};
+    g.save();g.clip(body);
+    for(let i=0;i<=48;i++){const f=i/48,yy=-f*h+ry*.9;g.fillStyle=oxAt(f);g.beginPath();g.ellipse(0,yy-ry*.9,rAt(c,yy-ry*.9)+.05*k,ry*.9+.05*k,0,0,TAU);g.fill();}
+    g.fillStyle=lin(g,-rx,0,rx,0,[[0,'rgba(0,0,0,.62)'],[.14,'rgba(0,0,0,.3)'],[.4,'rgba(255,255,255,.06)'],[.52,'rgba(255,255,255,.1)'],[.64,'rgba(0,0,0,.06)'],[.9,'rgba(0,0,0,.48)'],[1,'rgba(0,0,0,.62)']]);g.fillRect(-rx,-h,rx*2,h+ry);
+    // Brushed round the cup: each fine line follows the curve.
+    g.lineWidth=.04*k;for(let i=0;i<110;i++){const yy=-h3(i,1,51)*h,a=.025+h3(i,2,51)*.045;g.strokeStyle=h3(i,3,51)<.5?`rgba(255,255,255,${a.toFixed(3)})`:`rgba(0,0,0,${a.toFixed(3)})`;g.beginPath();bandArc(g,c,yy);g.stroke();}
+    for(const[lx,col,a]of glints(x)){const gx=clamp((lx-x)/(VW*.35),-1,1)*rx*.55;g.fillStyle=lin(g,gx-rx*.12,0,gx+rx*.12,0,[[0,rgba(col,0)],[.5,rgba(col,a*.16)],[1,rgba(col,0)]]);g.fillRect(gx-rx*.12,-h,rx*.24,h);}
+    g.fillStyle=rgba(RIM,.14);g.fillRect(rx*.9,-h,rx*.1,h+ry);g.fillRect(-rx,-h,rx*.07,h+ry);
+    g.fillStyle=lin(g,0,-h*.25,0,ry,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.4)']]);g.fillRect(-rx,-h*.25,rx*2,h*.25+ry);
     g.restore();
-    g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,-h-ry*.3,rx*.93,ry*.62,0,0,TAU);g.fill();
+    // A rolled lip of bare metal.
+    cupMouth(g,c,level,'#9a9ca4','#5a5c64');
+    g.strokeStyle='rgba(30,30,36,.6)';g.lineWidth=.12*k;g.beginPath();g.ellipse(0,-h+.3*k,rx*.99,ry*.98,0,Math.PI*.05,Math.PI*.95);g.stroke();}
+  else if(CUP.kind==='facet'){
+    // Eight flat facets, each lit by how it faces the light. The glaze thins and pales along the edges, and stops
+    // short of the foot, which is left as raw clay.
+    const B=CUP.body,N=8,off=.2,foot=.9*k,fs=[];
+    for(let i=0;i<N;i++){const a0=off+i/N*TAU,a1=off+(i+1)/N*TAU,m=(a0+a1)/2;if(Math.sin(m)>-.1)fs.push([a0,a1,m]);}
+    fs.sort((p,q)=>Math.sin(p[2])-Math.sin(q[2]));
+    const at=(a,top)=>[Math.cos(a)*(top?rx:bx),(top?-h:0)+Math.sin(a)*(top?ry:ry*.85)];
+    for(const[a0,a1,m]of fs){const L=.5+.5*(Math.cos(m)*-.55+Math.sin(m)*.62),t0=at(a0,1),t1=at(a1,1),b0=at(a0,0),b1=at(a1,0);
+      const fp=new Path2D();fp.moveTo(...t0);fp.lineTo(...t1);fp.lineTo(...b1);fp.lineTo(...b0);fp.closePath();
+      g.fillStyle=lin(g,0,-h,0,0,[[0,shade(B,(L-.55)*.6+.04)],[1,shade(B,(L-.55)*.6-.12)]]);g.fill(fp);
+      // The glaze stops at a line that runs straight across each flat facet, from corner to corner round the cup.
+      const fr=lerp(bx,rx,foot/h),f0=[Math.cos(a0)*fr,-foot+Math.sin(a0)*ry*.87],f1=[Math.cos(a1)*fr,-foot+Math.sin(a1)*ry*.87];
+      g.save();g.clip(fp);poly(g,[f0,f1,[b1[0],b1[1]+ry],[b0[0],b0[1]+ry]]);g.fillStyle=lin(g,0,-foot,0,ry,[[0,shade('#a88a68',(L-.6)*.5)],[1,shade('#8a6e52',(L-.6)*.5)]]);g.fill();
+        g.strokeStyle=rgba(shade(B,-.4),.5);g.lineWidth=.1*k;g.beginPath();g.moveTo(...f0);g.lineTo(...f1);g.stroke();
+        for(let i=0;i<30;i++){g.fillStyle=`rgba(255,255,255,${(.02+h3(i,m*7,3)*.04).toFixed(3)})`;g.fillRect((h3(i,m*7,1)*2-1)*rx,-h3(i,m*7,2)*h,.06*k,.06*k);}g.restore();
+      g.strokeStyle=rgba(mixC(B,'#e8dcc8',.55),.5);g.lineWidth=.09*k;g.beginPath();g.moveTo(...t0);g.lineTo(...b0);g.stroke();}
+    for(const[lx,col,a]of glints(x)){const gx=clamp((lx-x)/(VW*.35),-1,1)*rx*.5;g.fillStyle=rgba(col,a*.08);g.fillRect(gx-rx*.08,-h*.9,rx*.16,h*.6);}
+    cupMouth(g,c,level,mixC(B,'#e8dcc8',.25),B);}
+  else{
+    // Double-walled glass: the coffee sits in the inner wall and seems to float, with clear air beneath it.
+    const gap=.5*k,base=1.9*k,top=-base-(h-base-.4*k)*(.06+.86*level),iTop=-h+.25*k;
+    const inner=new Path2D();inner.moveTo(-(rx-gap),iTop);inner.lineTo(-(bx-gap),-base);inner.ellipse(0,-base,bx-gap,ry*.75,0,Math.PI,0,true);inner.lineTo(rx-gap,iTop);inner.closePath();
+    g.save();g.clip(body);seeThrough(g,x,y,-rx,-h,rx*2,h+ry,1.2,.85);g.fillStyle='rgba(200,222,232,.06)';g.fill(body);g.restore();
+    if(level>.01){g.save();g.clip(inner);g.beginPath();g.rect(-rx,top,rx*2,h);g.clip();
+      g.fillStyle=lin(g,-rx,0,rx,0,[[0,'#120804'],[.4,'#2a1408'],[.62,'#3c1e0c'],[1,'#100602']]);g.fillRect(-rx,top,rx*2,-top);
+      g.fillStyle=lin(g,0,-base-1.5*k,0,-base+ry,[[0,'rgba(0,0,0,0)'],[1,'rgba(110,60,25,.35)']]);g.fillRect(-rx,-base-1.5*k,rx*2,1.5*k+ry);g.restore();
+      const cr=lerp(bx-gap,rx-gap,(-top-base)/(h-base))*.98;hotCoffee(g,top,cr,ry*.8*(cr/rx),k,x);}
+    g.strokeStyle='rgba(220,236,244,.28)';g.lineWidth=.08*k;g.stroke(inner);
+    // The two walls fuse in a rounded lip.
+    g.strokeStyle='rgba(235,245,250,.32)';g.lineWidth=.1*k;g.beginPath();g.ellipse(0,-h,rx,ry,0,0,TAU);g.stroke();g.beginPath();g.ellipse(0,-h+.12*k,rx-gap,ry*.82,0,0,TAU);g.stroke();
+    g.fillStyle='rgba(255,255,255,.1)';poly(g,[[-rx*.62,-h*.95],[-rx*.52,-h*.95],[-bx*.5,-h*.08],[-bx*.6,-h*.08]]);g.fill();
+    g.fillStyle=rgba(RIM,.12);poly(g,[[rx*.84,-h],[rx*.94,-h],[bx*.94,0],[bx*.84,0]]);g.fill();
+    g.strokeStyle='rgba(225,240,248,.22)';g.lineWidth=.08*k;g.stroke(body);}
+  g.restore();
+}
+// An ice cube: a rounded, glassy block catching the light along its top edge.
+function iceCube(g,x,y,s,a){g.save();g.translate(x,y);g.rotate(a);rrect(g,-s/2,-s/2,s,s,s*.18);g.fillStyle='rgba(222,236,242,.24)';g.fill();
+  g.strokeStyle='rgba(240,248,252,.4)';g.lineWidth=s*.04;g.stroke();g.fillStyle='rgba(255,255,255,.4)';g.fillRect(-s*.34,-s*.36,s*.32,s*.05);g.fillStyle='rgba(255,255,255,.14)';g.fillRect(-s*.36,-s*.22,s*.05,s*.4);g.restore();}
+// A clear ice sphere: lit round its upper edge, a bright point, and the coffee dark through it.
+function iceSphere(g,x,y,r){g.fillStyle=rad(g,x-r*.2,y-r*.3,r*.1,r,[[0,'rgba(230,242,248,.3)'],[.8,'rgba(210,228,236,.18)'],[1,'rgba(240,248,252,.45)']]);g.beginPath();g.arc(x,y,r,0,TAU);g.fill();
+  g.strokeStyle='rgba(240,248,252,.35)';g.lineWidth=r*.05;g.beginPath();g.arc(x,y,r*.96,Math.PI*1.1,Math.PI*1.75);g.stroke();g.fillStyle='rgba(255,255,255,.6)';g.beginPath();g.ellipse(x-r*.38,y-r*.42,r*.12,r*.07,-.6,0,TAU);g.fill();}
+// The heavy tumbler for iced coffee. Its base is thick cut glass: rows of facets, each bending a different part of
+// the street into it, so the base glints in separate neon colours and throws small coloured patches on the wood.
+function drawRocks(g,c,level){
+  const{x,rx,h,ry,bx,k}=c,y=Y(c.y),T=CUP.tint,base=1.9*k,wall=.35*k,top=-base-(h-base)*(.06+.84*level),sr=lerp(bx,rx,-top/h)-wall,ice=coffee.ice;
+  const cols=[...new Set(SIGNS.filter(s=>s.x>-10&&s.x<VW+10).map(s=>s.col))].concat(['#ffcf7a','#9ad8ff']);
+  // Light through the cut base, split into colours on the wood.
+  g.save();g.globalCompositeOperation='lighter';for(let i=0;i<6;i++){const a=.25+h3(i,1,61)*(Math.PI-.5),d=bx*(1.1+h3(i,2,61)*.5),px=x+Math.cos(a)*d,py=y+Math.sin(a)*ry*1.4+ry*.3,col=cols[(i*2)%cols.length],r=(.9+h3(i,3,61)*.8)*k;
+    g.save();g.translate(px,py);g.scale(1,.3);g.fillStyle=rad(g,0,0,0,r,[[0,rgba(col,.14)],[1,rgba(col,0)]]);g.fillRect(-r,-r,r*2,r*2);g.restore();}g.restore();
+  g.save();g.translate(x,y);
+  const glass=new Path2D();glass.moveTo(-rx,-h);glass.lineTo(-bx,0);glass.ellipse(0,0,bx,ry*.85,0,Math.PI,0,true);glass.lineTo(rx,-h);glass.closePath();
+  g.save();g.clip(glass);seeThrough(g,x,y,-rx,-h,rx*2,h+top,1.15,.85);g.restore();
+  g.fillStyle='rgba(200,220,230,.06)';g.fill(glass);
+  const inside=new Path2D();inside.moveTo(-rx+wall,-h);inside.lineTo(-bx+wall,-base);inside.ellipse(0,-base,bx-wall,ry*.75,0,Math.PI,0,true);inside.lineTo(rx-wall,-h);inside.closePath();
+  if(level>.01){g.save();g.clip(inside);g.beginPath();g.rect(-rx,top,rx*2,-top);g.clip();
+    if(CUP.tonic)g.fillStyle=lin(g,0,top,0,-base,[[0,T[0]],[.45,T[1]],[1,T[2]]]);else g.fillStyle=lin(g,-rx,0,rx,0,[[0,T[0]],[.38,T[1]],[.62,T[2]],[1,T[0]]]);g.fillRect(-rx,top,rx*2,-top);
+    if(CUP.milk)for(let i=0;i<7;i++){const f=i/6,cx=Math.sin(t*.15+i*1.7)*sr*.45,cy=top+(-top-base)*(.15+f*.7),r=(1.4+h3(i,7,11)*1.6)*k;g.fillStyle=rad(g,cx,cy,0,r*1.6,[[0,'rgba(214,186,150,.18)'],[1,'rgba(214,186,150,0)']]);g.fillRect(cx-r*1.6,cy-r*1.6,r*3.2,r*3.2);}
+    if(CUP.tonic){g.fillStyle='rgba(220,200,170,.35)';for(let i=0;i<24;i++){const ph=(t*(.12+h3(i,2,17)*.12)+h3(i,3,17))%1,bx2=(h3(i,4,17)-.5)*sr*1.6,by2=-base-ph*(-base-top);g.beginPath();g.arc(bx2,by2,(.06+h3(i,5,17)*.06)*k,0,TAU);g.fill();}}
+    g.restore();
+    g.fillStyle=rgba(T[2],.9);g.beginPath();g.ellipse(0,top,sr,ry*.8*(sr/rx),0,0,TAU);g.fill();
+    // Ice: one big sphere, or two large cubes, floating nine tenths under.
+    g.save();g.clip(inside);
+    const iz=(.55+.45*ice);
+    if(CUP.sphere){const r=sr*.55*iz;iceSphere(g,(h3(1,1,63)-.5)*sr*.3,top+r*.8,r);}else{for(let i=0;i<2;i++){const s2=sr*.62*iz;iceCube(g,(i?.32:-.3)*sr,top+s2*.42+(i?.3*k:0),s2,(h3(i,6,11)-.5)*.6);}}
+    g.fillStyle=rgba(T[1],.7);g.fillRect(-rx,top,rx*2,-top-base);g.restore();
+    if(CUP.sphere){const r=sr*.55*iz,cx=(h3(1,1,63)-.5)*sr*.3;g.save();g.beginPath();g.rect(-rx,-h-2*k,rx*2,top+h+2*k);g.clip();iceSphere(g,cx,top+r*.8,r);g.restore();}
+    else for(let i=0;i<2;i++){const s2=sr*.62*iz,cy2=top+s2*.42+(i?.3*k:0);g.save();g.beginPath();g.rect(-rx,-h-2*k,rx*2,top+h+2*k);g.clip();iceCube(g,(i?.32:-.3)*sr,cy2,s2,(h3(i,6,11)-.5)*.6);g.restore();}
+    g.fillStyle='rgba(255,225,180,.18)';g.beginPath();g.ellipse(sr*.3,top-ry*.15,sr*.2,ry*.12,0,0,TAU);g.fill();}
+  // The thick cut base: two rows of facets, each glinting a different colour bent in from outside.
+  {g.save();g.clip(glass);g.beginPath();g.rect(-rx,-base,rx*2,base+ry);g.clip();
+    // Mostly clear: the wood behind shows through, flipped and squeezed by the solid glass. Faint coffee colour
+    // from above, crisp facet edges, and only a few facets catching a glint of neon, brightest along one edge.
+    g.save();g.scale(-1,1);seeThrough(g,x,y,-rx,-base,rx*2,base+ry,1.4,.7);g.restore();
+    g.fillStyle=lin(g,0,-base,0,ry,[[0,rgba(T[1],.45)],[.35,'rgba(200,215,225,.08)'],[1,'rgba(200,215,225,.14)']]);g.fillRect(-rx,-base,rx*2,base+ry);
+    // A diamond cut all the way round: crossing diagonal cuts, so across the front the diamonds narrow toward the sides
+    // and their points follow the curve of the glass. Only the ones facing us are drawn.
+    const n=14,pt=(a,yy)=>[Math.cos(a)*bx,yy+Math.sin(a)*ry*.85],y0=-base,ym=-base*.5,y1=0;
+    for(let i=0;i<n;i++){const a0=i/n*TAU,a1=a0+TAU/n,m=(a0+a1)/2,face=Math.sin(m);if(face<.05)continue;
+      const fp=[pt(a0,ym),pt(m,y0),pt(a1,ym),pt(m,y1)];poly(g,fp);
+      const r=h3(i,0,65);if(r<.3){const col=cols[(i*3)%cols.length];g.fillStyle=lin(g,fp[1][0],y0,fp[3][0],y1,[[0,rgba(col,.45*face)],[.5,rgba(col,.12)],[1,rgba(col,0)]]);g.fill();}
+      else{g.fillStyle=`rgba(225,236,244,${(.02+r*.06*face).toFixed(3)})`;g.fill();}
+      // Each diamond is cut as two sloping faces, so one half catches more light than the other.
+      poly(g,[fp[0],fp[1],fp[3]]);g.fillStyle=`rgba(255,255,255,${(.03*face).toFixed(3)})`;g.fill();
+      poly(g,fp);g.strokeStyle=`rgba(240,248,252,${(.1+.18*face).toFixed(3)})`;g.lineWidth=.04*k;g.stroke();
+      if(h3(i,0,67)<.2){const c0=pt(m,ym-base*.1);g.fillStyle='rgba(255,255,255,.7)';g.fillRect(c0[0]-.08*k*face,c0[1],.16*k*face,.06*k);}}
     g.restore();}
-  g.strokeStyle='rgba(255,252,245,.5)';g.lineWidth=.16*k;g.beginPath();g.ellipse(0,-h,rx-.08*k,ry-.06*k,0,Math.PI*.05,Math.PI*.95);g.stroke();
+  // Walls: thick glass, darker just inside each side, with soft highlights; the rim.
+  g.fillStyle='rgba(10,16,22,.24)';poly(g,[[-rx,-h],[-rx+wall,-h],[-bx+wall,-base],[-bx,-base]]);g.fill();poly(g,[[rx-wall,-h],[rx,-h],[bx,-base],[bx-wall,-base]]);g.fill();
+  g.fillStyle=lin(g,-rx,0,rx,0,[[0,'rgba(255,255,255,.1)'],[.06,'rgba(255,255,255,.02)'],[.94,'rgba(255,255,255,.02)'],[1,'rgba(255,255,255,.12)']]);g.fill(glass);
+  g.fillStyle='rgba(255,255,255,.1)';poly(g,[[-rx*.55,-h*.92],[-rx*.46,-h*.92],[-bx*.44,-base*1.1],[-bx*.53,-base*1.1]]);g.fill();
+  g.fillStyle=rgba(RIM,.14);poly(g,[[rx*.84,-h],[rx*.93,-h],[bx*.93,-base],[bx*.84,-base]]);g.fill();
+  g.strokeStyle='rgba(240,248,252,.34)';g.lineWidth=.12*k;g.beginPath();g.ellipse(0,-h,rx,ry,0,0,TAU);g.stroke();g.strokeStyle='rgba(240,248,252,.18)';g.beginPath();g.ellipse(0,-h+.1*k,rx-wall,ry*.82,0,0,TAU);g.stroke();
+  // Condensation on the cold part, below the coffee's surface.
+  {g.save();g.clip(glass);const ct=Math.min(top+1*k,-h*.3);g.fillStyle=lin(g,0,ct,0,ry,[[0,'rgba(225,236,242,.02)'],[.3,'rgba(225,236,242,.06)'],[1,'rgba(225,236,242,.05)']]);g.fillRect(-rx,ct,rx*2,-ct+ry);
+    for(let i=0;i<110;i++){const v=h3(i,1,13),yy=ct+v*(-ct+ry*.6),half=lerp(bx,rx,-yy/h),xx=(h3(i,2,13)*2-1)*half*.96,big=h3(i,4,13)<.12,r=(big?.3+h3(i,3,13)*.2:.07+h3(i,3,13)*.12)*k;
+      g.fillStyle='rgba(205,222,232,.1)';g.beginPath();g.ellipse(xx,yy,r,r*(big?1.3:1.1),0,0,TAU);g.fill();g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.arc(xx-r*.32,yy-r*.38,r*(big?.22:.3),0,TAU);g.fill();}
+    g.restore();}
+  // A steel straw, sometimes.
+  if(CUP.straw){const ax=-sr*.2,ay=top,sx1=rx*.6,sy1=-h-4*k,w=.5*k,dx=sx1-ax,dy=sy1-ay,dl=Math.hypot(dx,dy),nx=-dy/dl,ny=dx/dl,mx=(ax+sx1)/2,my=(ay+sy1)/2;
+    g.fillStyle=lin(g,mx-nx*w/2,my-ny*w/2,mx+nx*w/2,my+ny*w/2,[[0,'#3a3e46'],[.3,'#e8ecf2'],[.5,'#9aa0aa'],[1,'#2a2e36']]);g.fill(ptsPath(tube([[ax,ay],[sx1,sy1]],w,w)));
+    g.save();g.translate(sx1,sy1);g.rotate(Math.atan2(dy,dx)+Math.PI/2);g.fillStyle='#16181c';g.beginPath();g.ellipse(0,0,w*.5,w*.22,0,0,TAU);g.fill();g.strokeStyle='#c8ccd4';g.lineWidth=.05*k;g.stroke();g.restore();}
   g.restore();
 }
 // Steam: a few tapering ribbons that rise and wander on smooth noise, thin out as they climb, and are softened with
@@ -627,35 +809,67 @@ function drawCandle(g){
   g.restore();
 }
 // A small bud vase of clear glass with a little water, and a daisy on a bent stem.
-function leaf(g,x0,y0,x1,y1,k){const p=new Path2D();p.moveTo(x0,y0);p.quadraticCurveTo((x0+x1)/2-.2*k,y0-1.4*k,x1,y1);p.quadraticCurveTo((x0+x1)/2+.4*k,y0+.3*k,x0,y0);g.fillStyle=lin(g,x0,y0,x1,y1,[[0,'#355e2a'],[1,'#74a254']]);g.fill(p);g.strokeStyle='rgba(200,230,170,.35)';g.lineWidth=.06*k;g.beginPath();g.moveTo(x0,y0);g.quadraticCurveTo((x0+x1)/2,y0-.6*k,x1,y1);g.stroke();}
+// A leaf: a pointed blade with a finely toothed edge, a pale midrib and side veins. Curled, it shows its paler underside.
+function leaf(g,x0,y0,x1,y1,wd,under){
+  const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),nx=-dy/L,ny=dx/L,pts=[];
+  for(const side of[1,-1]){const row=[];for(let i=0;i<=16;i++){const f=i/16,w=Math.sin(Math.PI*Math.pow(f,.8))*wd*(1-f*.15)*(i%2&&i<15?1.08:1)*side;row.push([x0+dx*f+nx*w,y0+dy*f+ny*w]);}pts.push(side>0?row:row.reverse());}
+  const p=ptsPath(pts[0].concat(pts[1]));
+  g.fillStyle=lin(g,x0+nx*wd,y0+ny*wd,x0-nx*wd,y0-ny*wd,under?[[0,'#7a9a62'],[1,'#56784a']]:[[0,'#5e8e44'],[.5,'#3e6a2e'],[1,'#26461c']]);g.fill(p);
+  g.save();g.clip(p);g.strokeStyle=under?'rgba(220,240,200,.35)':'rgba(190,230,160,.4)';g.lineWidth=wd*.08;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
+  g.strokeStyle='rgba(190,230,160,.2)';g.lineWidth=wd*.04;for(let i=1;i<7;i++){const f=i/8,px=x0+dx*f,py=y0+dy*f;for(const sd of[1,-1]){g.beginPath();g.moveTo(px,py);g.quadraticCurveTo(px+dx*.05+nx*wd*.4*sd,py+dy*.05+ny*wd*.4*sd,px+dx*.1+nx*wd*.8*sd,py+dy*.1+ny*wd*.8*sd);g.stroke();}}
+  g.fillStyle=lin(g,x0,y0,x1,y1,[[0,'rgba(0,0,0,0)'],[1,rgba(RIM,.18)]]);g.fill(p);g.restore();
+  g.strokeStyle=rgba(RIM,.35);g.lineWidth=wd*.05;g.beginPath();for(const q of pts[0])g.lineTo(q[0],q[1]);g.stroke();}
+// A daisy turned a little toward you: white petals backlit by the window, glowing at their edges, with fine veins;
+// a domed centre packed with florets in a spiral, and the shadow it casts on the petals round it.
 function daisy(g,x,y,r,col){
-  g.save();g.translate(x,y);g.scale(1,.62);g.rotate(.2);
-  const n=20;
-  for(const back of[1,0])for(let i=0;i<n;i++){if(i%2!==back)continue;const a=i/n*TAU+h3(i,1,5)*.16,l=r*(.82+h3(i,2,5)*.26),lit=Math.sin(a)>0;
-    g.save();g.rotate(a);g.fillStyle=lin(g,0,0,l,0,[[0,shade(col,-.4)],[.3,col],[1,shade(col,lit?.05:-.2)]]);g.beginPath();g.ellipse(l*.55,0,l*.5,r*.15,0,0,TAU);g.fill();
-    g.strokeStyle='rgba(110,90,80,.18)';g.lineWidth=r*.02;g.beginPath();g.moveTo(r*.25,0);g.lineTo(l*.9,0);g.stroke();g.restore();}
-  g.fillStyle=rad(g,-r*.08,-r*.08,0,r*.32,[[0,'#f2c23a'],[.7,'#d4921a'],[1,'#a2660e']]);g.beginPath();g.arc(0,0,r*.3,0,TAU);g.fill();
-  g.fillStyle='rgba(110,64,8,.5)';for(let i=0;i<16;i++){const a=i*2.4,d=Math.sqrt(i/16)*r*.24;g.fillRect(Math.cos(a)*d,Math.sin(a)*d,r*.04,r*.04);}
+  g.save();g.translate(x,y);g.rotate(.2);
+  const n=22;
+  for(const back of[1,0])for(let i=0;i<n;i++){const a=i/n*TAU+h3(i,1,5)*.14,sa=Math.sin(a);if((sa<0)!==!!back)continue;const l=r*(.86+h3(i,2,5)*.24),w=r*(.15+h3(i,3,5)*.04),foreshort=.55+.45*Math.abs(Math.cos(a));
+    g.save();g.scale(1,.62);g.rotate(a);g.scale(1,1/foreshort*.9);
+    const pp=new Path2D();pp.moveTo(r*.22,0);pp.bezierCurveTo(l*.45,-w*1.2,l*.9,-w,l,-w*.2);pp.lineTo(l*.97,0);pp.lineTo(l,w*.2);pp.bezierCurveTo(l*.9,w,l*.45,w*1.2,r*.22,0);
+    const lit=sa>0?1:.72;g.fillStyle=lin(g,r*.2,0,l,0,[[0,mixC(col,'#c8c890',.35)],[.25,shade(col,-.1*(1-lit))],[1,shade(col,(lit-1)*.35)]]);g.fill(pp);
+    g.save();g.clip(pp);g.strokeStyle='rgba(150,140,120,.22)';g.lineWidth=r*.012;for(const o of[-.4,0,.4]){g.beginPath();g.moveTo(r*.3,o*w*.4);g.quadraticCurveTo(l*.6,o*w*.7,l*.95,o*w*.3);g.stroke();}
+      g.fillStyle=rgba(RIM,.18*lit);g.fillRect(l*.55,-w*1.3,l*.5,w*2.6);g.restore();
+    g.restore();}
+  // Shadow of the centre on the petals, then the domed centre with its spiral of florets.
+  g.fillStyle=rad(g,r*.05,r*.08,0,r*.5,[[0,'rgba(60,40,10,.35)'],[1,'rgba(60,40,10,0)']]);g.beginPath();g.ellipse(r*.05,r*.08,r*.5,r*.34,0,0,TAU);g.fill();
+  g.fillStyle=rad(g,-r*.08,-r*.1,0,r*.34,[[0,'#f6cc4a'],[.6,'#d6941c'],[1,'#8a560c']]);g.beginPath();g.ellipse(0,0,r*.32,r*.24,0,0,TAU);g.fill();
+  for(let i=0;i<70;i++){const a=i*2.39996,d=Math.sqrt(i/70)*r*.29,fx=Math.cos(a)*d,fy=Math.sin(a)*d*.75,sz=r*.022*(1.1-d/(r*.32)*.4);g.fillStyle=d<r*.1?'#f8d860':'#c8841a';g.beginPath();g.arc(fx,fy,sz,0,TAU);g.fill();g.fillStyle='rgba(255,240,180,.5)';g.fillRect(fx-sz*.4,fy-sz*.6,sz*.5,sz*.4);}
+  g.fillStyle='rgba(255,250,220,.25)';g.beginPath();g.ellipse(-r*.08,-r*.09,r*.12,r*.06,0,0,TAU);g.fill();
   g.restore();
 }
 function drawVase(g){
   if(!PROPS.vase)return;const k=sc(21)*2,x=VASEX,y=Y(21),top=[.6*k,-12.4*k];
-  softShadow(g,x+.3*k,y+.3*k,3*k,.9*k,.45);
+  softShadow(g,x+.3*k,y+.3*k,3.2*k,.95*k,.5);
+  // Light through the glass and the water pools on the wood in front of it.
+  g.save();g.globalCompositeOperation='lighter';g.translate(x+.2*k,y+.6*k);g.scale(1,.3);g.fillStyle=rad(g,0,0,0,2.4*k,[[0,'rgba(220,240,255,.14)'],[1,'rgba(220,240,255,0)']]);g.fillRect(-2.4*k,-2.4*k,4.8*k,4.8*k);g.restore();
   g.save();g.translate(x,y);
-  g.strokeStyle='rgba(66,104,46,.75)';g.lineWidth=.3*k;g.beginPath();g.moveTo(-.4*k,-.6*k);g.lineTo(.15*k,-6*k);g.stroke();
   const v=new Path2D();v.moveTo(-.55*k,-6.4*k);v.bezierCurveTo(-.6*k,-4.6*k,-2.2*k,-3.8*k,-2.2*k,-1.8*k);v.bezierCurveTo(-2.2*k,-.4*k,-1.4*k,0,0,0);v.bezierCurveTo(1.4*k,0,2.2*k,-.4*k,2.2*k,-1.8*k);v.bezierCurveTo(2.2*k,-3.8*k,.6*k,-4.6*k,.55*k,-6.4*k);v.closePath();
-  g.fillStyle='rgba(200,225,235,.1)';g.fill(v);
+  // What's behind the vase, squeezed and flipped by the round belly of water, the way a glass of water bends it.
+  const sx0=Math.round((x-2.6*k)*S),sy0=Math.round((y-4*k)*S),sw=Math.round(5.2*k*S),sh=Math.round(4*k*S);
+  if(sx0>=0&&sy0>=0&&sx0+sw<=CW){g.save();g.clip(v);g.beginPath();g.rect(-2.3*k,-3.7*k,4.6*k,3.7*k);g.clip();g.translate(0,0);g.scale(-1,1);g.globalAlpha=.7;g.drawImage(g.canvas,sx0,sy0,sw,sh,-2.2*k,-3.7*k,4.4*k,3.7*k);g.globalAlpha=1;g.restore();}
+  g.fillStyle='rgba(200,225,235,.08)';g.fill(v);
   g.save();g.clip(v);
-  g.fillStyle=lin(g,0,-3.6*k,0,0,[[0,'rgba(170,214,224,.26)'],[1,'rgba(80,130,140,.42)']]);g.fillRect(-3*k,-3.6*k,6*k,4*k);
-  g.strokeStyle='rgba(230,250,255,.5)';g.lineWidth=.12*k;g.beginPath();g.ellipse(0,-3.6*k,1.9*k,.3*k,0,0,TAU);g.stroke();
-  g.fillStyle=lin(g,-2.2*k,0,2.2*k,0,[[0,'rgba(20,30,40,.4)'],[.22,'rgba(0,0,0,0)'],[.78,'rgba(0,0,0,0)'],[1,'rgba(20,30,40,.4)']]);g.fillRect(-2.3*k,-6.5*k,4.6*k,6.6*k);
+  // Water, and the stem inside it, shifted sideways where it enters, as the water bends the light.
+  g.fillStyle=lin(g,0,-3.6*k,0,0,[[0,'rgba(150,200,210,.16)'],[1,'rgba(70,120,130,.3)']]);g.fillRect(-3*k,-3.6*k,6*k,4*k);
+  g.strokeStyle='rgba(70,110,50,.85)';g.lineWidth=.32*k;g.lineCap='round';g.beginPath();g.moveTo(.35*k,-.5*k);g.lineTo(.6*k,-3.6*k);g.stroke();
+  g.strokeStyle='rgba(66,104,46,.75)';g.lineWidth=.3*k;g.beginPath();g.moveTo(.1*k,-3.6*k);g.lineTo(.15*k,-6.4*k);g.stroke();
+  g.strokeStyle='rgba(235,250,255,.65)';g.lineWidth=.1*k;g.beginPath();g.ellipse(0,-3.6*k,1.92*k,.3*k,0,0,TAU);g.stroke();
+  g.fillStyle=lin(g,-2.2*k,0,2.2*k,0,[[0,'rgba(20,30,40,.45)'],[.12,'rgba(0,0,0,0)'],[.88,'rgba(0,0,0,0)'],[1,'rgba(20,30,40,.45)']]);g.fillRect(-2.3*k,-6.5*k,4.6*k,6.6*k);
+  // The thick glass base.
+  g.fillStyle='rgba(210,230,238,.22)';g.beginPath();g.ellipse(0,-.35*k,1.6*k,.4*k,0,0,TAU);g.fill();
   g.restore();
-  g.lineCap='round';g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=.14*k;g.beginPath();g.moveTo(-1.4*k,-3.4*k);g.quadraticCurveTo(-1.9*k,-2*k,-1.3*k,-.7*k);g.stroke();
-  g.strokeStyle=rgba(RIM,.4);g.beginPath();g.moveTo(1.6*k,-3*k);g.quadraticCurveTo(1.95*k,-1.9*k,1.5*k,-.9*k);g.stroke();
-  g.strokeStyle='rgba(230,245,250,.35)';g.lineWidth=.1*k;g.beginPath();g.ellipse(0,-6.4*k,.6*k,.16*k,0,0,TAU);g.stroke();
-  g.strokeStyle=lin(g,0,-6.4*k,0,top[1],[[0,'#467636'],[1,'#68984a']]);g.lineWidth=.28*k;g.beginPath();g.moveTo(0,-6.4*k);g.bezierCurveTo(.2*k,-8.4*k,.9*k,-10*k,top[0],top[1]);g.stroke();
-  leaf(g,.15*k,-8.2*k,-1.6*k,-9.2*k,k);
-  daisy(g,top[0],top[1]-.4*k,1.9*k,PROPS.flower);
+  g.lineCap='round';g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=.12*k;g.beginPath();g.moveTo(-1.4*k,-3.4*k);g.quadraticCurveTo(-1.95*k,-2*k,-1.35*k,-.7*k);g.stroke();
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.06*k;g.beginPath();g.moveTo(-.9*k,-3.8*k);g.quadraticCurveTo(-1.2*k,-2.6*k,-.95*k,-1.4*k);g.stroke();
+  g.strokeStyle=rgba(RIM,.45);g.lineWidth=.1*k;g.beginPath();g.moveTo(1.6*k,-3*k);g.quadraticCurveTo(1.95*k,-1.9*k,1.5*k,-.9*k);g.stroke();
+  g.strokeStyle='rgba(230,245,250,.4)';g.lineWidth=.08*k;g.beginPath();g.ellipse(0,-6.4*k,.6*k,.16*k,0,0,TAU);g.stroke();
+  // The stem: a slender tube, lit on one side, with fine hairs; two leaves, one curled to show its underside.
+  const sc3=[];bez([.15*k,-6.4*k],[.3*k,-8.4*k],[.95*k,-10*k],top,10,sc3);
+  g.fillStyle=lin(g,-.2*k,0,.4*k,0,[[0,'#7aa858'],[.5,'#4a7a34'],[1,'#2a4a1e']]);g.fill(ptsPath(tube(sc3,.34*k,.24*k)));
+  g.strokeStyle='rgba(200,230,170,.35)';g.lineWidth=.03*k;for(let i=1;i<sc3.length-1;i++){const q=sc3[i];g.beginPath();g.moveTo(q[0]-.14*k,q[1]);g.lineTo(q[0]-.26*k,q[1]-.1*k);g.stroke();}
+  leaf(g,sc3[3][0],sc3[3][1],sc3[3][0]-2.4*k,sc3[3][1]-1.4*k,.45*k,false);
+  leaf(g,sc3[5][0],sc3[5][1],sc3[5][0]+1.8*k,sc3[5][1]-.7*k,.35*k,true);
+  daisy(g,top[0],top[1]-.4*k,2*k,PROPS.flower);
   g.restore();
 }
 // An open hardback, its pages bowing up toward the spine, lines of print, and a ribbon marker.
@@ -715,9 +929,10 @@ function drawNotepad(g){
 }
 // The title and author on a spine, sized to fit, in gold on dark cloth or dark ink on pale.
 function spine(g,b,w,h){
-  const[title,author,sc2]=b.book,light=hex(b.col).reduce((a,v)=>a+v,0)>420,ink=light?'rgba(40,28,20,.85)':'rgba(226,196,124,.92)',font=BFONT[sc2];
+  if(!b.book)return;
+  const{title,author,script}=b.book,vert=script==='japanese'||script==='chinese',light=hex(b.col).reduce((a,v)=>a+v,0)>420,ink=light?'rgba(40,28,20,.85)':'rgba(226,196,124,.92)',font=BFONT[script]||SERIF;
   g.save();g.fillStyle=ink;g.textAlign='center';g.textBaseline='middle';
-  if(sc2==='v'){
+  if(vert){
     // Characters stacked top to bottom, the author smaller at the foot.
     // The title takes the upper 56% of the spine and the author the lowest 22%, so they never meet.
     const tc=[...title],ac=[...author],fs=Math.min(w*.62,h*.56/(tc.length*1.08)),as=Math.min(fs*.72,w*.5,h*.22/(ac.length*1.08));
@@ -761,50 +976,9 @@ function drawShelf(g){
   g.fillStyle=shade(wood,.35);g.fillRect(x-W/2,y-H,sd,.25*c);g.fillRect(x+W/2-sd,y-H,sd,.25*c);
 }
 
-/* ---------- the hand ---------- */
-// Your hand comes in from the bottom right, takes the cup by the handle and lifts it toward you.
-const HAND_D={reach:1.3,grip:.35,lift:1.1,sip:2,lower:1.1,let:.3,back:1.2};
+/* ---------- the cup ---------- */
 function cupRest(){const k=sc(8)*1.45;return{x:CUPX,y:8,k};}
-function cupNow(){
-  const r=cupRest();if(hand.state==='off'||hand.state==='reach'||hand.state==='grip'||hand.state==='let'||hand.state==='back')return{...r,lift:0};
-  let f=hand.state==='lift'?ease(hand.k):hand.state==='lower'?1-ease(hand.k):1;
-  return{x:lerp(r.x,r.x+7,f),y:lerp(r.y,-10,f),k:lerp(r.k,r.k*1.7,f),lift:f};}
-function drawHand(g){
-  if(hand.state==='off')return;
-  const c=cupNow(),G=cupGeom(c.x,c.y,c.k),cy=Y(c.y)-(CUP.saucer&&!c.lift?.55*c.k:0);
-  const grip=[c.x+G.rx+2.2*c.k,cy-G.h*.52],start=[CUPX+30,VH+16];
-  let f=1;if(hand.state==='reach')f=ease(hand.k);else if(hand.state==='back')f=1-ease(hand.k);
-  const hx=lerp(start[0],grip[0],f),hy=lerp(start[1],grip[1],f),k=c.k,A=ARM,chrome=A.kind==='chrome';
-  const elbow=[hx+16*k+10,hy+22*k+12],wrist=[hx+3.6*k,hy+2.8*k];
-  // The forearm, shaded across its width.
-  const dx=wrist[0]-elbow[0],dy=wrist[1]-elbow[1],dl=Math.hypot(dx,dy),nx=-dy/dl,ny=dx/dl,mid=[(elbow[0]+wrist[0])/2,(elbow[1]+wrist[1])/2];
-  const across=(w,stops)=>lin(g,mid[0]-nx*w,mid[1]-ny*w,mid[0]+nx*w,mid[1]+ny*w,stops);
-  const fore=ptsPath(tube([elbow,[lerp(elbow[0],wrist[0],.5),lerp(elbow[1],wrist[1],.5)],wrist],9.4*k,6.4*k));
-  if(chrome){g.fillStyle=across(4.6*k,[[0,'#3a4250'],[.18,'#e8eef6'],[.34,'#7a8494'],[.55,'#c8d2de'],[.8,'#4a5260'],[1,'#9aa6b6']]);g.fill(fore);
-    g.save();g.clip(fore);g.strokeStyle='rgba(20,24,32,.55)';g.lineWidth=.14*k;for(let i=1;i<5;i++){const p=[lerp(elbow[0],wrist[0],i/5),lerp(elbow[1],wrist[1],i/5)];g.beginPath();g.moveTo(p[0]-nx*6*k,p[1]-ny*6*k);g.lineTo(p[0]+nx*6*k,p[1]+ny*6*k);g.stroke();}
-    g.strokeStyle=rgba(A.trim,.8);g.lineWidth=.25*k;g.beginPath();g.moveTo(elbow[0]-nx*1.4*k,elbow[1]-ny*1.4*k);g.lineTo(wrist[0]-nx*1.4*k,wrist[1]-ny*1.4*k);g.stroke();g.restore();}
-  else{g.fillStyle=across(5*k,[[0,shade(A.col,.22)],[.45,A.col],[1,shade(A.col,-.55)]]);g.fill(fore);
-    // Folds in the sleeve, and a cuff at the wrist.
-    g.save();g.clip(fore);g.strokeStyle=rgba(shade(A.col,-.6),.45);g.lineWidth=.35*k;g.lineCap='round';
-    for(let i=0;i<4;i++){const p=[lerp(elbow[0],wrist[0],.2+i*.17),lerp(elbow[1],wrist[1],.2+i*.17)];g.beginPath();g.moveTo(p[0]-nx*3.6*k,p[1]-ny*3.6*k);g.quadraticCurveTo(p[0]+dx/dl*1.2*k,p[1]+dy/dl*1.2*k,p[0]+nx*2*k,p[1]+ny*2*k);g.stroke();}
-    const cf=[lerp(elbow[0],wrist[0],.86),lerp(elbow[1],wrist[1],.86)];g.strokeStyle=rgba(shade(A.col,-.5),.7);g.lineWidth=.5*k;g.beginPath();g.moveTo(cf[0]-nx*5*k,cf[1]-ny*5*k);g.lineTo(cf[0]+nx*5*k,cf[1]+ny*5*k);g.stroke();
-    g.fillStyle=across(5*k,[[0,'rgba(255,190,120,.2)'],[.4,'rgba(255,190,120,0)']]);g.fillRect(mid[0]-14*k,mid[1]-14*k,28*k,28*k);g.restore();}
-  // The hand: back of the hand, fingers curled through the handle, thumb along the top.
-  const skin=A.skin;
-  g.save();g.translate(hx,hy);g.rotate(-.35);
-  const sk=(y0,y1)=>chrome?lin(g,0,y0,0,y1,[[0,'#eef2f8'],[.4,'#8a94a4'],[.7,'#c4ccd8'],[1,'#4a5260']]):lin(g,0,y0,0,y1,[[0,shade(skin,.14)],[.55,skin],[1,shade(skin,-.38)]]);
-  const back=new Path2D();back.moveTo(6*k,4.2*k);back.quadraticCurveTo(5.4*k,-1.6*k,2.6*k,-3.2*k);back.quadraticCurveTo(.4*k,-3.6*k,-.9*k,-2.4*k);back.lineTo(-1.2*k,3.6*k);back.quadraticCurveTo(2*k,5.6*k,6*k,4.2*k);back.closePath();
-  g.fillStyle=sk(-3.6*k,5*k);g.fill(back);
-  if(!chrome){g.strokeStyle=rgba(shade(skin,-.3),.35);g.lineWidth=.12*k;for(let i=0;i<3;i++){g.beginPath();g.moveTo(-.4*k,-1*k+i*1.4*k);g.quadraticCurveTo(2*k,-.4*k+i*1.2*k,4.4*k,.6*k+i*.9*k);g.stroke();}}
-  for(let i=3;i>=0;i--){const o=i*1.32*k,fp=tube([[-.6*k,-1.7*k+o],[-2.3*k,-1.6*k+o],[-3.1*k,-.5*k+o],[-2.5*k,.5*k+o]],1.45*k,1.15*k);
-    g.fillStyle=sk(-2.4*k+o,1*k+o);g.fill(ptsPath(fp));
-    g.fillStyle=chrome?'rgba(255,255,255,.5)':rgba(shade(skin,.3),.7);g.beginPath();g.ellipse(-2.75*k,.25*k+o,.32*k,.42*k,.4,0,TAU);g.fill();
-    g.strokeStyle=chrome?rgba(A.trim,.6):rgba(shade(skin,-.45),.5);g.lineWidth=.1*k;g.beginPath();g.moveTo(-.8*k,-.95*k+o);g.lineTo(-2.4*k,-.9*k+o);g.stroke();
-    if(!chrome){g.fillStyle='rgba(255,236,220,.25)';g.beginPath();g.ellipse(-1*k,-1.9*k+o,.5*k,.25*k,0,0,TAU);g.fill();}}
-  const th=tube([[2.4*k,-2.7*k],[.6*k,-3.7*k],[-1.5*k,-3.9*k]],1.6*k,1.25*k);g.fillStyle=sk(-4.6*k,-2.4*k);g.fill(ptsPath(th));
-  g.fillStyle=chrome?'rgba(255,255,255,.55)':rgba(shade(skin,.32),.75);g.beginPath();g.ellipse(-1.2*k,-4.1*k,.45*k,.3*k,0,0,TAU);g.fill();
-  g.restore();
-}
+// How far the cup or glass is raised: by its saucer, or by the LED coaster under a glass.
 
 /* ---------- the refill robot ---------- */
 // A hatch in the counter opens and a little robot rises out of it on a lift. It rolls over to the cup, swings its
@@ -870,7 +1044,7 @@ function drawBot(g){
   glow(g,x+5.4*k,by-15*k,1.4*k,BOT.eye,(t*2)%1<.5?.8:.25);glow(g,x-2.8*k,by-8.6*k,3.2*k,BOT.eye,.35);
   g.restore();
   // The arm: steel, from the top of the body, folded at rest and out over the cup when it pours.
-  const sh=[x-1.6*k,by-11*k],c=cupRest(),G=cupGeom(c.x,c.y,c.k),mouth=[c.x+.8*c.k,Y(c.y)-G.h-(CUP.saucer?.55*c.k:0)];
+  const sh=[x-1.6*k,by-11*k],c=cupRest(),G=cupGeom(c.x,c.y,c.k),mouth=[c.x+.8*c.k,Y(c.y)-G.h];
   const fold=[x-3.6*k,by-14.6*k],reach=[mouth[0]+1.4*k,mouth[1]-3.4*k],a=bot.arm;
   const tip=[lerp(fold[0],reach[0],a),lerp(fold[1],reach[1],a)],mid=[(sh[0]+tip[0])/2+.6*k,Math.min(sh[1],tip[1])-(2.6+a*2.4)*k];
   g.lineCap='round';g.lineJoin='round';
@@ -1063,7 +1237,8 @@ function drawGlass(g){
   g.restore();}
 
 /* ---------- events ---------- */
-const SCHED={car:{m:5.5,f:1},walker:{m:9,f:3},near:{m:24,f:8},dog:{m:110,f:40},flyer:{m:28,f:6},sip:{m:40,f:14},cat:{m:300,f:90},rain:{m:420,f:240},window:{m:24,f:5},sign:{m:60,f:20},bill:{m:70,f:30},bulb:{m:200,f:100}};
+// It's late, so the street is mostly empty: a car now and then, the odd person, a dog once in a while.
+const SCHED={car:{m:22,f:6},walker:{m:110,f:20},near:{m:200,f:45},dog:{m:420,f:120},flyer:{m:75,f:20},sip:{m:40,f:14},cat:{m:300,f:90},rain:{m:420,f:240},window:{m:40,f:10},sign:{m:60,f:20},bill:{m:70,f:30},bulb:{m:200,f:100}};
 const nextEv={};for(const k in SCHED)nextEv[k]=expo(SCHED[k].f);
 function fire(k){
   if(k==='car'){const v=newCar();
@@ -1074,35 +1249,39 @@ function fire(k){
   else if(k==='dog'){const d=newDog(chance(.6)),v=d.G===GAITS.gallop?'races':d.G===GAITS.walk?'ambles':'trots';log(d.near?`${cap(an(d.B.name))} ${v} past outside the window, on its own`:`${cap(an(d.B.name))} ${v} along the far pavement`);}
   else if(k==='flyer'){newFlyer();logOnce('flyer',90,'A flyer drifts across the sky between the towers');}
   else if(k==='sip')startSip();
-  else if(k==='cat'){if(!cat)newCat();}
-  else if(k==='rain'){if(raining){raining=false;log('The rain stops');}else if(chance(MOOD.rain+.12)){raining=true;log(pick(['It starts to rain. Drops gather on the glass','Rain starts to tap at the window','A light rain begins, blurring the neon']));}}
+  // The cat only comes on a hot-drink night.
+  else if(k==='cat'){if(!cat&&!ICED)newCat();}
+  // Nobody orders iced coffee on a rainy night, so an iced night stays dry.
+  else if(k==='rain'){if(raining){raining=false;log('The rain stops');}else if(chance(MOOD.rain+.12)&&!ICED){raining=true;log(pick(['It starts to rain. Drops gather on the glass','Rain starts to tap at the window','A light rain begins, blurring the neon']));}}
   else if(k==='window'){const w=pick(WINS.filter(w=>w.x<VW&&w.x>-6));if(w){w.want=1-w.want;w.rate=rr(.4,2);log(w.want?`A light goes on, ${FLOORS[w.f+1]||'top'} floor across the street`:`A window goes dark across the street`);}}
   else if(k==='sign'){const s=pick(SIGNS.filter(s=>s.x>-4&&s.x<XWR));if(chance(.2)){cafeOut=t+rr(.8,2.5);logOnce('cafe',120,'The sign on the window buzzes and flickers');return;}
     if(s){s.flick={t0:t,d:rr(.8,3),out:chance(.15)?rr(20,90):0};logOnce('sign',80,s.flick.out?`The ${s.word} sign across the street sputters out`:`The ${s.word} sign across the street flickers`);}}
   else if(k==='bill'){BILL.mode=pick(['koi','text','bars'].filter(m=>m!==BILL.mode));BILL.col=pick(NEON);BILL.col2=pick(NEON);BILL.word=pick(['SYNTH 9','NEW YOU','DREAM ON','CHROME SALE','NIGHT AIR','SLEEP IS OPTIONAL','UPGRADE','FEEL MORE']);logOnce('bill',120,'The big screen on the tower changes');}
   else if(k==='bulb'){if(DARK)return;const b=pick(BULBS);b.flick={t0:t,d:rr(.4,1.4)};logOnce('bulb',150,'One of the bulbs over the counter flickers');}
 }
+// Now and then the coffee starts going down, as if someone out of frame were drinking it, but so slowly that you
+// can't see it move: a few percent spread over somewhere between ten seconds and a minute, at a pace that varies.
+// You only notice later that there's less in the cup.
 function startSip(){
-  if(hand.state!=='off'||bot.state!=='off'||coffee.level<.04)return;
-  hand.state='reach';hand.k=0;hand.dur=HAND_D.reach;hand.amount=Math.min(coffee.level,rr(.1,.26));HAND_D.sip=rr(1.4,3.2);}
-function updateHand(dt){
-  if(hand.state==='off')return;hand.k+=dt/hand.dur;if(hand.k<1)return;
-  const nx={reach:'grip',grip:'lift',lift:'sip',sip:'lower',lower:'let',let:'back',back:'off'}[hand.state];
-  if(hand.state==='sip'){coffee.level=Math.max(0,coffee.level-hand.amount);stats.sips++;
-    const hot=coffee.temp;log(coffee.level<.04?pick(['You drain the last of the coffee','You finish the cup']):hot>.75?pick(['You take a careful sip. Still hot','You sip your coffee and watch the street','A sip of hot coffee']):hot>.4?pick(['You take a sip','You drink some coffee','Another sip, warm now']):pick(['You sip. It has gone lukewarm','A sip of cooling coffee','You drink. Nearly cold now']));
-    if(coffee.level<.04)refillAt=t+rr(8,40);}
-  hand.state=nx;hand.k=0;hand.dur=HAND_D[nx]||1;}
+  if(sip.left>0||bot.state!=='off'||coffee.level<.04)return;
+  sip.left=Math.min(coffee.level,rr(.05,.14));sip.rate=rr(.0018,.006);stats.sips++;
+  const end=coffee.level-sip.left<.04,hot=coffee.temp;
+  if(ICED)log(end?pick(['The glass is drained. Just ice left, clinking','The last of the coffee goes, the ice rattling']):CUP.straw?pick(['The level drops as someone takes a long pull through the straw','A slow sip through the straw','The coffee sinks in the glass, the ice settling']):pick(['The ice clinks and the coffee drops','The level in the glass falls a little','A long cold sip']));
+  else log(end?pick(['The last of the coffee is drunk','The cup is drained']):hot>.75?pick(['A careful sip. Still hot','The coffee goes down a little','A sip, and the steam swirls']):hot>.4?pick(['A sip','The coffee drops in the cup','Another sip, warm now']):pick(['A sip of lukewarm coffee','The cooling coffee goes down a little','A sip. Nearly cold now']));}
+function updateSip(dt){
+  if(sip.left<=0)return;const d=Math.min(sip.left,sip.rate*dt);coffee.level=Math.max(0,coffee.level-d);sip.left-=d;
+  if(sip.left<=1e-6){sip.left=0;if(coffee.level<.04){coffee.level=0;refillAt=t+rr(8,40);}}}
 function updateBot(dt){
-  if(bot.state==='off'){if(refillAt>0&&t>=refillAt&&hand.state==='off'){refillAt=-1;bot.state='open';bot.k=0;bot.dur=BOT_D.open;bot.x=hatchX();bot.arm=0;bot.tank=1;log(pick([`A hatch slides open in the counter and a ${BOT.name} rises out of it`,`The counter hatch opens. Up comes a ${BOT.name} with fresh coffee`]));}return;}
+  if(bot.state==='off'){if(refillAt>0&&t>=refillAt&&sip.left<=0){refillAt=-1;bot.state='open';bot.k=0;bot.dur=BOT_D.open;bot.x=hatchX();bot.arm=0;bot.tank=1;log(pick([`A hatch slides open in the counter and a ${BOT.name} rises out of it`,`The counter hatch opens. Up comes a ${BOT.name} with fresh coffee`]));}return;}
   bot.k+=dt/bot.dur;
   const k=botK(),stop=botStop(),home=hatchX();
   if(bot.state==='go')bot.x=lerp(home,stop,ease(bot.k));
   if(bot.state==='back')bot.x=lerp(stop,home,ease(bot.k));
   if(bot.state==='pour'){bot.arm=clamp(bot.k*5,0,1)*(bot.k>.88?1-(bot.k-.88)/.12:1);
-    if(bot.k>.2&&bot.k<.88){coffee.level=Math.min(.94,coffee.level+dt*.42);coffee.temp=Math.min(1,coffee.temp+dt*.8);bot.tank=Math.max(.15,bot.tank-dt*.3);}}
+    if(bot.k>.2&&bot.k<.88){coffee.level=Math.min(.94,coffee.level+dt*.42);if(!ICED)coffee.temp=Math.min(1,coffee.temp+dt*.8);bot.tank=Math.max(.15,bot.tank-dt*.3);}}
   if(bot.k<1)return;
   const next={open:'rise',rise:'go',go:'pour',pour:'back',back:'sink',sink:'shut',shut:'off'}[bot.state];
-  if(bot.state==='pour'){stats.refills++;coffee.temp=1;bot.arm=0;log(pick([`The ${BOT.name} tops up your cup and beeps once`,'A fresh pour. Steam rises again',`The ${BOT.name} fills your cup to the brim and rolls back home`]));}
+  if(bot.state==='pour'){stats.refills++;bot.arm=0;if(ICED){coffee.ice=1;log(pick([`The ${BOT.name} tops up your ${CUP.name.replace('glass of ','')} and drops in fresh ice`,'A fresh pour over new ice. The glass beads with cold again']));}else{coffee.temp=1;log(pick([`The ${BOT.name} tops up your cup and beeps once`,'A fresh pour. Steam rises again',`The ${BOT.name} fills your cup to the brim and rolls back home`]));}}
   if(bot.state==='shut')bot.x=0;
   bot.state=next;bot.k=0;bot.dur=next==='go'||next==='back'?Math.max(.6,Math.abs(home-stop)/(4.5*k)):next==='pour'?rr(2.8,4):BOT_D[next]||1;
 }
@@ -1129,7 +1308,7 @@ function update(dt){
   t+=dt;BILL.t+=dt;
   if(!warming)for(const k in SCHED){nextEv[k]-=dt;if(nextEv[k]<=0){nextEv[k]=expo(SCHED[k].m);fire(k);}}
   rainK+=((raining?1:0)-rainK)*Math.min(1,dt*.15);wet=clamp(wet+(raining?dt/90:-dt/400),0,1);
-  coffee.temp=Math.max(0,coffee.temp-dt/560*(coffee.temp+.2));
+  coffee.temp=Math.max(0,coffee.temp-dt/560*(coffee.temp+.2));if(ICED)coffee.ice=Math.max(.3,coffee.ice-dt/900);
   for(const w of WINS)w.lit+=(w.want-w.lit)*Math.min(1,dt*w.rate);
   for(const s of SIGNS){if(!s.flick){s.on=1;continue;}const e=t-s.flick.t0;if(e<s.flick.d)s.on=noise(t*30+s.x)>.45?1:.15;else if(s.flick.out&&e<s.flick.d+s.flick.out)s.on=0;else{s.flick=null;s.on=1;}}
   for(const b of BULBS){if(DARK){b.on=0;continue;}if(!b.flick){b.on=1;continue;}const e=t-b.flick.t0;b.on=e<b.flick.d?(noise(t*40+b.f*9)>.4?1:.3):1;if(e>=b.flick.d)b.flick=null;}
@@ -1152,7 +1331,7 @@ function update(dt){
     if(p.kind==='person'&&p.near&&!p.run&&!p.looked&&p.x>VW*.15&&p.x<XWR*.8&&chance(dt*.05)){p.looked=true;p.stop=rr(1.5,3);if(!warming)logOnce('look',60,'Someone outside glances in at the window and keeps walking');}
     if(p.x<-p.h*2-10||p.x>VW+p.h*2+10)walkers.splice(i,1);}
   for(let i=flyers.length-1;i>=0;i--){const f=flyers[i];f.x+=f.v*dt;if(f.x<-f.L-20||f.x>VW+20)flyers.splice(i,1);}
-  updateGlass(dt);updateHand(dt);updateBot(dt);updateCat(dt);
+  updateGlass(dt);updateSip(dt);updateBot(dt);updateCat(dt);
 }
 
 /* ---------- draw ---------- */
@@ -1164,7 +1343,8 @@ function drawOut(o){
   o.setTransform(OS,0,0,OS,0,0);
   drawBill(o);
   for(const f of flyers)drawFlyer(o,f);
-  o.save();o.globalCompositeOperation='lighter';for(const tw of TOW)if(tw.ant&&tw.x<VW+4&&(t*.8+tw.s)%2<.25)glow(o,tw.x+tw.w*.5,Y(tw.top)-8,1.6,'#ff3a3a',.9);o.restore();
+  o.save();o.globalCompositeOperation='lighter';for(const tw of TOW){if(tw.x>VW+4||tw.x+tw.w<-4)continue;const blink=(t*.8+tw.s)%2<.25;const tp=topOf(tw);if(tw.ant&&blink)glow(o,tw.x+tw.w*.5,Y(tp)-8,1.6,'#ff3a3a',.9);if(tw.roof==='spire'&&(t*.7+tw.s*1.3)%2.4<.3)glow(o,tw.x+tw.w*.5,Y(tp+tw.rh),1.4,'#ff3a3a',.85);}
+  for(const[x,yu,p]of TWK){const a=Math.max(0,noise(t*1.6+p)-.45)*1.4;if(a>.02)glow(o,x,Y(yu),1.1,'#e8eeff',a*.6);}o.restore();
   o.setTransform(1,0,0,1,0,0);o.drawImage(NEAR,0,0);o.setTransform(OS,0,0,OS,0,0);
   // Lit windows across the street, some with blinds or someone moving behind them.
   for(const w of WINS){if(w.lit<.02||w.x>VW+4||w.x<-8)continue;const y=Y(w.y+w.h);o.globalAlpha=w.lit;o.fillStyle=w.col;o.fillRect(w.x,y,w.w,w.h);
@@ -1233,13 +1413,10 @@ function draw(){
   drawVase(g);
   drawCandle(g);
   drawHatch(g);drawBot(g);
-  const rest=cupRest(),cn=cupNow();
-  if(CUP.saucer)drawSaucer(g,rest.x,rest.y,rest.k);
-  const str=clamp((coffee.temp-.12)/.8,0,1)*(coffee.level>.03?1:.15);
-  if(!cn.lift){const G=cupGeom(rest.x,rest.y,rest.k);if(!CUP.saucer)softShadow(g,rest.x+.6*rest.k,Y(rest.y)+.4*rest.k,G.rx*1.5,G.ry*1.4,.55);drawCup(g,G,coffee.level,0);drawSteam(g,rest.x,Y(rest.y)-G.h-(CUP.saucer?.55*rest.k:0),rest.k,str);}
+  const rest=cupRest();
+  const str=ICED?0:clamp((coffee.temp-.12)/.8,0,1)*(coffee.level>.03?1:.15);
+  {const G=cupGeom(rest.x,rest.y,rest.k);softShadow(g,rest.x+.6*rest.k,Y(rest.y)+.4*rest.k,G.rx*1.5,G.ry*1.4,.55);drawCup(g,G,coffee.level);drawSteam(g,rest.x,Y(rest.y)-G.h,rest.k,str);}
   drawBook(g);drawNotepad(g);
-  if(cn.lift){const G=cupGeom(cn.x,cn.y,cn.k);drawSteam(g,cn.x,Y(cn.y)-G.h,cn.k,str*(1-cn.lift));drawCup(g,G,coffee.level,-cn.lift*.25);}
-  drawHand(g);
   // Light: bulb halos, the candle's warm pool on the wood.
   g.globalCompositeOperation='lighter';
   for(const b of BULBS){if(b.on<=0)continue;const x=b.f*VW,y=b.drop+(VH-100)*.15+1.6;glow(g,x,y,18,b.warm,.2*b.on);g.save();g.translate(x,y);g.scale(.6,1);glow(g,0,0,7,'#fff0c0',.4*b.on);g.restore();}
@@ -1273,23 +1450,23 @@ function redrawCars(){for(const v of cars)v.spr=carSprite(v);}
 
 /* ---------- start ---------- */
 build();
-if(chance(MOOD.rain*.5)){raining=true;rainK=1;wet=1;}
-// Start with the street already moving.
-for(let i=0;i<ri(2,4);i++){const v=newCar();v.x=rr(-v.L,VW);}
-for(let i=0;i<ri(2,4);i++){const p=newWalker(false,false);p.x=rr(0,VW);}
-if(chance(.4)){const p=newWalker(true,false);p.x=rr(VW*.1,XWR*.8);}
-if(chance(.5))newFlyer(),flyers[0].x=rr(0,VW);
-if(chance(.2)){newCat();cat.x=cat.target;cat.state='curl';cat.k=rr(0,60);}
+if(chance(MOOD.rain*.5)&&!ICED){raining=true;rainK=1;wet=1;}
+// Start with the street much as it usually is this late: perhaps a car going by, perhaps someone across the road.
+if(chance(.4)){const v=newCar();v.x=rr(-v.L,VW);}
+if(chance(.35)){const p=newWalker(false,false);p.x=rr(0,VW);}
+if(chance(.1)){const p=newWalker(true,false);p.x=rr(VW*.1,XWR*.8);}
+if(chance(.3))newFlyer(),flyers[0].x=rr(0,VW);
+if(chance(.2)&&!ICED){newCat();cat.x=cat.target;cat.state='curl';cat.k=rr(0,60);}
 stats.cars=stats.people=0;
 warming=true;for(let i=0;i<120;i++)update(1/60);warming=false;
-log(`${MOOD.name}. A window seat at ${CAFE==='CAFE'||CAFE==='COFFEE'?'the cafe':CAFE}, ${an(CUP.name)} of coffee in front of you`);
-log(coffee.temp>.85?'The coffee is hot, still steaming':'The coffee has cooled a little');
+log(`${MOOD.name}. A window seat at ${CAFE==='CAFE'||CAFE==='COFFEE'?'the cafe':CAFE}, ${ICED?an(CUP.name)+' in a heavy cut tumbler':an(CUP.name)+' of coffee'} in front of you`);
+log(ICED?'Ice floats in the glass and beads of water gather on the outside':coffee.temp>.85?'The coffee is hot, still steaming':'The coffee has cooled a little');
 if(DARK)log('The lights are off tonight. Just a candle burning beside the flower');
-{const t=SHELF.books.concat(SHELF.lean?[SHELF.lean]:[]).map(b=>b.book[0]);log(`On the little shelf: ${t.length>1?t.slice(0,-1).join(', ')+' and '+t[t.length-1]:t[0]}`);}
+{const t=SHELF.books.concat(SHELF.lean?[SHELF.lean]:[]).filter(b=>b.book).map(b=>b.book.title);if(t.length)log(`On the little shelf: ${t.length>1?t.slice(0,-1).join(', ')+' and '+t[t.length-1]:t[0]}`);}
 {const ex={book:'A book lies open beside the cup',notepad:'Your notepad lies beside the cup, a pen across the page'}[PROPS.extra];if(ex)log(ex);}
 if(cat)log(`A ${catName()} is already asleep on the counter`);
 if(raining)log('Rain runs down the glass');
-if(DEBUG)window.CF={stats,coffee,hand,bot,PROPS,SHELF,LIBRARY,get cat(){return cat;},cars:()=>cars,walkers:()=>walkers,fire,startSip,refill(){refillAt=t;coffee.level=0;},get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},draw:()=>draw(),step:dt=>update(dt),
+if(DEBUG)window.CF={stats,coffee,sip,bot,PROPS,CUP,ICED,NIGHT,get moonAt(){return MOONAT;},rebuild(){build();redrawCars();draw();},SHELF,LIBRARY,get cat(){return cat;},cars:()=>cars,walkers:()=>walkers,fire,startSip,refill(){refillAt=t;coffee.level=0;},get t(){return t;},get paused(){return NightCity.paused;},set paused(v){NightCity.paused=v;},draw:()=>draw(),step:dt=>update(dt),
   run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();NightCity.refresh();}};
 NightCity.run({step:1/60,update,draw,ui:()=>NightCity.stats(stats)});
 let rz=0;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{build();redrawCars();draw();},200);});
