@@ -47,7 +47,7 @@ const WORLD={
   off:[0,1,2,3,4,5,6,7].map(()=>rr(0,3000)),
   runway:chance(.5)?1:-1,airport:rr(1.1,1.5),highway:chance(.75),
   props:[],
-  edge:[],stones:[],logs:[],cons:[],
+  edge:[],stones:[],logs:[],tongues:[],cons:[],
 };
 for(const s of[-1,1]){const n=ri(1,2);for(let i=0;i<n;i++)WORLD.edge.push({u:s<0?rr(-.06,.05):rr(.95,1.06),h:rr(.85,1.4),w:rr(.75,1)});}
 for(let i=ri(2,4);i>0;i--){
@@ -80,10 +80,18 @@ const BUILD=[];
 }
 {
   const n=ri(9,13);
-  for(let i=0;i<n;i++)WORLD.stones.push({a:i/n*Math.PI*2+rr(-.15,.15),w:rr(3,5.5),h:rr(.5,.75),tone:rr(.8,1.2)});
-  // A teepee of leaning logs over two crossed ones. Positions are in fire units (one unit is a pixel at the standard size).
-  WORLD.logs.push({x1:-15,y1:1,x2:13,y2:-2,th:5,front:true},{x1:-12,y1:-2,x2:16,y2:1,th:5,front:false});
-  for(let i=ri(3,5);i>0;i--){const s=i%2?1:-1;WORLD.logs.push({x1:s*rr(7,14),y1:rr(-1,2),x2:-s*rr(-3,5),y2:-rr(10,22),th:rr(3.5,5),front:chance(.75)});}
+  for(let i=0;i<n;i++)WORLD.stones.push({a:i/n*Math.PI*2+rr(-.15,.15),w:rr(5,9),h:rr(.55,.8),tone:rr(.85,1.25)});
+  // A low stack over the coals, like a real campfire: thick logs lying across, and short ones on top pointing at us, cut ends showing.
+  // Positions are in fire units, one unit to a pixel at the standard size.
+  WORLD.logs.push({type:'lie',x1:-rr(15,20),y1:-5+rr(-1,1),x2:rr(15,20),y2:-5+rr(-1.5,1.5),th:rr(6,7),front:false});
+  // The front log lies across one side only, so the coals show on the other.
+  const fs=chance(.5)?-1:1;
+  WORLD.logs.push({type:'lie',x1:fs*rr(17,22),y1:3+rr(-1,1),x2:-fs*rr(-4,4),y2:-rr(0,2.5),th:rr(6,7.5),front:true});
+  const ends=ri(2,4);
+  for(let i=0;i<ends;i++)WORLD.logs.push({type:'end',x:lerp(-11,11,ends>1?i/(ends-1):.5)+rr(-2.5,2.5),y:-rr(5,8.5),r:rr(3.2,4.6),charred:chance(.35),front:chance(.8)});
+  if(chance(.5))WORLD.logs.push({type:'lie',x1:-rr(8,14),y1:-rr(7,11),x2:rr(6,13),y2:-rr(3,8),th:rr(4,5.5),front:true});
+  // Flames rise in a few tongues from the gaps between the logs.
+  for(let i=ri(4,6);i>0;i--)WORLD.tongues.push({x:rr(-15,15),w:rr(1.5,3),s:rr(.55,1),ph:rr(0,100)});
 }
 
 /* ---------- layout ---------- */
@@ -102,11 +110,12 @@ function layout(){
   spread=Math.round(clamp(W*.17,28,80)*WORLD.size);
   cx=Math.round(W*(tall?.5+WORLD.side*.19:WORLD.cityX));
   ax=Math.round(cx-WORLD.side*spread*WORLD.airport);ry=hz+Math.round(pd*.4);rl=Math.round(10*vk);
-  fireAlloc(Math.round(clamp(H*.24,52,100)));
+  fk=clamp(H/220,1,2.6);
+  fireAlloc(Math.round(clamp(H*.114,26,60)),Math.round(46*fk/2)*2);
   fx=Math.round(W/2);fy=Math.round(H*(tall?.8:.85));
   gy=hz+pd+Math.round(36*vk);
-  airGlow=glowSprite(Math.round(FH*1.5),[255,140,60],.22);
-  coalGlow=glowSprite(Math.round(FW*.7),[255,110,40],.35);
+  airGlow=glowSprite(Math.round(H*.22),[255,120,50],.2);
+  coalGlow=glowSprite(Math.round(30*fk),[255,90,40],.4);
   landGlow=glowSprite(4,[255,250,230],.6);
   moonGlow=glowSprite(Math.round((WORLD.moon?WORLD.moon.r:4)*3.5),[200,210,255],.2);
   [scratch,sctx]=mk(FW*2,FH*2);
@@ -275,14 +284,14 @@ function shadow(sh,ox,oy,len,w,str){
 function groundTop(x){return gy+Math.round((fbm(x/40+WORLD.off[6])-.5)*5*vk);}
 function paintFg(){
   const gb=buf(),ob=buf(1),of=buf(1),sh=new Float32Array(W*H);
-  const ringX=FW*.55,ringY=ringX*.3;
+  const ringX=30*fk,ringY=ringX*.32,CU=34*fk;
   for(let x=0;x<W;x++)for(let y=Math.max(0,groundTop(x));y<H;y++){
     const far=clamp((y-gy)/(H-gy),0,1);
     let c=mix([20,24,20],[30,34,24],far);
     const h=hash(x,y,81);c=mix(c,[38,40,28],h*.35);
     c=mix(c,[14,16,14],vn(x,y*2.5,16,86)*.55+clamp(1-(y-gy)/(10*vk),0,1)*.5);
     if(vn(x,y*2.5,9,87)>.72)c=mix(c,[42,50,30],.5);
-    const e=Math.hypot((x-fx)/(FW*1.7),(y-fy)/(FW*.5));
+    const e=Math.hypot((x-fx)/(CU*1.7),(y-fy)/(CU*.5));
     if(e<1)c=mix(c,[46,36,28],clamp((1-e)*2.2,0,1));
     if(e<.55)c=mix(c,[42,38,36],.6);
     if(e>1.1&&hash(x,y,82)<.05)c=[46,58,34];
@@ -292,7 +301,7 @@ function paintFg(){
   // Grass tufts.
   for(let i=0,n=Math.round(W*(H-gy)/90);i<n;i++){
     const x=Math.floor(hash(i,1,84)*W),y=gy+Math.floor(hash(i,2,84)*(H-gy));
-    if(Math.hypot((x-fx)/(FW*1.8),(y-fy)/(FW*.55))<1.1)continue;
+    if(Math.hypot((x-fx)/(CU*1.8),(y-fy)/(CU*.55))<1.1)continue;
     const h=1+Math.floor(hash(i,3,84)*3*vk);
     for(let j=0;j<h;j++){put(gb,x,y-j,[40,54,32]);if(j<h-1&&hash(i,j,85)<.5)put(gb,x+(hash(i,4,84)<.5?-1:1),y-j-1,[34,46,28]);}
   }
@@ -309,7 +318,7 @@ function paintFg(){
     const x=fx+Math.cos(st.a)*ringX,y=fy+1+Math.sin(st.a)*ringY,w=st.w*fk,h=w*st.h;
     const b=Math.sin(st.a)>0?of:ob;
     curDep=y;
-    blob(b,x,y,w/2,h,(nx,ny)=>{const t=st.tone;return ny<-.35?[96*t,92*t,90*t]:ny>.4?[44*t,42*t,44*t]:[66*t,64*t,66*t];});
+    blob(b,x,y,w/2,h,(nx,ny)=>{const t=st.tone;return ny<-.35?[150*t,142*t,134*t]:ny>.4?[74*t,68*t,66*t]:[112*t,106*t,100*t];});
     shadow(sh,x,y+h*.5,w*1.2,w,.7);
   }
   // Logs, a stump and a woodpile, wherever this night's camp put them.
@@ -326,7 +335,7 @@ function paintFg(){
     shadow(sh,cx,cy+1,len*.5,Math.max(len*Math.abs(gx)*.8,th*2),.7);
   }
   WORLD.props.forEach((p,pi)=>{
-    const ringR=FW*p.d,cx=fx+Math.cos(p.a)*ringR,cy=fy+Math.sin(p.a)*ringR*.3;
+    const ringR=CU*p.d,cx=fx+Math.cos(p.a)*ringR,cy=fy+Math.sin(p.a)*ringR*.3;
     if(p.kind==='log'){
       const ga=p.a+Math.PI/2+p.tilt,len=p.len*fk,th=Math.max(4,Math.round(p.th*fk));
       groundLog(cx,cy,len,th,ga,900+pi);
@@ -353,7 +362,7 @@ function paintFg(){
 // Every lit layer is painted twice, once in the cold of the night and once with the fire at full strength.
 // Each frame draws the cold one, then the lit one on top at the fire's brightness, so the clearing flickers with the flames.
 function bake(gb,ob,sh){
-  const amb=WORLD.moon?[.22,.24,.34]:[.16,.17,.26],fire=[1.9,1.1,.5],R0=Math.max(FH*.75,W*.07);
+  const amb=WORLD.moon?[.22,.24,.34]:[.16,.17,.26],fire=[1.9,1.1,.5],R0=Math.max(H*.17,W*.07);
   const ly=fy-FH*.3;
   const[bc,bg]=mk(W,H),[lc,lg]=mk(W,H);
   const bi=bg.createImageData(W,H),li=lg.createImageData(W,H),b=bi.data,l=li.data;
@@ -379,15 +388,15 @@ function bake(gb,ob,sh){
 // A heat field: every step each cell takes the heat of the cells below it, minus a cooling map that scrolls upward with the flames.
 // The holes in the cooling map are what tear tongues of flame loose.
 let FW=0,FH=0,heat,cool,CMH=0,scroll=0,edgeCool,coolRow,fireC,fctx,fimg;
-const PAL=[null,[110,22,10,140],[168,36,12,210],[214,64,16,255],[240,104,26,255],[252,146,40,255],[255,190,70,255],[255,226,130,255],[255,248,210,255]];
-function fireAlloc(h){
-  if(h===FH)return;
-  FH=h;FW=Math.round(FH*.56/2)*2;fk=FH/60;
+const PAL=[null,[110,22,10,140],[168,36,12,210],[214,60,16,240],[240,96,24,255],[252,132,36,255],[255,168,58,255],[255,206,110,255],[255,238,180,255]];
+function fireAlloc(h,w){
+  if(h===FH&&w===FW)return;
+  FH=h;FW=w;
   heat=new Float32Array(FW*FH);
   CMH=Math.ceil(FH*4/12)*12;cool=new Float32Array(FW*CMH);
   for(let y=0;y<CMH;y++)for(let x=0;x<FW;x++){const v=vn(x,y,6,101,CMH/6)*.6+vn(x,y,3,102,CMH/3)*.3+vn(x,y,2,103,CMH/2)*.1;cool[y*FW+x]=v*v*v*3.4;}
   // Extra cooling toward the sides, stronger higher up, gives the flames their taper.
-  edgeCool=new Float32Array(FW*FH);for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){const u=(x+.5-FW/2)/(FW/2);edgeCool[y*FW+x]=u*u*(.15+2.4*(1-y/FH)**2);}
+  edgeCool=new Float32Array(FW*FH);for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){const u=(x+.5-FW/2)/(FW/2);edgeCool[y*FW+x]=u**4*(.4+1.6*(1-y/FH)**2);}
   // The cooling map bites less near the base, so the body of the fire stays whole and only the tips tear.
   coolRow=new Float32Array(FH);for(let y=0;y<FH;y++)coolRow[y]=.3+1.1*(1-y/FH)**1.5;
   [fireC,fctx]=mk(FW,FH);fimg=fctx.createImageData(FW,FH);
@@ -395,11 +404,12 @@ function fireAlloc(h){
 let lightRaw=1,lean=0,fireAcc=0;
 function fireStep(){
   scroll=(scroll+1)%CMH;
-  const half=FW*.34,c0=FW/2-.5;
+  const c0=FW/2-.5,tg=WORLD.tongues;
   for(let r=0;r<3;r++){const y=FH-1-r;for(let x=0;x<FW;x++){
-    const u=(x-c0)/half,b=Math.max(0,1-u*u);
-    const p=Math.pow(b,.8)*(.55+.9*noise(x*.35+t*.3+40));
-    heat[y*FW+x]=fuel*p*(.7+.5*R())*(1-r*.12);
+    const xu=(x-c0)/fk,u=xu/20,b=Math.max(0,1-u*u);
+    let p=.22*b;
+    for(const g of tg){const px=g.x+(noise(t*.05+g.ph)-.5)*5,d=(xu-px)/g.w;p+=g.s*Math.exp(-d*d)*(.5+.9*noise(t*.25+g.ph*3));}
+    heat[y*FW+x]=fuel*Math.min(1.3,p)*(.7+.5*R())*(1-r*.12);
   }}
   lean=wind*.6+(noise(t*.45+7)-.5)*.45;
   const coolK=2/FH,sgn=lean<0?-1:1,al=Math.abs(lean);
@@ -413,50 +423,83 @@ function fireStep(){
       const h=v>0?v:0;heat[row+x]=h;sum+=h;
     }
   }
-  lightRaw=sum/(FW*FH*.16);
+  // The coals give a steady glow of their own, and the flames add to it.
+  lightRaw=.45+sum/(FW*FH)*4.5;
 }
 function drawFire(){
   const d=fimg.data;
   for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){
-    const i=(y*FW+x)*4;let q=Math.floor(Math.pow(heat[y*FW+x],.75)*8.6+(bayer(x,y)-.5)*.6+.1);
+    const i=(y*FW+x)*4;let q=Math.floor(Math.pow(heat[y*FW+x],1.05)*8.6+(bayer(x,y)-.5)*.6+.1);
     if(q<=0){d[i+3]=0;continue;}if(q>8)q=8;const p=PAL[q];d[i]=p[0];d[i+1]=p[1];d[i+2]=p[2];d[i+3]=p[3];
   }
   fctx.putImageData(fimg,0,0);
-  ctx.drawImage(fireC,fx-FW/2,fy-FH+2);
-  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3;ctx.drawImage(fireC,fx-FW/2,fy-FH+2);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  ctx.drawImage(fireC,fx-FW/2,fy-FH-Math.round(3*fk));
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.18;ctx.drawImage(fireC,fx-FW/2,fy-FH-Math.round(3*fk));ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
 }
 const EMB=[[40,12,8],[96,24,8],[178,52,14],[238,104,28],[255,170,60],[255,226,140]];
 const ember=v=>EMB[clamp(Math.floor(v*EMB.length),0,EMB.length-1)];
-const LOGTOP=[0,1,2,3,4,5].map(i=>mix([90,40,20],[255,150,60],i/5)),CHAR=[[14,10,9],[30,20,16]],BARK=[[44,30,22],[58,40,28]],CUT=[[118,88,58],[84,60,40]];
+const LOGTOP=[0,1,2,3,4,5].map(i=>mix([90,40,20],[255,150,60],i/5)),CHAR=[[16,10,8],[36,22,16]],BARK=[[72,46,30],[92,60,38]],CUT=[[118,88,58],[84,60,40]];
+// The bed of coals is most of the fire: a wide glow of red embers, flecked with ash, breathing slowly.
+const COAL=[[34,10,8],[86,18,8],[150,32,12],[208,56,18],[246,96,32],[255,146,60]],ASH=[[70,62,60],[96,88,84]];
+const coal=v=>COAL[clamp(Math.floor(v*COAL.length),0,COAL.length-1)];
 function drawCoals(){
-  const rx=FW*.46,ryc=Math.max(3,3.2*fk);
-  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=clamp(light*.8,0,1);
-  ctx.drawImage(coalGlow,Math.round(fx-coalGlow.width/2),Math.round(fy-coalGlow.height/2));
+  const rx=24*fk,ryc=Math.max(3,5.5*fk);
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=clamp(.5+light*.4,0,1);
+  ctx.drawImage(coalGlow,Math.round(fx-coalGlow.width/2),Math.round(fy-2-coalGlow.height/2));
   ctx.globalCompositeOperation='source-over';
-  for(let y=-Math.ceil(ryc);y<=1;y++)for(let x=-Math.ceil(rx);x<=Math.ceil(rx);x++){
+  for(let y=-Math.ceil(ryc);y<=Math.ceil(ryc*.5);y++)for(let x=-Math.ceil(rx);x<=Math.ceil(rx);x++){
     const e=(x/rx)**2+(y/ryc)**2;if(e>1)continue;
-    const v=clamp((1-e)*.7+noise(t*.35+hash(x,y,111)*60)*.55-.08+fuel*.12,0,1);
-    dot(fx+x,fy+1+y,ember(v));
+    const h=hash(x,y,112);
+    if(h<.1&&e>.3){dot(fx+x,fy-1+y,ASH[h<.04?1:0]);continue;}
+    const v=clamp((1-e)*.55+noise(t*.25+hash(x,y,111)*60)*.6-.12+fuel*.1,0,1);
+    dot(fx+x,fy-1+y,coal(v));
   }
   ctx.globalAlpha=1;
 }
+// A log lying across the pile: lit along the top, glowing red underneath where it sits in the coals, cut faces at both ends.
 function drawLog(g,id){
   const x1=fx+g.x1*fk,y1=fy+g.y1*fk,x2=fx+g.x2*fk,y2=fy+g.y2*fk;
-  const len=Math.ceil(Math.hypot(x2-x1,y2-y1)),th=Math.max(2,Math.round(g.th*fk)),steep=Math.abs(y2-y1)>Math.abs(x2-x1);
-  const litTop=LOGTOP[clamp(Math.round((light-.2)*5),0,5)];
-  // The side facing the flames is lit, the far side is a dark outline, and the outer end shows its cut face.
+  const len=Math.ceil(Math.hypot(x2-x1,y2-y1)),th=Math.max(3,Math.round(g.th*fk));
+  const litTop=LOGTOP[clamp(Math.round((light-.1)*5),0,5)],rx=24*fk;
   for(let i=0;i<=len;i++){
-    const px=Math.round(x1+(x2-x1)*i/len),py=Math.round(y1+(y2-y1)*i/len);
-    const core=Math.abs(px-fx)<6*fk&&py>fy-FH*.25,lit=steep&&px<fx?th-1:0,dark=th-1-lit;
+    const px=Math.round(x1+(x2-x1)*i/len),py=Math.round(y1+(y2-y1)*i/len),inCoals=Math.abs(px-fx)<rx*.9;
     for(let j=0;j<th;j++){
-      const X=steep?px-(th>>1)+j:px,Y=steep?py:py-(th>>1)+j;
-      let c=j===lit?litTop:j===dark?CHAR[0]:core?CHAR[1]:BARK[hash(id,i>>1,j+140)<.35?0:1];
-      if(i===0&&j!==dark)c=CUT[j===(th>>1)?1:0];
-      const h=hash(id,i,j+120);
-      if(i>0&&j!==dark&&(h<.08||(core&&h<.6))){const v=clamp(noise(t*.7+h*80+id*9)*1.1-.05+(core?.3:0),0,1);c=ember(v*.85);}
-      dot(X,Y,c);
+      const Y=py-(th>>1)+j,h=hash(id,i,j+120);
+      let c=j===0?litTop:j===th-1?CHAR[0]:BARK[hash(id,i>>1,j+140)<.35?0:1];
+      if(h<.3&&j>0&&j<th-1)c=CHAR[1];
+      if(inCoals&&j>=th-2){const v=clamp(noise(t*.3+h*80+id*9)*1.1+.1,0,1);c=coal(v);}
+      else if(h<.06&&j>0){const v=clamp(noise(t*.3+h*80+id*9)*1.2-.1,0,1);c=ember(v*.85);}
+      dot(px,Y,c);
     }
   }
+  for(const[ex,ey]of[[x1,y1],[x2,y2]])endFace(ex,ey-.5,Math.max(1.5,th*.32),th/2,id,false);
+}
+// A cut end: bark rim, pale rings of wood, a darker heart, and embers creeping in from the bottom edge.
+function endFace(cx0,cy0,rx,ryy,id,charred){
+  const shade=clamp(.55+light*.45,.5,1.15);
+  for(let y=Math.floor(-ryy);y<=Math.ceil(ryy);y++)for(let x=Math.floor(-rx);x<=Math.ceil(rx);x++){
+    const nx=x/rx,ny=y/ryy,d=Math.hypot(nx,ny);if(d>1)continue;
+    let c;
+    if(d>.8)c=CHAR[1];
+    else if(charred)c=hash(id,x+9,y+9)<.22?ember(clamp(noise(t*.35+hash(id,x,y)*70)*1.2,0,1)*.8):CHAR[hash(id,x,y+30)<.5?0:1];
+    else{const ring=Math.abs(d-.35)<.09||Math.abs(d-.62)<.08;const b=d<.15?WOOD[2]:ring?WOOD[1]:WOOD[0];c=WOODL[clamp(Math.round(shade*3.5),0,4)][WOOD.indexOf(b)];}
+    if(ny>.55&&d>.6)c=ember(clamp(noise(t*.3+id*5+x*.3)*1.1,0,1)*.9);
+    dot(cx0+x,cy0+y,c);
+  }
+}
+const WOOD=[[196,136,78],[160,104,60],[120,76,44]],WOODL=[0,1,2,3,4].map(i=>WOOD.map(c=>mix([60,30,16],mix(c,[255,160,90],.3),.35+i*.17)));
+// A short log pointing at us: its top runs back into the pile, and its round cut end faces the camera.
+function drawEndLog(g,id){
+  const cx0=fx+g.x*fk,cy0=fy+g.y*fk,r=Math.max(3,g.r*fk),back=r*.8;
+  const litTop=LOGTOP[clamp(Math.round((light-.1)*5),0,5)];
+  // The body is the round end swept back and up, so it reads as a cylinder rather than a box.
+  for(let y=Math.floor(-r-back);y<=Math.ceil(r);y++)for(let x=Math.floor(-r);x<=Math.ceil(r);x++){
+    if(Math.abs(x)>r)continue;
+    const half=Math.sqrt(Math.max(0,r*r-x*x)),top=-back-half;if(y<top||y>half)continue;
+    if(x*x+y*y<=r*r)continue;
+    dot(cx0+x,cy0+y,y<top+1.2?litTop:Math.abs(x)>r*.8?CHAR[0]:g.charred?CHAR[1]:BARK[hash(id,x,y+60)<.4?0:1]);
+  }
+  endFace(cx0,cy0,r,r,id,g.charred);
 }
 
 /* ---------- sparks, embers, ash and smoke ---------- */
@@ -469,7 +512,7 @@ function flameTop(){
 }
 function spark(kind){
   const[x,y]=kind==='pop'?[FW/2+rr(-FW*.25,FW*.25),FH-rr(3,8)*fk]:flameTop();
-  const s={kind,id:sid++,x:fx-FW/2+x,y:fy-FH+2+y,px:0,py:0,vx:rr(-4,4)*fk,vy:-rr(7,20)*fk,temp:rr(.8,1),cool:rr(.07,.24),turb:rr(5,18)*fk,buoy:rr(4,11)*fk,ground:0};
+  const s={kind,id:sid++,x:fx-FW/2+x,y:fy-FH-3*fk+y,px:0,py:0,vx:rr(-4,4)*fk,vy:-rr(7,20)*fk,temp:rr(.8,1),cool:rr(.07,.24),turb:rr(5,18)*fk,buoy:rr(4,11)*fk,ground:0};
   if(kind==='high'){s.cool*=.45;s.buoy*=1.3;}
   if(kind==='pop'){s.vx=rr(-22,22)*fk;s.vy=-rr(18,40)*fk;s.cool=rr(.05,.12);s.ground=fy+rr(-4,16)*fk;}
   if(kind==='ash'){s.vy=-rr(3,7)*fk;s.vx=0;s.temp=rr(.4,.8);s.cool=rr(.08,.15);s.y-=rr(4,14)*fk;}
@@ -478,7 +521,7 @@ function spark(kind){
 }
 function burst(n,pops){for(let i=0;i<n;i++)spark(chance(.25)?'high':'spark');for(let i=0;i<pops;i++)spark('pop');}
 function updateSparks(dt){
-  sparkAcc+=dt*(10+16*fuel)*(.6+.5*light);
+  sparkAcc+=dt*(6+10*fuel)*(.6+.5*light);
   while(sparkAcc>1){sparkAcc--;spark(chance(.22)?'high':'spark');}
   ashAcc+=dt*.6*fuel;while(ashAcc>1){ashAcc--;spark('ash');}
   for(let i=sparks.length-1;i>=0;i--){
@@ -613,8 +656,11 @@ function fire(k){
   switch(k){
     case'crackle':{const n=ri(6,26);burst(n,ri(1,n>14?7:3));if(n>18&&!warming)log('The fire cracks and throws a shower of sparks');break;}
     case'settle':{
-      flare=Math.min(.6,flare+rr(.2,.4));burst(ri(30,70),ri(3,8));
-      const g=pick(WORLD.logs.slice(2));g.y2=clamp(g.y2+rr(-3,5),-22,-8);g.x2=clamp(g.x2+rr(-3,3),-6,6);g.front=chance(.75);
+      flare=Math.min(.5,flare+rr(.15,.3));burst(ri(20,45),ri(3,7));
+      const g=pick(WORLD.logs);
+      if(g.type==='end'){g.y=clamp(g.y+rr(-.5,2),-10,-4);g.x=clamp(g.x+rr(-2,2),-14,14);g.charred=g.charred||chance(.3);}
+      else{g.y1=clamp(g.y1+rr(-1,1.5),-12,3);g.y2=clamp(g.y2+rr(-1,1.5),-12,3);}
+      const tg=pick(WORLD.tongues);tg.x=clamp(tg.x+rr(-5,5),-15,15);
       log('A log settles into the coals and the fire flares');break;
     }
     case'gust':{const d=chance(.5)?1:-1;gust={age:0,dur:rr(7,14),amp:d*rr(.4,.9)};log(`A gust leans the flames to the ${d>0?'right':'left'}`);break;}
@@ -714,9 +760,9 @@ function draw(){
   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   shimmer();
   drawCoals();
-  WORLD.logs.forEach((g,i)=>{if(!g.front)drawLog(g,i);});
+  WORLD.logs.forEach((g,i)=>{if(!g.front)(g.type==='end'?drawEndLog:drawLog)(g,i);});
   drawFire();
-  WORLD.logs.forEach((g,i)=>{if(g.front)drawLog(g,i);});
+  WORLD.logs.forEach((g,i)=>{if(g.front)(g.type==='end'?drawEndLog:drawLog)(g,i);});
   drawSmoke();
   for(const s of sparks)if(s.landed)drawSpark1(s);
   ctx.drawImage(fgF,0,0);ctx.globalAlpha=la;ctx.drawImage(fgFL,0,0);ctx.globalAlpha=1;
