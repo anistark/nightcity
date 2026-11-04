@@ -20,6 +20,7 @@ ogPath: ""
           <a class="scene" href="{{ s.url.slice(1) }}">
             <div class="preview">
               <iframe data-src="{{ s.url.slice(1) }}" title="Live preview of {{ s.data.title }}" tabindex="-1" aria-hidden="true"></iframe>
+              <span class="added">Added on <time datetime="{{ s.data.added }}">{{ s.data.added | cardDate }}</time></span>
             </div>
             <div class="info">
               <div>

@@ -72,7 +72,7 @@ A scene's `main.js` holds only its world. The shared runtime and the scene layou
 ### Checklist
 
 1. Create a folder at the root named after the scene in kebab case, for example `night-train/`, with `README.md`, `assets/css/style.css`, `assets/js/main.js` and `assets/images/logo.svg`.
-2. Add `night-train.11tydata.json`, copied from another scene, with `"tags": "scene"`, an `order`, your GitHub username as `author`, the title, descriptions, share text, canvas label, log counters and landing card text.
+2. Add `night-train.11tydata.json`, copied from another scene, with `"tags": "scene"`, an `order` one above the newest scene (the landing page shows the newest first), the date it was added as `added` in `YYYY-MM-DD` form, your GitHub username as `author`, the title, descriptions, share text, canvas label, log counters and landing card text.
 3. Add `index.njk` with `{% extends "layouts/scene.njk" %}`, and `embed.njk` copied from another scene.
 4. Make the logo 16×16 pixel art in the scene's palette: one SVG path per colour with `shape-rendering="crispEdges"`. The layout uses it as the favicon.
 5. Add a 1200x630 share preview at `assets/images/og.jpg`.

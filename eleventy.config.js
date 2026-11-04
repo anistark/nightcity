@@ -16,9 +16,14 @@ export default function (eleventyConfig) {
     const depth = url.split('/').length - 2;
     return depth > 0 ? '../'.repeat(depth) : '';
   });
-  // Scenes for the landing page, in the order their data files give.
-  eleventyConfig.addCollection('scenes', api => api.getFilteredByTag('scene').sort((a, b) => a.data.order - b.data.order));
+  // Scenes for the landing page, newest first: each data file's order goes up by one with every new scene.
+  eleventyConfig.addCollection('scenes', api => api.getFilteredByTag('scene').sort((a, b) => b.data.order - a.data.order));
   // A file's text, for llms-full.txt, which gathers the READMEs into one file for agents.
+  // 2026-11-04 becomes 4 Nov 2026, read as plain text so no time zone can move it to another day.
+  eleventyConfig.addFilter('cardDate', iso => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${d} ${'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[m - 1]} ${y}`;
+  });
   eleventyConfig.addFilter('readText', path => readFileSync(path, 'utf8').trim());
   eleventyConfig.addFilter('readmeOf', path => readFileSync(join(dirname(path), 'README.md'), 'utf8').trim());
   // Structured data (schema.org JSON-LD) for search engines and agents: the site and its scenes on the landing page,

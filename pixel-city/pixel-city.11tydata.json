@@ -1,6 +1,7 @@
 {
   "tags": "scene",
   "order": 1,
+  "added": "2026-10-28",
   "author": "anistark",
   "title": "Pixel City",
   "description": "A pixel-art night city seen from a rooftop. Every event is generated on the fly, so the scene never loops.",
