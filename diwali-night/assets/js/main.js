@@ -1285,12 +1285,14 @@ function wash(alb,minT,maxA){
 const who={yaw:.1,yawT:.1,pitch:.2,pitchT:.2,lean:0,leanT:0,slump:0,slumpT:0,sip:0,sipT:0,phone:0,phoneT:0,stretch:0,stretchT:0,
   hair:pick(['short','short','bun','braid','long']),hairC:pick(HAIRC),skin:pick(SKIN),top:pick([[132,34,60],[28,86,98],[150,96,30],[62,46,112],[166,62,36],[190,184,170],[40,92,70]]),
   shawl:chance(.5)?pick([[186,150,90],[120,40,60],[60,80,110],[200,192,176]]):null,cs:chance(.5)?1:-1,gajra:chance(.5)};
+// How far through a sip the hand has reached the cup on the ledge.
+const GRIP=.25;
 let WQ=1,PW=0,PH=0,whoC,whoG,whoImg,whoBuf,whoM,cupX=0,bright=[0,0,0],rimDir=0;
 function layoutWho(){
   WQ=clamp(H/290,.72,1.5)*clamp(W/330,.72,1);
   PW=Math.round(96*WQ);PH=Math.round(84*WQ);
   [whoC,whoG]=mk(PW,PH);whoImg=whoG.createImageData(PW,PH);whoBuf=whoImg.data;whoM=new Uint8Array(PW*PH);
-  cupX=seatX+who.cs*Math.round(27*WQ);
+  cupX=seatX+who.cs*Math.round(23*WQ);
 }
 function wset(x,y,c,s=1){x=x|0;y=y|0;if(x<0||y<0||x>=PW||y>=PH)return;const i=y*PW+x,j=i*4;whoM[i]=1;whoBuf[j]=c[0]*s;whoBuf[j+1]=c[1]*s;whoBuf[j+2]=c[2]*s;whoBuf[j+3]=255;}
 function capsule(x0,y0,x1,y1,r0,r1,fn){
@@ -1311,7 +1313,12 @@ function drawWho(){
   const shoulder=i=>[sx+i*(shW-2.5*q),sy+3*q+(i===w.cs?-w.sip*1.5*q:0)];
   const hand=i=>{
     const rest=[ox+i*16.8*q,oy-.5*q];
-    if(i===w.cs&&w.sip>.01){const m=[hx+i*3.5*q,hy0+6*q],k=ease(w.sip);return[lerp(rest[0],m[0],k),lerp(rest[1],m[1],k)-Math.sin(k*3.14)*5*q];}
+    // The hand goes out to the cup first, then lifts it wide of the shoulder and round in front of them, out of our sight.
+    if(i===w.cs&&w.sip>.01){
+      const c=[ox+i*23*q,oy-3*q],m=[hx+i*2.5*q,hy0+6*q];
+      if(w.sip<GRIP){const k=ease(w.sip/GRIP);return[lerp(rest[0],c[0],k),lerp(rest[1],c[1],k)];}
+      const k=ease((w.sip-GRIP)/(1-GRIP));return[lerp(c[0],m[0],k),lerp(c[1],m[1],k)-Math.sin(k*3.14)*5*q];
+    }
     if(w.phone>.01){const k=ease(w.phone);return[lerp(rest[0],sx+i*5*q,k),lerp(rest[1],sy+12*q,k)];}
     if(w.stretch>.01){const k=ease(w.stretch);return[lerp(rest[0],sx+i*12*q,k),lerp(rest[1],sy-24*q,k)];}
     return rest;
@@ -1323,6 +1330,8 @@ function drawWho(){
     // Otherwise the arms stay nearly straight, taking the weight on the ledge, not bent like hands on hips.
     let e=ik(s[0],s[1],h[0],h[1],up?l:Math.min(l,Math.hypot(h[0]-s[0],h[1]-s[1])/2+.22*q),i);
     if(up&&e[1]<(s[1]+h[1])/2+l*.3)e=[lerp(e[0],s[0]+i*7*q,.75),s[1]+l*.82];
+    // Lifting the cup, the elbow stays down at their side and the forearm swings up from it.
+    if(i===w.cs&&w.sip>GRIP){const k=clamp((w.sip-GRIP)/.12,0,1);e=[lerp(e[0],s[0]+i*7*q,k),lerp(e[1],s[1]+l*.82,k)];}
     return{s,h,e};
   };
   const A={'-1':arm(-1),'1':arm(1)},fore=i=>{const a=A[i];capsule(a.e[0],a.e[1],a.h[0],a.h[1]-1.4*q,3*q,2.2*q,(x,y,d)=>cl(x,y,armC,.82-d*.14));capsule(a.h[0],a.h[1]-1.2*q,a.h[0]+i*.5*q,a.h[1],1.8*q,1.5*q,(x,y)=>wset(x,y,w.skin,.62));};
@@ -1389,12 +1398,12 @@ function drawWho(){
   // A soft shadow on the ledge, then the figure, then the glow of a phone in front of it.
   ctx.globalAlpha=.4;ctx.fillStyle='#08060c';ctx.fillRect(seatX-Math.round(14*q),roofY+1,Math.round(28*q),2);ctx.globalAlpha=1;
   if(w.phone>.1){bloom(sx-0+px,hy0+py+10*q,16*q,[160,200,255],.3*w.phone);}
+  // The cup goes down first, so the hand closes over it and the body hides it once it is lifted.
+  if(w.sip<GRIP)drawCup(1);else{const a=A[w.cs];drawCup(0,a.h[0]+px,a.h[1]+py);}
   ctx.drawImage(whoC,px,py);
-  if(w.sip<.08)drawCup(1);
-  else if(w.sip<.6){const a=A[w.cs];drawCup(0,a.h[0]+px,a.h[1]+py);}
 }
 function drawCup(onLedge,x,y){
-  const q=WQ,cw=Math.max(3,Math.round(4.4*q)),ch=Math.max(4,Math.round(6*q)),X=onLedge?cupX-(cw>>1):Math.round(x-cw/2),Y=onLedge?roofY-ch+1:Math.round(y-ch);
+  const q=WQ,cw=Math.max(3,Math.round(4.4*q)),ch=Math.max(4,Math.round(6*q)),X=onLedge?cupX-(cw>>1):Math.round(x-cw/2),Y=onLedge?roofY-ch+1:Math.round(y-ch/2)+1;
   ctx.fillStyle='#8c8f96';ctx.fillRect(X,Y,cw,ch);ctx.fillStyle='#c6c9ce';ctx.fillRect(X,Y,1,ch);ctx.fillStyle='#55575e';ctx.fillRect(X+cw-1,Y,1,ch);ctx.fillStyle='#d8dade';ctx.fillRect(X,Y,cw,1);ctx.fillStyle='#6a3e22';ctx.fillRect(X+1,Y,cw-2,1);
 }
 function stepWho(dt){
@@ -1402,7 +1411,7 @@ function stepWho(dt){
   sp('yaw',2.6);sp('pitch',2.2);sp('lean',1.3);sp('slump',1.1);sp('sip',2.1);sp('phone',1.8);sp('stretch',1.5);
   if(w.co)w.co.next();
   // Steam from the cup, while it sits on the ledge.
-  w.st=(w.st||0)+dt*1.1;while(w.st>1){w.st--;if(w.sip<.08)part(4,{x:cupX+rr(-1,1),y:roofY-6*WQ,vx:wind*3,vy:-rr(5,9),dr:.2,life:rr(.8,1.7),c:[220,214,206],c2:[170,166,170],a:.2,wv:rr(1,2.4)});}
+  w.st=(w.st||0)+dt*1.1;while(w.st>1){w.st--;if(w.sip<GRIP)part(4,{x:cupX+rr(-1,1),y:roofY-6*WQ,vx:wind*3,vy:-rr(5,9),dr:.2,life:rr(.8,1.7),c:[220,214,206],c2:[170,166,170],a:.2,wv:rr(1,2.4)});}
   // The sum of what's flashing, for the rim of the figure.
   let r=0,g=0,b=0,dx=0;
   for(const f of flashes){if(f.r<20)continue;const k=clamp(f.a*(.5+f.r/90),0,1.4);r+=f.c[0]*k;g+=f.c[1]*k;b+=f.c[2]*k;dx+=(f.x-seatX)*k;}
@@ -1415,7 +1424,7 @@ function* whoLife(){
     yield* wait(expo(18)+6);
     if(w.track>t)continue;
     const a=wpick([['sip',5],['look',6],['shift',4],['down',3],['phone',1.6],['stretch',.8],['slump',2]]);
-    if(a==='sip'){w.yawT*=.3;w.sipT=1;yield* wait(rr(1.6,2.2));w.pitchT=rr(.4,.7);yield* wait(rr(1.8,3.4));w.pitchT=rr(0,.25);w.sipT=0;yield* wait(rr(1.6,2.6));}
+    if(a==='sip'){w.yawT*=.3;w.sipT=GRIP;yield* wait(rr(1.2,1.8));w.sipT=1;yield* wait(rr(1.6,2.2));w.pitchT=rr(.4,.7);yield* wait(rr(1.8,3.4));w.pitchT=rr(0,.25);w.sipT=GRIP;yield* wait(rr(1.8,2.6));w.sipT=0;yield* wait(rr(1.6,2.6));}
     else if(a==='look'){w.yawT=rr(-.7,.7);w.pitchT=rr(-.1,.5);yield* wait(rr(4,10));if(chance(.4)){w.yawT=rr(-.4,.4);w.pitchT=rr(0,.3);}}
     else if(a==='shift'){w.leanT=rr(-.4,.4);yield* wait(rr(6,16));if(chance(.6))w.leanT=rr(-.12,.12);}
     else if(a==='down'){w.yawT=rr(-.6,.6);w.pitchT=-rr(.4,.9);w.leanT=rr(-.1,.1);yield* wait(rr(5,11));w.pitchT=rr(0,.3);}
