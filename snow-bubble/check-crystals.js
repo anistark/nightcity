@@ -19,7 +19,7 @@ let sandbox={URLSearchParams,Math,JSON,Date:class extends Date{constructor(...ar
 sandbox.window=sandbox;vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL('../assets/js/nightcity.js',import.meta.url),'utf8'),sandbox);
 let source=readFileSync(new URL('assets/js/main.js',import.meta.url),'utf8');
-source=source.replace('window.SB={pause','window.SB={crystalSurface,crystalBranches,crystal,iceFront,sheetPose,icePieces,pause');
+source=source.replace('window.SB={pause','window.SB={testSurface(items,dt){let saved=flakes;flakes=items;updateSurface(dt);flakes=saved;return items;},crystalSurface,crystalBranches,crystal,iceFront,sheetPose,icePieces,pause');
 vm.runInContext(source,sandbox);
 let api=sandbox.SB,start=api.state();
 assert(start.center.airborne&&start.center.ground<start.center.snow,'The bubble begins above the snow');
@@ -33,6 +33,16 @@ assert(!landed.center.airborne&&landed.center.ground===landed.center.snow,'The f
 assert.equal(landed.center.x,400);assert(landed.bubble.ice>0,'Cooling begins after landing');
 api.fire('nucleate');
 let state=api.state(),f=state.flakes[0],p=state.center,tolerance=Math.sqrt(Number.EPSILON);
+// Compare identical points with different nucleus offsets to detect per-particle wandering.
+let mobile={...f,nx:0,ny:0,nz:1,age:f.growth/2,lock:0,locked:false,contacts:[]};
+let paired=api.testSurface([{...mobile},{...mobile,offset:mobile.offset+100}],1/60);
+assert.deepEqual([paired[0].nx,paired[0].ny,paired[0].nz],[paired[1].nx,paired[1].ny,paired[1].nz],'Coincident crystals share the same current regardless of nucleus noise');
+assert(paired.every(v=>!v.locked&&v.lock===0),'Detached crystals can pass through the same current without permanently trapping each other');
+let anchored=api.testSurface([{...mobile},{...mobile,locked:true,lock:1}],1/60)[0];
+assert(!anchored.locked&&anchored.lock>0&&anchored.lock<1,'Contact with anchored ice gradually reduces mobility');
+let alone=api.testSurface([{...mobile}],1/60)[0];
+let nearby=api.testSurface([{...mobile},{...mobile,nx:.05,nz:Math.sqrt(1-.05**2)}],1/60)[0];
+assert.notDeepEqual([alone.nx,alone.ny,alone.nz],[nearby.nx,nearby.ny,nearby.nz],'Growing neighboring ice changes the local surface flow');
 for(let normal of [[1,0,0],[0,-1,0],[0,1,0],[0,0,1],[0,0,-1]]){
  Object.assign(f,{nx:normal[0],ny:normal[1],nz:normal[2],age:f.growth});
  for(let branch of api.crystalBranches(f)){
@@ -81,3 +91,23 @@ assert(seenGround&&api.state().phase==='settling','The shell reaches rest and th
 if(api.icePieces().length>1)assert(releases.size>1,'Pieces have independent release timing');
 let debris=JSON.stringify(api.state());api.draw();assert.equal(JSON.stringify(api.state()),debris,'Drawing debris never advances its physics');
 console.log('Full-size airborne arrival, touchdown before cooling, curved branches, silhouette crossing, pole projection, progressive growth, uneven frost and render-state isolation, independent ice release, ground collision and settled debris passed.');
+
+let motionSandbox={...sandbox};motionSandbox.window=motionSandbox;vm.createContext(motionSandbox);
+vm.runInContext(readFileSync(new URL('../assets/js/nightcity.js',import.meta.url),'utf8'),motionSandbox);
+vm.runInContext(source,motionSandbox);
+let motionAPI=motionSandbox.SB;motionAPI.step(motionAPI.state().bubble.form+1/60);
+let tracks=new Map(),travel=0;
+for(let frame=0;frame<600&&!motionAPI.state().bubble.ending;frame++){
+ motionAPI.step(1/60);let motionState=motionAPI.state();
+ for(let v of motionState.flakes){
+  let previous=tracks.get(v.offset);
+  if(previous&&!previous.locked){
+   let arc=Math.acos(Math.max(-1,Math.min(1,previous.nx*v.nx+previous.ny*v.ny+previous.nz*v.nz)));
+   v.distance=previous.distance+arc;
+   travel=Math.max(travel,v.distance*motionState.center.r/v.size);
+  }else v.distance=0;
+  tracks.set(v.offset,v);
+ }
+}
+assert(travel>1,'Surface flow carries naturally formed crystals farther than their own radius');
+console.log('Shared currents, anchored contact and natural surface travel passed ('+travel.toFixed(1)+' crystal radii).');

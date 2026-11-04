@@ -144,9 +144,9 @@ function nucleate(){
  const azimuth=R()*TAU,ny=clamp(bubble.front-positive(.075,.65),-.999,.975),ring=Math.sqrt(1-ny*ny);
  const f={nx:Math.cos(azimuth)*ring,ny,nz:Math.sin(azimuth)*ring,x:0,y:0,z:0,
   age:0,size:positive(23,.38),growth:positive(8,.45),rotation:R()*TAU,spin:normal()*.09,offset:R()*4000,
-  branches:sampleCount(positive(4,.25)),spread:rr(.35,.65),arm:rr(.72,1),locked:false,lock:0,contacts:[]};
- // Some nuclei stay in the advancing front. Others detach into surface circulation.
- f.locked=R()<1-Math.exp(-bubble.ice/(bubble.flow+Number.EPSILON));
+  branches:sampleCount(positive(4,.25)),spread:rr(.35,.65),arm:rr(.72,1),locked:false,lock:0,vx:0,vy:0,vz:0,contacts:[]};
+ // Nuclei begin mobile. Crystal habit varies continuously from plates to branches.
+ f.habit=R();
  const point=surfacePoint(f,center());f.x=point.x;f.y=point.y;f.z=f.nz;flakes.push(f);
  stats.crystals++;N.stats(stats);return true;
 }
@@ -191,41 +191,62 @@ function shootingStar(){
 }
 function updateSurface(dt){
  const p=center(),flow=bubble.flow;
- for(const f of flakes){
-  f.age+=dt;
-  if(!f.locked){
-   const vx=-f.nz*bubble.current*bubble.strength+(noise(f.offset+time*.3)-.5)*.12;
-   const vy=-bubble.strength*.65+(noise(f.offset+50+time*.2)-.5)*.08;
-   const vz=f.nx*bubble.current*bubble.strength+(noise(f.offset+100+time*.3)-.5)*.12;
-   const radial=vx*f.nx+vy*f.ny+vz*f.nz;
-   f.nx+=(vx-radial*f.nx)*flow*dt;f.ny+=(vy-radial*f.ny)*flow*dt;f.nz+=(vz-radial*f.nz)*flow*dt;
-   const length=Math.hypot(f.nx,f.ny,f.nz);f.nx/=length;f.ny/=length;f.nz/=length;
-   if(f.ny>.975){f.ny=.975;const ring=Math.sqrt(1-f.ny*f.ny),len=Math.hypot(f.nx,f.nz)||1;f.nx=f.nx/len*ring;f.nz=f.nz/len*ring;}
-   f.rotation+=f.spin*flow*dt;if(f.ny>=bubble.front||bubble.ice>=1)f.locked=true;
-  }
-  f.lock=f.locked?Math.min(1,f.lock+dt*.6):0;
-  const point=surfacePoint(f,p);f.x=point.x;f.y=point.y;f.z=f.nz;
+ if(flakes.every(f=>f.locked)){
+  for(const f of flakes){f.age+=dt;f.lock=1-(1-f.lock)*Math.exp(-dt*bubble.strength);const point=surfacePoint(f,p);f.x=point.x;f.y=point.y;f.z=f.nz;}
+  return;
  }
- // Spatial lookup avoids comparing every pair, without dropping or limiting crystals.
- if(!flakes.some(f=>!f.locked&&f.age>0))return;
+ // One shared field carries nearby crystals together. Growing ice supplies local heat.
  const growing=flakes.map(f=>({f,r:crystalBranches(f).reduce((radius,branch)=>Math.max(radius,Math.hypot(branch.x2,branch.y2)),0)*ease(clamp(f.age/f.growth,0,1))}));
- if(!growing.some(item=>!item.f.locked&&item.r>0))return;
- const cellSize=growing.reduce((maximum,item)=>Math.max(maximum,item.r),0)*2/p.r;
- if(!(cellSize>0))return;
+ const diffusion=Math.sqrt(p.r*bubble.frost),cellSize=(growing.reduce((maximum,item)=>Math.max(maximum,item.r),0)*2+diffusion)/p.r;
  const cells=new Map(),key=(x,y,z)=>x+','+y+','+z;
  for(const item of growing){
   const f=item.f;item.cell=[Math.floor(f.nx/cellSize),Math.floor(f.ny/cellSize),Math.floor(f.nz/cellSize)];
   const k=key(...item.cell);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(item);
  }
+ // Compute from the same snapshot so iteration order cannot move a heat source early.
  for(const a of growing){
-  if(a.f.locked||a.r===0)continue;
-  search:for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+  if(a.f.locked)continue;
+  const f=a.f;let heatX=0,heatY=0,heatZ=0,crowding=0,contacts=[];
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
    for(const b of cells.get(key(a.cell[0]+x,a.cell[1]+y,a.cell[2]+z))||[]){
     if(a===b)continue;
-    const distance=Math.hypot(a.f.nx-b.f.nx,a.f.ny-b.f.ny,a.f.nz-b.f.nz)*p.r;
-    if(distance<a.r+b.r){a.f.contacts.push({nx:b.f.nx,ny:b.f.ny,nz:b.f.nz});a.f.locked=true;b.f.locked=true;break search;}
+    const dx=f.nx-b.f.nx,dy=f.ny-b.f.ny,dz=f.nz-b.f.nz,distance=Math.hypot(dx,dy,dz)*p.r,reach=a.r+b.r;
+    const progress=clamp(b.f.age/b.f.growth,0,1),release=6*progress*(1-progress)/b.f.growth;
+    const warmth=release*Math.max(0,1-(distance/(reach+diffusion))**2)**2*p.r/(distance+diffusion);
+    heatX+=dx*warmth;heatY+=dy*warmth;heatZ+=dz*warmth;
+    if(distance<reach){crowding+=(1-distance/reach)*b.f.lock;contacts.push({nx:b.f.nx,ny:b.f.ny,nz:b.f.nz});}
    }
   }
+  const frost=clamp((f.ny-iceFront(f.nx,p))*p.r/(a.r+bubble.frost),0,1);
+  const resistance=(frost+crowding)*bubble.ice;
+  const lock=1-(1-f.lock)*Math.exp(-dt*resistance*bubble.strength);
+  const spatial=bubble.circulation,clock=time/bubble.form,offset=bubble.offset;
+  const ax=bubble.groundCold+noise(offset+f.ny*spatial+clock)-noise(offset-f.nz*spatial-clock);
+  const ay=bubble.current+noise(offset+f.nz*spatial+clock)-noise(offset-f.nx*spatial-clock);
+  const az=noise(offset+f.nx*spatial+clock)-noise(offset-f.ny*spatial-clock);
+  // Warm film rises across the front and returns down the back instead of piling up at the top.
+  const vx=ay*f.nz-az*f.ny+heatX;
+  const vy=az*f.nx-ax*f.nz+heatY;
+  const vz=ax*f.ny-ay*f.nx+heatZ;
+  const radial=vx*f.nx+vy*f.ny+vz*f.nz;
+  a.motion={vx:vx-radial*f.nx,vy:vy-radial*f.ny,vz:vz-radial*f.nz,lock,contacts};
+ }
+ for(const a of growing){
+  const f=a.f,m=a.motion;f.age+=dt;
+  if(!f.locked){
+   f.lock=m.lock;
+   const mobility=flow*(1-f.lock)*bubble.strength;
+   const response=1-Math.exp(-dt*bubble.strength*p.r/(f.size+bubble.frost));
+   f.vx+=(m.vx*mobility-f.vx)*response;f.vy+=(m.vy*mobility-f.vy)*response;f.vz+=(m.vz*mobility-f.vz)*response;
+   const radial=f.vx*f.nx+f.vy*f.ny+f.vz*f.nz;
+   f.vx-=radial*f.nx;f.vy-=radial*f.ny;f.vz-=radial*f.nz;
+   f.nx+=f.vx*dt;f.ny+=f.vy*dt;f.nz+=f.vz*dt;
+   const length=Math.hypot(f.nx,f.ny,f.nz);f.nx/=length;f.ny/=length;f.nz/=length;
+   if(f.ny>.975){f.ny=.975;const ring=Math.sqrt(1-f.ny*f.ny),len=Math.hypot(f.nx,f.nz)||1;f.nx=f.nx/len*ring;f.nz=f.nz/len*ring;}
+   f.rotation+=(f.spin*mobility+f.vz*f.nx-f.vx*f.nz)*dt;
+   if(1-f.lock<=bubble.frost/p.r||bubble.ice>=1){f.locked=true;f.contacts=m.contacts;}
+  }else f.lock=1-(1-f.lock)*Math.exp(-dt*bubble.strength);
+  const point=surfacePoint(f,p);f.x=point.x;f.y=point.y;f.z=f.nz;
  }
 }
 function evolve(dt){
@@ -236,7 +257,7 @@ function evolve(dt){
  b.cooling+=Math.max(0,ground+air)*dt;
  const before=b.ice;b.ice=clamp(b.ice+drive*b.freezeRate*dt,0,1);b.front=.975-b.ice*1.975;
  const liquid=1-b.ice;
- b.flow=b.circulation*Math.max(0,drive)*liquid*Math.exp(-b.ice*b.cooling*.16);
+ b.flow=b.circulation*Math.max(0,drive)*liquid;
  const area=(b.radius/150)**2;
  b.nextCrystal-=dt*b.crystalRate*area*Math.max(0,drive)*liquid;
  while(b.nextCrystal<=0&&b.ice<1){nucleate();b.nextCrystal+=gap(1);}
@@ -354,7 +375,7 @@ function crystalBranches(f){
   let a=i*TAU/6,ux=Math.cos(a),uy=Math.sin(a),length=f.size*(i%2?f.arm:1)*(f.arm+(1-f.arm)*noise(f.offset+i));
   branches.push({x:0,y:0,x2:ux*length,y2:uy*length,start:0,end:length});
   for(let j=1;j<=f.branches;j++){
-   let dist=length*j/(f.branches+1),branch=(length-dist)*f.spread*noise(f.offset+i+j);
+   let dist=length*j/(f.branches+1),branch=(length-dist)*f.spread*(1-f.arm**(f.branches*f.habit))*noise(f.offset+i+j);
    for(let side of [-1,1]){
     let b=a+side*Math.PI/3;
     branches.push({x:ux*dist,y:uy*dist,x2:ux*dist+Math.cos(b)*branch,y2:uy*dist+Math.sin(b)*branch,start:dist,end:dist+branch});
@@ -392,16 +413,17 @@ function crystal(f,front){
  }
  c.save();c.beginPath();c.arc(p.x,p.y,p.r,0,TAU);c.clip();
  c.beginPath();c.rect(p.x-p.r,p.y-p.r,p.r*2,p.ground-p.y+p.r);c.clip();
- // Translucent patches overlap where growing crystals have met and locked together.
- if(f.lock){
-  c.fillStyle='#c3deec28';c.globalAlpha=fade*f.lock*bubble.ice*Math.abs(f.nz);c.beginPath();
+ // Faceted plates and dendrites share sixfold symmetry, with continuously varying habit.
+ const habit=f.arm**(f.branches*f.habit);
+ {
+  c.fillStyle='#c3deec28';c.globalAlpha=fade*Math.abs(f.nz)*(habit+f.lock*bubble.ice)/(1+habit);c.beginPath();
   let patch=[];
   for(let branch of crystalBranches(f)){
    if(branch.start)continue;
-   let v=crystalSurface(f,branch.x2*growth,branch.y2*growth,p,basis);
+   let v=crystalSurface(f,branch.x2*growth*habit,branch.y2*growth*habit,p,basis);
    if(visible(v))patch.push(surfacePoint(v,p));
   }
-  if(patch.length){c.moveTo(patch[0].x,patch[0].y);for(let v of patch)c.lineTo(v.x,v.y);c.closePath();c.fill();}
+  if(patch.length){c.moveTo(patch[0].x,patch[0].y);for(let v of patch)c.lineTo(v.x,v.y);c.closePath();c.fill();c.strokeStyle='#c3deec28';c.lineWidth=pixel/scale*growth;c.stroke();}
  }
  c.globalAlpha=fade*clamp((Math.abs(f.nz)+f.lock*bubble.ice)*f.spread,0,1)*(front===false?1-bubble.ice:1);
  c.beginPath();c.strokeStyle='#c3deec28';c.lineWidth=size*f.spread*f.lock;
