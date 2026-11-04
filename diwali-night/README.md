@@ -1,6 +1,6 @@
 # Diwali Night
 
-The moonless night of Diwali from a rooftop in the thick of the city, in pixel art. Someone sits on the ledge with their back to us among a row of diyas, a steel cup of chai beside them, with buildings rising on every side, all of them lit by hand. Balconies are strung with bulbs and paper lanterns, people come out to watch, a man smokes by the rail, children wave sparklers, crackers go off on the road, and fireworks go up here and there between the blocks. Nothing is scripted, so no two Diwalis go the same way.
+The moonless night of Diwali from a rooftop in the thick of the city, in pixel art. Someone sits on the ledge with their back to us, a steel cup of chai beside them, with buildings rising on every side, all of them lit by hand. Balconies are strung with bulbs and paper lanterns, people come out to watch, a man smokes by the rail, children wave sparklers, crackers go off on the road, and fireworks go up here and there between the blocks. Nothing is scripted, so no two Diwalis go the same way.
 
 ## Run it
 
@@ -38,19 +38,21 @@ When the page opens, it hashes the current date and time down to the millisecond
 
 ### The city
 
-There is no moon, because Diwali falls on the new moon, so the sky is dark and only the brightest stars get through the smoke and the city's light. There is no skyline either, because we are inside the city. The same kind of block goes on in every direction, six rows of them, each a little hazier than the last, with taller ones among them at every distance, until they close off the view. Roofs below eye level show their tops, with black water tanks, stair boxes and strings of bulbs along the parapets, and taller blocks show only a parapet against the sky. A few carry a red light for aircraft or a line of neon, and now and then a whole wall of lights hangs like a curtain. In the gap between the near blocks a side street runs off past a row of flats with shops at street level and a few old trees wound with fairy lights. The near blocks rise past our eye level on either side, with shops along the street below, and the street runs across the front with its lamps, sagging wires and bulbs strung over the road. Neighbouring buildings stand right beside us at both edges of the view and run past the top of the frame, close enough to see into. Our own roof comes last: the ledge, the wall below it, a black tank on a brick stand, plants in old tins and the rangoli on the floor.
+There is no moon, because Diwali falls on the new moon, so the sky is dark and only the brightest stars get through the smoke and the city's light. Now and then a plane crosses very far above it all, one point of light with a double flash and a slow red blink, taking a minute or two and passing behind whatever stands in its way. There is no skyline either, because we are inside the city. The same kind of block goes on in every direction, six rows of them, each a little hazier than the last, with taller ones among them at every distance, until they close off the view. Roofs below eye level show their tops, with black water tanks, stair boxes and strings of bulbs along the parapets, and taller blocks show only a parapet against the sky. A few carry a red light for aircraft or a line of neon, and now and then a whole wall of lights hangs like a curtain. In the gap between the near blocks a side street runs off past a row of flats with shops at street level and a few old trees wound with fairy lights. The near blocks rise past our eye level on either side, with shops along the street below, and the street runs across the front with its lamps, sagging wires and bulbs strung over the road. Neighbouring buildings stand right beside us at both edges of the view and run past the top of the frame, close enough to see into. Our own roof comes last, and it is only a narrow strip along the bottom of the frame: the ledge, the wall below it, plants in old tins and the far part of a rangoli on the floor, cut off by the edge of the view. It has no flame of its own, only what the city throws back.
 
 Each block is painted as flat colour first, then lit in one pass from a list of lights: rooms, balcony lamps, lanterns, diyas, shops and street lamps. A balcony's lamp stays inside its recess, so the walls stay dark with pools of light around them, and lights add up without ever burning out to white. Each row keeps three pictures, one with every electric light on, one with them off for a power cut, and the current one, and a window lighting up or going dark just copies its rectangle from one to the other. Rails, slabs and trees sit on a separate front layer, so people stand behind them.
 
 ### The lights
 
-Strings of bulbs glow steady, or swell and fade slowly along the wire, each on its own clock, and the long strands down the corners of a block have a soft glint drifting down them. Paper lanterns are small heavy pendulums barely pushed by the air, with tails that trail behind the swing. Diyas and candles sit on the rails and the ledge with small, slow flames that hardly move. They burn down and a gust can take a few at once, and then someone comes along to relight them. The diyas on the roof are close enough to have a clay bowl and a proper flame, and the roof is painted twice, cold and with every diya burning, so the warm layer breathes with them.
+Strings of bulbs glow steady, or swell and fade slowly along the wire, each on its own clock, and the long strands down the corners of a block have a soft glint drifting down them. Paper lanterns are small heavy pendulums barely pushed by the air, with tails that trail behind the swing. Diyas and candles sit on the balcony rails with small, slow flames that hardly move. Each burns for its own length of time, anywhere from a few minutes to many hours, so they go out one by one and never together, and a gust can take a few at once.
+
+One window high up keeps its own hours, chosen fresh each night and on a bare wall where one is free. Neon pours out through its blinds, drifting between two colours with a slow buzz, and its light spills over the wall around it. Rice lights are strung round the frame all the same, running along the top, hanging past the sides and across the glass, with a soft swell moving along the string.
 
 ### People
 
 A person is a small skeleton, not a sprite. Each foot stays planted for its part of the step while the body moves over it, so nothing slides, knees and elbows come from two-bone reach, and hands and heads move on springs toward wherever a routine wants them. Nobody is in a hurry: a walk is an amble with short steps, at about half of real walking pace, and starts, stops and turns all ease in. Standing still is not still: weight drifts from foot to foot on a slow clock of its own. Everyone has their own height, stride, tempo, clothes and hair, and turning is a smooth change of facing, so nobody snaps from pose to pose.
 
-Each person runs one small routine, written as a generator that yields once a tick, and every timing in it comes from a range. Visits only happen on balconies we can see, and the walls beside us get more than their share. Someone comes out and watches, leaning on the rail, looking about, pointing at what goes up. Someone paces on a phone call or films the sky. A family comes out one at a time, and the children hop when a shell opens. A child waves a sparkler in loops until it burns down. Someone goes along the rail with a taper relighting diyas. When a big shell opens, some heads turn a moment later, each at its own speed. Most of the time people just stand there.
+Each person runs one small routine, written as a generator that yields once a tick, and every timing in it comes from a range. Visits only happen on balconies we can see, and the walls beside us get more than their share. Someone comes out and watches, leaning on the rail, looking about, pointing at what goes up. Someone paces on a phone call or films the sky. A family comes out one at a time, and the children hop when a shell opens. A child waves a sparkler in loops until it burns down. When diyas burn out, someone comes out with a plate of new ones, lifts each spent one off the rail and sets a lit one in its place, and relights any the wind took. When a big shell opens, some heads turn a moment later, each at its own speed. Most of the time people just stand there.
 
 The man smoking gets the longest routine. He steps out, reaches into his pocket, lights up with cupped hands and a lighter that takes a few tries, then settles at the rail. A faint thread of smoke rises from the burning end. Each drag brightens the ember, a little smoke is let go a moment later, and he stands a long while between drags, looking about and tapping off the ash. At the end he flicks the stub over the rail, and it falls and bounces on the road below.
 
@@ -64,23 +66,23 @@ A flash lights what faces it. The sky glows around the shell, the rows nearer th
 
 ### The one on the ledge
 
-The figure on the ledge is close enough to paint a pixel at a time. It is built each frame into a small buffer: back and shoulders, sometimes a shawl with a gold hem, neck, head, hair in one of several styles, and arms. A last pass lets the flashes catch whichever edges face them and the diyas warm the sides of the body from below. Head, lean and arms all move on slow springs, and long stretches pass with nothing but breathing. They sip from the cup, shift their weight, look down at the road, check a phone, stretch, slump, and lean over to relight a diya within reach. A big shell turns their head a moment after it opens, and their gaze follows it down.
+The figure on the ledge is close enough to paint a pixel at a time. It is built each frame into a small buffer: back and shoulders, sometimes a shawl with a gold hem, neck, head, hair in one of several styles, and arms. A last pass lets the flashes catch whichever edges face them and the city's glow warm the sides of the body from below. Head, lean and arms all move on slow springs, and long stretches pass with nothing but breathing. They sip from the cup, shift their weight, look down at the road, check a phone, stretch and slump. A big shell turns their head a moment after it opens, and their gaze follows it down.
 
 ### Events
 
-The scene is meant to be slow, with only a few things happening at any moment. Each kind of event has its own timer, with exponentially distributed gaps, so the night has bursts and lulls instead of a beat. Fireworks are also thinned over minutes on smooth noise, which makes their real gaps longer than the table below. That comes to two or three shells a minute, most of them far off, with quiet stretches of two or three minutes.
+The scene is meant to be slow, with only a few things happening at any moment. Each kind of event has its own timer, with exponentially distributed gaps, so the night has bursts and lulls instead of a beat. Far shells are the one exception: one goes up every 5 to 30 seconds whatever the mood of the night, so the distance is never quite still. The nearer fireworks are thinned over minutes on smooth noise, which makes their real gaps longer than the table below. That comes to about five shells a minute, most of them far off, with only one or two nearer ones and quiet stretches of up to about four minutes between those.
 
 | Event | Average gap |
 |---|---|
 | A window lights up or goes dark | ~9 s |
+| A far shell across the rooftops | 5 to 30 s |
 | Someone crosses a room behind a curtain | ~18 s |
-| Someone comes out on a balcony to watch | ~46 s |
-| A far shell across the rooftops | ~52 s |
+| Someone sees to a balcony's burnt-out diyas, when any need it | ~40 s |
 | A man steps out to smoke, when nobody else is | ~60 s |
+| Someone comes out on a balcony to watch | ~64 s |
 | A vehicle passes | ~72 s |
 | People walk along the street | ~78 s |
 | A shell over the city | ~95 s |
-| Someone relights the diyas on a balcony | ~2 min |
 | A sparkler on a balcony | ~2 min |
 | A shell over the flats | ~3 min |
 | A family comes out on a balcony | ~3 min |
@@ -90,6 +92,7 @@ The scene is meant to be slow, with only a few things happening at any moment. E
 | A gust swings the lanterns and takes a few diyas | ~4.5 min |
 | A shell close by | ~5 min |
 | A flowerpot on the road | ~5 min |
+| A plane crosses, very far above the city | ~5 min |
 | A cat walks along the ledge, and may bolt at a big shell | ~6 min |
 | A ground spinner on the road | ~9 min |
 | A big shell right over the lane | ~11 min |
@@ -97,7 +100,7 @@ The scene is meant to be slow, with only a few things happening at any moment. E
 | A cake of five to eleven shots | ~20 min |
 | The power goes and the diyas have the street to themselves | ~25 min |
 
-You can tune these in `assets/js/main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event. Bulbs, beacons, smoke and a very light wind run all the time.
+You can tune these in `assets/js/main.js`: the `SCHED` table holds the average gap (`m`) and the first appearance (`f`) for each event, with the shortest and longest gap (`lo`, `hi`) in place of `m` for far shells. Bulbs, beacons, smoke and a very light wind run all the time.
 
 Before the first frame, the scene runs half a minute out of sight, so it opens on a night already under way, with a few people out and one shell open in the sky. With reduced motion on, it shows that frame and stays still.
 

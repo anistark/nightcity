@@ -3,12 +3,12 @@
   "order": 10,
   "author": "anistark",
   "title": "Diwali Night",
-  "description": "A pixel-art Diwali night from a rooftop in the thick of the city: someone sits on the ledge among the diyas, with buildings all around lit by bulbs and paper lanterns, while fireworks go up here and there. No two Diwalis go the same way.",
+  "description": "A pixel-art Diwali night from a rooftop in the thick of the city: someone sits on the ledge, with buildings all around lit by bulbs, paper lanterns and diyas, while fireworks go up here and there. No two Diwalis go the same way.",
   "ogTitle": "Diwali Night | Night City",
   "ogImage": "diwali-night/assets/images/og.jpg",
   "ogPath": "diwali-night/",
-  "ogAlt": "Diwali Night: a pixel-art rooftop in the middle of a city at night, with someone sitting on the ledge among diyas, apartment blocks strung with lights on every side and a firework overhead",
-  "canvasLabel": "Animated pixel-art Diwali night: a person sits on a rooftop ledge among diyas, surrounded by apartment blocks with lit balconies where people come and go, while fireworks burst now and then between the buildings",
+  "ogAlt": "Diwali Night: a pixel-art rooftop in the middle of a city at night, with someone sitting on the ledge, apartment blocks strung with lights on every side and a firework overhead",
+  "canvasLabel": "Animated pixel-art Diwali night: a person sits on a rooftop ledge, surrounded by apartment blocks with lit balconies where people come and go, while fireworks burst now and then between the buildings",
   "share": "Diwali night from the rooftop, the whole city lit by hand. No two nights go the same way. Mine began at {seed}.",
   "stats": [
     [
@@ -25,5 +25,5 @@
     ]
   ],
   "footTail": ". Tap the scene to hide this",
-  "card": "The moonless night of Diwali from a rooftop in the thick of the city. Someone sits on the ledge among the diyas, with blocks of flats rising all around, strung with lights. People drift out onto their balconies, a man smokes by the rail, and now and then a firework goes up."
+  "card": "The moonless night of Diwali from a rooftop in the thick of the city. Someone sits on the ledge, with blocks of flats rising all around, strung with lights. People drift out onto their balconies, a man smokes by the rail, and now and then a firework goes up."
 }

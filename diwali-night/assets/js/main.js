@@ -62,8 +62,8 @@ const WORLD={
 // side street in the gap, the near blocks and the street below them, neighbouring walls at both edges, and our own roof in front of it all.
 // u scales the whole city to the window.
 let S=2,W=0,H=0,u=1,hz=0,roofY=0,baseY=0,fgH=0,floorY=0,gapC=0,gapW=0,seatX=0;
-let skyC,farC,carpetC,roofC,roofL,rimC,hazeC,vig,grain,grainT=0,gx=0,gy=0,scratch,sctx;
-let stars=[],beacons=[],crowns=[],carpetBulbs=[],carpetRoofs=[],lamps=[],roofDiyas=[],rangoli=null,tankX=0;
+let skyC,farC,carpetC,roofC,rimC,hazeC,vig,grain,grainT=0,gx=0,gy=0,scratch,sctx;
+let stars=[],beacons=[],crowns=[],carpetBulbs=[],carpetRoofs=[],lamps=[],rangoli=null;
 let near=null,flats=null,close=null;
 function layout(){
   S=Math.max(2,Math.round(Math.min(innerWidth/500,innerHeight/290)));
@@ -72,7 +72,7 @@ function layout(){
   ctx.imageSmoothingEnabled=false;
   const tall=H>W*1.1;
   u=clamp(Math.sqrt(W*H)/380,.7,1.35);
-  fgH=Math.round(clamp(H*.21,34,112));roofY=H-fgH;
+  fgH=Math.round(clamp(H*.11,20,58));roofY=H-fgH;
   baseY=roofY-Math.round(25*u);
   hz=Math.round(H*(tall?.34:.385));
   gapC=Math.round(W*(.5-WORLD.side*.06));gapW=Math.round(W*WORLD.gap);
@@ -84,7 +84,7 @@ function layout(){
   genFlats(flats);genNear(near);genClose(close);
   paintCity();
   paintStreet(near);paintGround(flats);
-  bakeRow(flats);bakeRow(near);bakeRow(close);
+  bakeRow(flats);bakeRow(near);bakeRow(close);placeNeon();
   paintRoof();paintHaze();
   paintGrade();
   [scratch,sctx]=mk(W,H);
@@ -285,13 +285,13 @@ function paintBalcony(row,b,x,y,w,fl,bay){
   if(hash(id,4,5)<.68){const pal=wpickH(PAL,id,5);addString(row,b,x+1,iy+1,x+w-2,iy+1,Math.round(fh*.12),Math.max(2,3*k),pal,hi(id,6,5,0,3),hash(id,7,5)*30);row.lights.push({x:cx,y:iy+3,r:fh*.7,c:pal[0],k:.7,el:true,clip});row.lights.push({x:cx,y:iy+fh*.9,r:fh*.8,c:pal[0],k:.09,el:true});}
   if(hash(id,8,5)<.32){const c=hp(LANTC,id,9,5),lx=Math.round(left?x+w*.7:x+w*.3);B.lantern=true;row.lanterns.push({b,x:lx,y:iy,len:Math.round(fh*.2),c,a:0,v:0,ph:hash(id,10,5)*9,star:hash(id,11,5)<.55});row.lights.push({x:lx,y:iy+fh*.34,r:fh*.6,c,k:.8,el:true,clip});row.lights.push({x:lx,y:iy+fh*.5,r:fh*.7,c,k:.16,el:true});}
   const n=hash(id,12,5)<.8?hi(id,13,5,2,Math.max(2,Math.round(w/(5*k)))):0;
-  for(let i=0;i<n;i++){const px=Math.round(lerp(x+2,x+w-3,(i+.5+(hash(id,14+i,5)-.5)*.5)/n)),candle=hash(id,30+i,5)<.2;B.diyas.push({x:px,y:railY-1,lit:hash(id,40+i,5)<.82,ph:hash(id,50+i,5)*50,candle,fuel:.5+.5*hash(id,55+i,5)});row.diyas.push(B.diyas[B.diyas.length-1]);row.lights.push({x:px,y:railY-2,r:fh*.32,c:[255,150,60],k:.8,el:false});pa(F,px-1,railY-1,[130,70,40]);pa(F,px,railY-1,[150,84,48]);pa(F,px+1,railY-1,[130,70,40]);}
+  for(let i=0;i<n;i++){const px=Math.round(lerp(x+2,x+w-3,(i+.5+(hash(id,14+i,5)-.5)*.5)/n)),candle=hash(id,30+i,5)<.2;B.diyas.push({x:px,y:railY-1,lit:hash(id,40+i,5)<.9,ph:hash(id,50+i,5)*50,candle,fuel:-Math.log(1-hash(id,55+i,5)*.999)*BURN,B});row.diyas.push(B.diyas[B.diyas.length-1]);row.lights.push({x:px,y:railY-2,r:fh*.32,c:[255,150,60],k:.8,el:false});pa(F,px-1,railY-1,[130,70,40]);pa(F,px,railY-1,[150,84,48]);pa(F,px+1,railY-1,[130,70,40]);}
   if(hash(id,15,5)<.45){const px=Math.round(left?x+w-sw-3*k:x+sw+2*k),green=[[46,96,52],[34,76,44],[60,116,60]];box(F,px-1,railY-Math.round(2*k),Math.max(3,Math.round(4*k)),Math.round(2*k),[120,70,44]);for(let i=0;i<9*k;i++)pa(F,px+hi(id,60+i,5,-2,3),railY-Math.round(2*k)-hi(id,70+i,5,1,Math.round(5*k)),hp(green,id,80+i,5));}
   if(hash(id,16,5)<.22){const c0=hp(CURTC,id,17,5),n2=hi(id,18,5,1,3),cy=iy+Math.round(2*k);box(A,x+sw,cy,w-sw*2,1,[30,28,34]);for(let i=0;i<n2;i++){const cx2=x+sw+hi(id,19+i,5,2,w-sw*2-6),cw=hi(id,23+i,5,3,5),ch=hi(id,27+i,5,4,Math.round(9*k)),c=i?mix(c0,[220,214,200],.5):c0;box(A,cx2,cy+1,cw,ch,c);}}
 }
 const GOODS=[[[236,120,150],[250,220,120],[240,236,220],[236,170,70]],[[214,50,50],[240,190,60],[236,120,40]],[[60,150,140],[210,70,120],[230,190,90],[120,90,170]]];
 const ORD=['ground-floor','first-floor','second-floor','third-floor','fourth-floor','fifth-floor','sixth-floor','seventh-floor','eighth-floor','high'];
-function paintWindow(row,b,x,y,w,h,id){
+function paintWindow(row,b,x,y,w,h,id,free){
   const{A,E,k}=row,on=hash(id,1,9)<b.dens,tube=hash(id,2,9)<.26,c=hp(tube?TUBEW:WARMW,id,3,9),cur=hp(CURTC,id,4,9),drawn=hash(id,5,9);
   box(A,x-1,y-1,w+2,h+2,mix(b.trim,[30,26,32],.45));box(A,x,y,w,h,[20,24,36]);box(A,x-1,y+h+1,w+2,1,b.trim);
   for(let j=0;j<h;j++)for(let i=0;i<w;i++){
@@ -302,14 +302,14 @@ function paintWindow(row,b,x,y,w,h,id){
   }
   if(w>6*k)for(let j=0;j<h;j++)pa(E,x+(w>>1),y+j,mix(c,[40,30,30],.65));
   for(let i=0;i<w;i+=2)for(let j=1;j<h;j+=Math.max(3,Math.round(3*k)))pa(E,x+i,y+j,mix(c,[40,30,30],.3));
-  const W0={x:x-1,y:y-1,w:w+2,h:h+2,on,b,tv:hash(id,6,9)<.1,ix:x,iy:y,iw:w,ih:h,ph:hash(id,7,9)*40};
+  const W0={x:x-1,y:y-1,w:w+2,h:h+2,on,b,free,tv:hash(id,6,9)<.1,ix:x,iy:y,iw:w,ih:h,ph:hash(id,7,9)*40};
   row.wins.push(W0);
   if(on)row.lights.push({x:x+w/2,y:y+h/2,r:Math.max(w,h)*.9,c,k:.16,el:true});
 }
 function paintWinBay(row,b,x,y,w,f,i){
   const{A,F,fh,k}=row,id=b.id*173+f*19+i*7,two=w>30*k,top=y+Math.round(5*k),wh=Math.round(fh*.5),ww=Math.round((two?10:14)*k);
-  if(two){paintWindow(row,b,x+Math.round(w*.14),top,ww,wh,id+1);paintWindow(row,b,x+Math.round(w*.58),top,ww,wh,id+2);}
-  else paintWindow(row,b,x+Math.round((w-ww)/2),top,ww,wh,id+1);
+  if(two){paintWindow(row,b,x+Math.round(w*.14),top,ww,wh,id+1,true);paintWindow(row,b,x+Math.round(w*.58),top,ww,wh,id+2,true);}
+  else paintWindow(row,b,x+Math.round((w-ww)/2),top,ww,wh,id+1,true);
   // A concrete hood over the windows, and sometimes an air conditioner.
   box(F,x+2,top-Math.round(3*k),w-4,1,mix(b.trim,[40,36,42],.25));
   if(hash(id,1,11)<.4){const ax=x+hi(id,2,11,3,Math.max(3,w-14)),ay=top+wh+Math.round(2*k);box(A,ax,ay,Math.round(9*k),Math.round(5*k),[120,120,122]);box(A,ax+1,ay+1,Math.round(5*k),Math.round(3*k),[56,58,64]);}
@@ -458,33 +458,14 @@ function paintRoof(){
     }
     pa(A,x,y,c);
   }
-  // A black tank on a brick stand at the far side of the roof.
-  tankX=Math.round(W*(.5-WORLD.side*.42));
-  {
-    const tw=Math.round(50*u),th=Math.round(58*u),by=floorY+Math.round(fgH*.1),ty=by-th-Math.round(8*u);
-    box(A,tankX-tw/2+2,by-Math.round(8*u),tw-4,Math.round(9*u),[96,62,52]);
-    for(let y=by-Math.round(8*u);y<by;y+=2)for(let x=-tw/2+2;x<tw/2-2;x+=4)pa(A,tankX+x+((y>>1)&1)*2,y,[60,40,36]);
-    for(let y=0;y<th;y++){
-      const e=y/th,sq=e<.08?Math.sqrt(1-((.08-e)/.08)**2):1;
-      for(let x=-tw/2;x<tw/2;x++){
-        const nx=(x+.5)/(tw/2);if(Math.abs(nx)>sq)continue;
-        let c=mix([150,150,172],[46,46,60],clamp(Math.abs(nx+.28)*1.15,0,1));
-        if(y%Math.round(9*u)<1)c=mix(c,[14,14,20],.7);else if(y%Math.round(9*u)<2)c=mix(c,[210,210,226],.14);
-        pa(A,tankX+x,ty+y,c);
-      }
-    }
-    box(A,tankX-Math.round(6*u),ty-3,Math.round(12*u),4,[96,96,112]);
-    // A pipe down to the floor.
-    box(A,tankX+Math.round(tw*.42),by-4,2,Math.round(8*u),[112,112,116]);
-  }
-  // Plants in old paint tins by the wall, on the side away from the tank.
+  // Plants in old paint tins by the wall.
   for(let i=0,n=hi(1,1,77,2,3);i<n;i++){
     const px=Math.round(W*(.5+WORLD.side*(.3+i*.06+hash(i,2,77)*.03))),py=floorY+Math.round(5*u)+i*3,pw=Math.round(9*u),ph=Math.round(10*u);
     for(let k=0;k<70*u;k++){const a=hash(i,k,78)*3.14,l=(6+hash(i,k,79)*18)*u,x=px+pw/2+Math.cos(a)*l*.7,y=py-Math.sin(a)*l;pa(A,x,y,hash(i,k,80)<.5?[60,110,60]:[40,84,50]);}
     box(A,px,py,pw,ph,hash(i,3,77)<.5?[160,84,54]:[130,60,50]);box(A,px-1,py,pw+2,2,[176,110,78]);
   }
-  // A rangoli on the floor, laid out in coloured powder and foreshortened by the view.
-  const rside=-WORLD.side,rcx=Math.round(W*(.5+rside*.2)),rcy=floorY+Math.round((H-floorY)*.62),rx=Math.round(clamp(50*u,30,W*.2)),ry=Math.max(7,Math.round((H-floorY)*.46));
+  // A rangoli on the floor, laid out in coloured powder and foreshortened by the view. Only the far part of it is in the frame.
+  const rside=-WORLD.side,rcx=Math.round(W*(.5+rside*.2)),rx=Math.round(clamp(50*u,30,W*.2)),ry=Math.max(7,Math.round((H-floorY)*.95)),rcy=H+Math.round(ry*.35*hash(1,4,82));
   const RC=WORLD.rangoli.cols,petals=WORLD.rangoli.petals;
   rangoli={x:rcx,y:rcy,rx,ry};
   for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){
@@ -498,31 +479,16 @@ function paintRoof(){
     else if(r<.97)c=RC[5];else c=[240,236,226];
     if(c&&hash(x,y,81)>.04)pa(A,rcx+x,rcy+y,c);
   }
-  // Diyas: along the ledge, in ones and twos, and in a ring round the rangoli.
-  roofDiyas=[];
-  const s=Math.max(1,Math.round(u));
-  for(let x=hi(2,2,82,6,18),i=0;x<W;i++){
-    if(Math.abs(x-seatX)>20*u&&Math.abs(x-tankX)>30*u)roofDiyas.push({x,y:roofY,ph:hash(i,1,83)*60,lit:hash(i,2,83)<.9,s,ledge:true,fuel:.6+.4*hash(i,7,83)});
-    x+=Math.round((hash(i,3,83)<.3?11:26+hash(i,4,83)*30)*u);
-  }
-  for(let i=0,n=hi(3,3,82,7,10);i<n;i++){const a=i/n*6.283+hash(i,5,83)*.2;roofDiyas.push({x:Math.round(rcx+Math.cos(a)*rx*1.06),y:Math.round(rcy+Math.sin(a)*ry*1.06)+1,ph:hash(i,6,83)*60,lit:true,s,fuel:.6+.4*hash(i,8,83)});}
-  for(const d of roofDiyas){
-    const hw=2+s*1.2;
-    for(let y=0;y<2+s;y++){const w=Math.round(hw*(1-y*.22));for(let x=-w;x<=w;x++)pa(A,d.x+x,d.y-1-(1+s)+y+1,y===0?[186,110,66]:x<0?[150,84,50]:[120,64,40]);}
-  }
-  // Paint it twice: cold, and with every diya burning. Each frame draws the cold one, then the warm one on top at the diyas' flicker.
-  const[c0,g0]=mk(W,H),[c1,g1]=mk(W,H),i0=g0.createImageData(W,H),i1=g1.createImageData(W,H),d0=i0.data,d1=i1.data,amb=[.19,.17,.27];
-  const Lr=clamp(17*u,12,34);
+  // There is no flame up here, only what the city throws back: enough to warm the ledge and read the rangoli by, with the wall in shadow.
+  const[c0,g0]=mk(W,H),i0=g0.createImageData(W,H),d0=i0.data,amb=[.19,.17,.27],spill=[.34,.22,.16];
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
     const i=(y*W+x)*4;if(!A[i+3])continue;
-    let L=0;for(const d of roofDiyas){if(!d.lit)continue;const dd=Math.hypot(x-d.x,(y-d.y+3)*(d.ledge?1.3:2.2))/Lr;if(dd<5)L+=1/(1+dd*dd)**1.5;}
-    if(y>=roofY+lh&&y<floorY)L*=.3;
-    L=Math.min(1.3,L);
-    for(let j=0;j<3;j++){const a=A[i+j],b=a*amb[j];d0[i+j]=quant(b,x,y,4);d1[i+j]=quant(b+a*L*[1.15,.68,.3][j],x,y,4);}
-    d0[i+3]=d1[i+3]=255;
+    const L=y<roofY+lh?1:y<floorY?.25:.8;
+    for(let j=0;j<3;j++)d0[i+j]=quant(A[i+j]*(amb[j]+spill[j]*L),x,y,4);
+    d0[i+3]=255;
   }
-  g0.putImageData(i0,0,0);g1.putImageData(i1,0,0);roofC=c0;roofL=c1;
-  // Fireworks are in front of us, so they only catch the top of the ledge and the rim of the tank.
+  g0.putImageData(i0,0,0);roofC=c0;
+  // Fireworks are in front of us, so they only catch the top of the ledge.
   const[c2,g2]=mk(W,H),i2=g2.createImageData(W,H);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;if(!A[i+3])continue;const top=y>0&&!A[((y-1)*W+x)*4+3],edge=y<roofY+lh&&y>=roofY;if(!top&&!edge)continue;i2.data[i]=A[i];i2.data[i+1]=A[i+1];i2.data[i+2]=A[i+2];i2.data[i+3]=255;}
   g2.putImageData(i2,0,0);rimC=c2;
@@ -643,16 +609,56 @@ function drawLamps(){
   }
   ctx.globalAlpha=1;
 }
+/* ---------- the window up high ---------- */
+// One window high up keeps its own hours: neon from inside, with rice lights strung round the frame for Diwali all the same.
+const NEON=[[[255,40,170],[40,230,255]],[[190,80,255],[60,255,210]],[[255,60,120],[110,90,255]]];
+const RICE=[[255,196,90],[255,228,160],[255,70,60],[255,196,90],[90,230,120]];
+let neonWin=null;
+function placeNeon(){
+  const clear=(row,w)=>{const cx=w.ix+w.iw/2;return!w.shop&&w.iy>H*.08&&w.iy<H*.42&&w.ix>4&&w.ix+w.iw<W-4&&(row===close||!close.blocks.some(b=>cx>=b.x-3&&cx<=b.x+b.w+3));};
+  // A window in a bare wall stands out better than one back in a balcony, so those come first.
+  let all=[];for(const row of[near,close])for(const w of row.wins)if(clear(row,w))all.push({row,w});
+  if(all.some(n=>n.w.free))all=all.filter(n=>n.w.free);
+  neonWin=null;if(!all.length)return;
+  const n=all[Math.floor(hash(1,1,86)*all.length)],w=n.w,[a,b]=NEON[Math.floor(hash(2,1,86)*NEON.length)];
+  w.neon=true;n.pal=Array.from({length:8},(_,i)=>mix(a,b,i/7));
+  // The string sags a little along the top and hangs down past the frame at each side, with a few strands across the glass.
+  const P=[],x0=w.ix-2,x1=w.ix+w.iw+1,y0=w.iy-2,drop=Math.round(w.ih*(1.15+.35*hash(3,1,86)));
+  for(let y=y0+drop;y>y0;y-=2)P.push([x0,y]);
+  for(let x=x0;x<=x1;x+=2)P.push([x,y0+Math.round(Math.sin((x-x0)/(x1-x0)*3.14)*1.4)]);
+  for(let y=y0+2;y<=y0+drop;y+=2)P.push([x1,y]);
+  for(let x=x0+5;x<x1-2;x+=5)for(let y=y0+3;y<=w.iy+w.ih;y+=2)P.push([x,y]);
+  n.bulbs=P.map(([x,y],i)=>({x,y,c:RICE[i%RICE.length],ph:i*.55+hash(i,4,86)*.8}));
+  neonWin=n;
+}
+function drawNeon(row){
+  const n=neonWin;if(!n||n.row!==row||n.w.b.power<.5)return;
+  const w=n.w,drift=Math.sin(t*.13+w.ph),lum=(.82+.18*noise(t*.4+w.ph))*(noise(t*2.3+w.ph)>.82?.72:1)*w.b.power;
+  const cx=w.ix+w.iw/2,cy=w.iy+w.ih/2,r=Math.max(w.iw,w.ih),m=Math.round((drift+1)*3.5);
+  // The spill goes down first, so the glass itself keeps its colour.
+  bloom(cx,cy,r*2.4,n.pal[m],.42*lum);bloom(cx,cy+r*.7,r*3.6,n.pal[7-m],.2*lum);
+  for(let j=-1;j<=w.ih;j++)for(let i=-1;i<=w.iw;i++)dot(w.ix+i,w.iy+j,n.pal[Math.round(clamp(i/w.iw*.7+j/w.ih*.3+drift*.3,0,1)*7)],lum*(j%3===2?.6:1));
+  ctx.globalAlpha=1;
+}
+function drawRice(row){
+  const n=neonWin;if(!n||n.row!==row)return;
+  const pw=n.w.b.power;if(pw<.05)return;
+  for(const b of n.bulbs){
+    const a=(.5+.5*(.5+.5*Math.sin(t*.8-b.ph)))*pw;
+    dot(b.x,b.y,b.c,a);bloom(b.x+.5,b.y+.5,2,b.c,.22*a);
+  }
+  ctx.globalAlpha=1;
+}
 function drawRow(row){
   ctx.drawImage(row.curC,0,0);
   for(const b of row.blocks)if(b.power<.99){const y=Math.max(0,b.top-30),h=Math.min(H,row.base)-y;ctx.globalAlpha=1-b.power;ctx.drawImage(row.offC,b.x,y,b.w,h,b.x,y,b.w,h);}
   ctx.globalAlpha=1;
-  drawWindows(row);drawDoors(row);
+  drawWindows(row);drawNeon(row);drawDoors(row);
   for(const p of row.people)drawFig(p);
   ctx.drawImage(row.frontC,0,0);
   for(const p of row.people){for(const a of p.arm)if(a.rail)dot(a.x,a.y,p.c.skin,p.show);if(p.after)p.after(p);}
   ctx.globalAlpha=1;
-  drawStrings(row);drawSmallDiyas(row);
+  drawStrings(row);drawRice(row);drawSmallDiyas(row);
   for(const l of row.lanterns)drawLantern(row,l);
 }
 
@@ -718,6 +724,8 @@ function stepPerson(p,dt){
     if(!p.placed){a.x=tx;a.y=ty;}
     a.vx+=(w*w*(tx-a.x)-2*w*a.vx)*dt;a.vy+=(w*w*(ty-a.y)-2*w*a.vy)*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;
     [a.ex,a.ey]=ik(a.sx,a.sy,a.x,a.y,la,af>.3?-dir:s);
+    // A hand held out towards us keeps its elbow in by the ribs.
+    if(q&&q.tuck){a.ex=lerp(a.ex,(a.sx+a.x)/2,q.tuck);a.ey=lerp(a.ey,(a.sy+a.y)/2+h*.04,q.tuck);}
   }
   p.placed=true;
 }
@@ -916,20 +924,34 @@ function drawCig(p){
   if(p.flame>0){const x=p.J.hx,y=p.J.hy+p.h*.1;dot(x,y,[255,230,140],1);dot(x,y-1,[255,170,70],.8);ctx.globalAlpha=1;bloom(x,y,p.h*.6,[255,170,80],.5);}
   if(p.cig){const c=p.cig,[x,y]=cigTip(p);dot(x,y,[255,lerp(70,170,c.ember),lerp(30,80,c.ember)],clamp(.5+c.ember*.6,0,1));ctx.globalAlpha=1;bloom(x,y,lerp(2,p.h*.28,c.ember),[255,110,50],.14+.3*c.ember);}
 }
-// Someone goes along the rail with a taper, relighting the diyas the wind has put out.
-function* lighting(p,B){
+// How long a diya burns, in seconds. Oil and wick differ, so some last minutes and some last hours.
+const BURN=10800,burn=()=>rr(240,600)+expo(BURN);
+// Someone comes out with a plate of new diyas, swapping the burnt-out ones along the rail and relighting any the wind put out.
+function* tending(p,B){
   yield* enter(p,B);p.busy=true;
-  const i=1,a=p.arm[i];
-  a.fn=q=>({x:q.J.sx+q.h*.2,y:q.J.sy+q.h*.14,w:10});
-  p.after=q=>{const h=q.arm[i];dot(h.x,h.y-1,[255,214,120],.9);ctx.globalAlpha=1;bloom(h.x,h.y-1,q.h*.3,[255,160,70],.3);};
+  const a=p.arm[1],at=q=>({x:q.J.sx+q.h*.15,y:q.J.sy+q.h*.25,w:10,tuck:.8}),r=Math.max(1,Math.round(p.h*.11));
+  let held=0;
+  p.arm[0].fn=q=>({x:q.J.sx-q.h*.1,y:q.J.sy+q.h*.25,w:10,tuck:.8});a.fn=at;
+  p.after=q=>{
+    const b=q.arm[0],h=q.arm[1],x=Math.round(b.x),y=Math.round(b.y);
+    ctx.globalAlpha=1;ctx.fillStyle='#c8a050';ctx.fillRect(x-r,y,r*2+1,1);
+    dot(x-1,y-1,[150,84,48]);dot(x+1,y-1,[150,84,48]);dot(x,y-2,[255,214,120],.9);
+    if(held){dot(h.x,h.y,[150,84,48]);if(held>1){dot(h.x,h.y-1,[255,214,120],.9);ctx.globalAlpha=1;bloom(h.x,h.y-1,q.h*.3,[255,160,70],.3);}}
+    ctx.globalAlpha=1;
+  };
   for(const d of shuffle(B.diyas.filter(d=>!d.lit))){
     yield* go(p,clamp(d.x-p.h*.12,B.x+B.sw+1,B.x+B.w-B.sw-1),rr(.6,.9));p.fT=0;p.leanT=.8;p.hpT=-.7;
-    a.fn=()=>({x:d.x,y:d.y-1,w:9});
-    yield* wait(rr(1.8,3));d.lit=true;d.fuel=rr(.6,1);
-    yield* wait(rr(.6,1.2));p.leanT=.15;a.fn=q=>({x:q.J.sx+q.h*.2,y:q.J.sy+q.h*.14,w:10});
+    const rail=()=>({x:d.x,y:d.y-1,w:9});
+    if(d.fuel<=0){
+      a.fn=rail;yield* wait(rr(1,1.7));held=1;
+      a.fn=q=>({x:q.arm[0].x+q.h*.05,y:q.arm[0].y-1,w:9,tuck:.8});yield* wait(rr(.9,1.5));held=2;
+      a.fn=rail;yield* wait(rr(1,1.6));d.fuel=burn();
+    }else{held=2;a.fn=rail;yield* wait(rr(1.8,3));}
+    d.lit=true;held=0;
+    yield* wait(rr(.6,1.2));p.leanT=.15;a.fn=at;
     yield* wait(rr(1,2));
   }
-  p.after=null;p.hpT=.2;
+  p.after=null;p.arm[0].fn=null;p.hpT=.2;
   yield* wait(rr(2,5));
   yield* linger(p,B,rr(12,35),false);
   yield* leave(p,B);
@@ -1259,10 +1281,10 @@ function wash(alb,minT,maxA){
 
 /* ---------- the one on the ledge ---------- */
 // The figure on the ledge is close enough to paint a pixel at a time. It is built each frame into a small buffer: back, shoulders, neck,
-// head and hair, then a pass that lets the fireworks catch its edges and the diyas warm it from below.
-const who={yaw:.1,yawT:.1,pitch:.2,pitchT:.2,lean:0,leanT:0,slump:0,slumpT:0,sip:0,sipT:0,reach:0,reachT:0,rx:0,ry:0,phone:0,phoneT:0,stretch:0,stretchT:0,
+// head and hair, then a pass that lets the fireworks catch its edges and the city's glow warm it from below.
+const who={yaw:.1,yawT:.1,pitch:.2,pitchT:.2,lean:0,leanT:0,slump:0,slumpT:0,sip:0,sipT:0,phone:0,phoneT:0,stretch:0,stretchT:0,
   hair:pick(['short','short','bun','braid','long']),hairC:pick(HAIRC),skin:pick(SKIN),top:pick([[132,34,60],[28,86,98],[150,96,30],[62,46,112],[166,62,36],[190,184,170],[40,92,70]]),
-  shawl:chance(.5)?pick([[186,150,90],[120,40,60],[60,80,110],[200,192,176]]):null,cs:chance(.5)?1:-1,rs:1,gajra:chance(.5),taper:0};
+  shawl:chance(.5)?pick([[186,150,90],[120,40,60],[60,80,110],[200,192,176]]):null,cs:chance(.5)?1:-1,gajra:chance(.5)};
 let WQ=1,PW=0,PH=0,whoC,whoG,whoImg,whoBuf,whoM,cupX=0,bright=[0,0,0],rimDir=0;
 function layoutWho(){
   WQ=clamp(H/290,.72,1.5)*clamp(W/330,.72,1);
@@ -1290,7 +1312,6 @@ function drawWho(){
   const hand=i=>{
     const rest=[ox+i*16.8*q,oy-.5*q];
     if(i===w.cs&&w.sip>.01){const m=[hx+i*3.5*q,hy0+6*q],k=ease(w.sip);return[lerp(rest[0],m[0],k),lerp(rest[1],m[1],k)-Math.sin(k*3.14)*5*q];}
-    if(i===w.rs&&w.reach>.01){const k=ease(w.reach);return[lerp(rest[0],w.rx-seatX+ox,k),lerp(rest[1],oy-1*q,k)];}
     if(w.phone>.01){const k=ease(w.phone);return[lerp(rest[0],sx+i*5*q,k),lerp(rest[1],sy+12*q,k)];}
     if(w.stretch>.01){const k=ease(w.stretch);return[lerp(rest[0],sx+i*12*q,k),lerp(rest[1],sy-24*q,k)];}
     return rest;
@@ -1352,8 +1373,8 @@ function drawWho(){
     // A gap of shadow between the arm and the body.
     if(!raised(i)){const dx=-i;for(let k=.1;k<1;k+=.06){const x=lerp(a.s[0],a.e[0],k)+dx*3.8*q,y=lerp(a.s[1],a.e[1],k);wset(x,y,dk,.7);}}
   }
-  // Light: the flashes catch whichever edges face them, the sky lifts the shoulders, and the diyas warm everything low down.
-  const[br,bg,bb]=bright,dW=diyaWarm;
+  // Light: the flashes catch whichever edges face them, the sky lifts the shoulders, and the city's glow warms everything low down.
+  const[br,bg,bb]=bright,dW=.3;
   for(let y=0;y<PH;y++)for(let x=0;x<PW;x++){
     const i=y*PW+x;if(!whoM[i])continue;
     const j=i*4,up=y===0||!whoM[i-PW],lf=x===0||!whoM[i-1],rt=x===PW-1||!whoM[i+1],up2=y<2||!whoM[i-PW*2],lf2=x<2||!whoM[i-2],rt2=x>PW-3||!whoM[i+2];
@@ -1369,7 +1390,6 @@ function drawWho(){
   ctx.globalAlpha=.4;ctx.fillStyle='#08060c';ctx.fillRect(seatX-Math.round(14*q),roofY+1,Math.round(28*q),2);ctx.globalAlpha=1;
   if(w.phone>.1){bloom(sx-0+px,hy0+py+10*q,16*q,[160,200,255],.3*w.phone);}
   ctx.drawImage(whoC,px,py);
-  if(w.taper>0){const a=A[w.rs],x=a.h[0]+px,y=a.h[1]+py-1;dot(x,y,[255,220,130],1);dot(x,y-1,[255,150,60],.8);ctx.globalAlpha=1;bloom(x,y,9*q,[255,160,70],.5);}
   if(w.sip<.08)drawCup(1);
   else if(w.sip<.6){const a=A[w.cs];drawCup(0,a.h[0]+px,a.h[1]+py);}
 }
@@ -1379,7 +1399,7 @@ function drawCup(onLedge,x,y){
 }
 function stepWho(dt){
   const w=who,sp=(k,f)=>{const v=k+'V',T=k+'T',e=w[T]-w[k];w[v]=(w[v]||0)+(f*f*e-2*f*(w[v]||0))*dt;w[k]+=w[v]*dt;};
-  sp('yaw',2.6);sp('pitch',2.2);sp('lean',1.3);sp('slump',1.1);sp('sip',2.1);sp('reach',2);sp('phone',1.8);sp('stretch',1.5);
+  sp('yaw',2.6);sp('pitch',2.2);sp('lean',1.3);sp('slump',1.1);sp('sip',2.1);sp('phone',1.8);sp('stretch',1.5);
   if(w.co)w.co.next();
   // Steam from the cup, while it sits on the ledge.
   w.st=(w.st||0)+dt*1.1;while(w.st>1){w.st--;if(w.sip<.08)part(4,{x:cupX+rr(-1,1),y:roofY-6*WQ,vx:wind*3,vy:-rr(5,9),dr:.2,life:rr(.8,1.7),c:[220,214,206],c2:[170,166,170],a:.2,wv:rr(1,2.4)});}
@@ -1394,7 +1414,7 @@ function* whoLife(){
   for(;;){
     yield* wait(expo(18)+6);
     if(w.track>t)continue;
-    const a=wpick([['sip',5],['look',6],['shift',4],['down',3],['phone',1.6],['stretch',.8],['relight',roofDiyas.some(reachable)?6:0],['slump',2]]);
+    const a=wpick([['sip',5],['look',6],['shift',4],['down',3],['phone',1.6],['stretch',.8],['slump',2]]);
     if(a==='sip'){w.yawT*=.3;w.sipT=1;yield* wait(rr(1.6,2.2));w.pitchT=rr(.4,.7);yield* wait(rr(1.8,3.4));w.pitchT=rr(0,.25);w.sipT=0;yield* wait(rr(1.6,2.6));}
     else if(a==='look'){w.yawT=rr(-.7,.7);w.pitchT=rr(-.1,.5);yield* wait(rr(4,10));if(chance(.4)){w.yawT=rr(-.4,.4);w.pitchT=rr(0,.3);}}
     else if(a==='shift'){w.leanT=rr(-.4,.4);yield* wait(rr(6,16));if(chance(.6))w.leanT=rr(-.12,.12);}
@@ -1402,16 +1422,8 @@ function* whoLife(){
     else if(a==='phone'){w.phoneT=1;w.pitchT=-.8;w.yawT=0;w.slumpT=.8;const end=t+rr(10,24);while(t<end&&!(lastBurst&&lastBurst.r>50*u&&t-lastBurst.t<.6))yield;w.phoneT=0;w.slumpT=0;w.pitchT=.2;yield* wait(rr(2,4));}
     else if(a==='stretch'){w.stretchT=1;w.pitchT=.7;yield* wait(rr(2.6,4));w.stretchT=0;w.pitchT=.1;yield* wait(rr(2,3.5));log('The one on the ledge stretches and settles again');}
     else if(a==='slump'){w.slumpT=rr(.5,1);yield* wait(rr(14,36));w.slumpT=0;}
-    else if(a==='relight'){
-      const d=pick(roofDiyas.filter(reachable));
-      w.rs=d.x<seatX?-1:1;w.yawT=w.rs*.9;w.pitchT=-.7;yield* wait(rr(1,1.6));
-      w.leanT=clamp((d.x-seatX)/(40*WQ),-1,1)*.75;w.rx=d.x;w.reachT=1;w.taper=1;yield* wait(rr(2.2,3.2));
-      d.lit=true;d.fuel=rr(.7,1);yield* wait(rr(1,1.8));
-      w.reachT=0;w.taper=0;w.leanT=0;w.yawT=rr(-.2,.2);w.pitchT=.2;log('The one on the ledge leans over and relights a diya');yield* wait(rr(2,4));
-    }
   }
 }
-const reachable=d=>d.ledge&&!d.lit&&Math.abs(d.x-seatX)<48*WQ;
 // Heads turn to a big shell a moment after it opens, follow it down, and drift back.
 function whoSees(x,y,r){
   const w=who;w.track=t+rr(5,9);
@@ -1442,43 +1454,25 @@ function* catWalk(c){
   cat=null;
 }
 function drawCat(c){
-  if(Math.abs(c.x-tankX)<27*u)return;
   const f=CATF[c.sit?2:Math.floor(c.ph)%2],col=[20,18,24],hi2=[56,50,56],y=roofY-f.length;
   f.forEach((r,j)=>{for(let i=0;i<r.length;i++)if(r[i]==='#')dot(Math.round(c.x)+(c.d>0?i:r.length-1-i)-5,y+j,j<2?hi2:col,1);});
   if(c.sit&&Math.sin(t*2+c.ph)>.3)dot(Math.round(c.x)+(c.d>0?-6:6),y+3,col,1);
   ctx.globalAlpha=1;
 }
 
-/* ---------- the roof's diyas ---------- */
-let diyaWarm=.8;
-function drawRoofDiyas(){
-  let sum=0,n=0;
-  // The warm layer is painted with every diya burning, so one that has gone out needs its pool of light taken away again.
-  ctx.save();ctx.beginPath();ctx.rect(0,roofY,W,H-roofY);ctx.clip();
-  for(const d of roofDiyas)if(!d.lit){const s=glow(Math.round(24*u),[16,14,22],1);ctx.globalAlpha=.6*diyaWarm;ctx.drawImage(s,Math.round(d.x-s.width/2),Math.round(d.y-s.height/2));}
-  ctx.restore();
-  for(const d of roofDiyas){
-    if(!d.lit)continue;n++;
-    const f=noise(t*.45+d.ph),gs=clamp(1-Math.abs(wind)*.2,.7,1),hN=(1.8+d.s*1.2)*(.9+.2*f)*gs,lean=clamp(wind*1.1,-1.4,1.4)+(noise(t*.8+d.ph*3)-.5)*.5,x0=d.x,y0=d.y-2-d.s;
-    sum+=.86+.14*f;
-    ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3+.07*f;const s=glow(Math.round(11*u),[255,140,50],.6);ctx.drawImage(s,Math.round(x0-s.width/2),Math.round(y0-3-s.height/2));ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
-    const hh=Math.ceil(hN);
-    for(let i=0;i<hh;i++){
-      const k=i/hN,x=x0+lean*k*k,w=k<.35?1:0,c=k<.3?FLAME[0]:k<.6?FLAME[1]:k<.85?FLAME[2]:FLAME[3];
-      dot(x,y0-i,c,1);if(w&&d.s>1)dot(x+1,y0-i,FLAME[1],.9);if(w)dot(x-1,y0-i,FLAME[2],.75);
-    }
-  }
-  ctx.globalAlpha=1;
-  diyaWarm=n?clamp(sum/Math.max(1,roofDiyas.length)*1.1,.2,1):.1;
-}
-
 /* ---------- events ---------- */
 const stats={shells:0,visits:0,events:0};
+// A jet very far up: one point of light that takes a minute or two to cross, going behind whatever stands in its way.
+const planes=[];
+function overflight(){
+  const d=chance(.5)?1:-1,v=rr(3.2,6)*u,y=rr(.05,.42)*hz,y1=clamp(y+rr(-.1,.1)*hz,.04*hz,.46*hz);
+  planes.push({x:d>0?-3:W+3,y,v:d*v,vy:(y1-y)*v/(W+6),ph:R()*9,per:rr(1.05,1.5),beat:rr(1.6,2.2),b:rr(.4,.65)});
+}
 function log(text){if(warming)return;stats.events++;N.log(text);}
-const SCHED={far:{m:52,f:6},city:{m:95,f:14},flats:{m:180,f:35},lane:{m:320,f:80},overhead:{m:640,f:150},cake:{m:1200,f:420},rooftop:{m:240,f:60},
-  visit:{m:46,f:8},smoker:{m:60,f:.1},phone:{m:210,f:50},film:{m:280,f:80},family:{m:190,f:40},sparkler:{m:130,f:20},diya:{m:120,f:35},
+const SCHED={far:{lo:5,hi:30,f:6},city:{m:95,f:14},flats:{m:180,f:35},lane:{m:320,f:80},overhead:{m:640,f:150},cake:{m:1200,f:420},rooftop:{m:240,f:60},
+  visit:{m:64,f:8},smoker:{m:60,f:.1},phone:{m:210,f:50},film:{m:280,f:80},family:{m:190,f:40},sparkler:{m:130,f:20},diya:{m:40,f:20},
   walkers:{m:78,f:10},vehicle:{m:72,f:14},anar:{m:320,f:70},ladi:{m:760,f:220},chakri:{m:520,f:130},
-  window:{m:9,f:3},shadow:{m:18,f:6},gust:{m:280,f:110},powercut:{m:1500,f:600},cat:{m:380,f:90}};
+  window:{m:9,f:3},shadow:{m:18,f:6},gust:{m:280,f:110},powercut:{m:1500,f:600},cat:{m:380,f:90},plane:{m:300,f:40}};
 const nextEv={};for(const k in SCHED)nextEv[k]=expo(SCHED[k].f);
 const crowded=()=>near.people.length+flats.people.length+close.people.length>4;
 function cake(){
@@ -1520,21 +1514,24 @@ function fire(k){
       visit(B,[[p,sparkling(p,B)]]);log(`${kid?'A child':'Someone'} waves a sparkler on a ${B.name} balcony`);break;
     }
     case'diya':{
-      const B=freeBalcony(b=>b.diyas.some(d=>!d.lit));if(!B||crowded())break;const p=person({h:figH(B.row),wear:pick(['sari','sari','salwar','kurta'])});
-      visit(B,[[p,lighting(p,B)]]);log(`Someone relights the diyas on a ${B.name} balcony`);break;
+      // Of a few balconies that need it, the one that needs it most.
+      const need=b=>b.diyas.filter(d=>!d.lit).length;let B=null;
+      for(let i=0;i<4;i++){const c=freeBalcony(need);if(c&&(!B||need(c)>need(B)))B=c;}
+      if(!B||crowded())break;const p=person({h:figH(B.row),wear:pick(['sari','sari','salwar','kurta'])});
+      const fresh=B.diyas.some(d=>!d.lit&&d.fuel<=0);visit(B,[[p,tending(p,B)]]);log(fresh?`Someone brings new diyas out to a ${B.name} balcony`:`Someone relights the diyas on a ${B.name} balcony`);break;
     }
     case'walkers':if(street.length<4)walkers();break;
     case'vehicle':if(vehicles.length<2)vehicle();break;
     case'anar':case'ladi':case'chakri':if(street.length<4)crackers(k);break;
     case'window':{
-      const row=pick([near,near,near,flats,close]),w=pick(row.wins);if(!w||w.shop||w.b.power<.5)break;
+      const row=pick([near,near,near,flats,close]),w=pick(row.wins);if(!w||w.shop||w.neon||w.b.power<.5)break;
       w.on=!w.on;row.curG.drawImage(w.on?row.onC:row.offC,w.x,w.y,w.w,w.h,w.x,w.y,w.w,w.h);break;
     }
     case'shadow':{const row=pick([near,near,flats,close]),w=pick(row.wins);if(w&&w.on&&!w.shop&&!w.sh)w.sh={age:0,dur:rr(1.2,3.4),dir:chance(.5)?1:-1};break;}
     case'gust':{
       const d=chance(.5)?1:-1;gust={age:0,dur:rr(9,18),amp:d*rr(.4,.8)};
-      let n=0;const all=[...near.diyas,...flats.diyas,...close.diyas,...roofDiyas];
-      for(const q of all)if(q.lit&&chance(.05*(q.ledge?1.4:1))){q.lit=false;n++;}
+      let n=0;const all=[...near.diyas,...flats.diyas,...close.diyas];
+      for(const q of all)if(q.lit&&chance(.02)){q.lit=false;n++;}
       log(n>2?`A gust comes through and takes ${n} diyas with it`:'A gust sets the lanterns swinging');break;
     }
     case'powercut':{
@@ -1544,11 +1541,12 @@ function fire(k){
       log('The power goes, and for a while the diyas have the street to themselves');break;
     }
     case'cat':if(!cat&&W>260){cat={x:0,d:chance(.5)?1:-1,ph:0,v:15,sit:false,bolt:false};cat.co=catWalk(cat);log('A cat walks along the ledge');}break;
+    case'plane':overflight();log('A plane crosses, very far above the city');break;
   }
 }
 function rowsReset(){
   who.co=who.co||whoLife();
-  street.length=0;vehicles.length=0;skyPeople.length=0;ground.length=0;
+  street.length=0;vehicles.length=0;skyPeople.length=0;ground.length=0;planes.length=0;
   if(cat)cat=null;
   for(const row of[near,flats,close])for(const b of row.blocks)b.powerT=1;
 }
@@ -1571,14 +1569,14 @@ function update(dt){
   DT=dt;t+=dt;
   let g=0;if(gust){gust.age+=dt;const p=gust.age/gust.dur;if(p>=1)gust=null;else g=gust.amp*Math.sin(Math.PI*p)**2;}
   wind=(fbm(t*.014+WORLD.off[1])-.5)*.7+g;
-  // The whole night breathes: fireworks come and go over minutes, with long stretches of nothing at all.
+  // The whole night breathes: nearer fireworks come and go over minutes, while the far ones keep popping away between the rooftops.
   act=clamp(fbm(t*.01+WORLD.off[2])*1.7-.15,.08,1.1);
   hazeAmt=Math.max(.35,hazeAmt-dt*.0012);hazeX+=dt*(.5+wind*1.2);
   for(const k in SCHED){
     nextEv[k]-=dt;
     if(nextEv[k]<=0){
-      nextEv[k]=expo(SCHED[k].m);
-      const fw=k==='far'||k==='city'||k==='flats'||k==='lane'||k==='overhead'||k==='cake';
+      nextEv[k]=SCHED[k].hi?rr(SCHED[k].lo,SCHED[k].hi):expo(SCHED[k].m);
+      const fw=k==='city'||k==='flats'||k==='lane'||k==='overhead'||k==='cake';
       if(!fw||R()<act)fire(k);
     }
   }
@@ -1588,9 +1586,11 @@ function update(dt){
   for(let i=street.length-1;i>=0;i--){const p=street[i];if(p.co.next().done){street.splice(i,1);continue;}stepPerson(p,dt);if(p.flame>0)p.flame-=dt;}
   for(let i=skyPeople.length-1;i>=0;i--){const p=skyPeople[i];if(p.co.next().done){skyPeople.splice(i,1);continue;}stepPerson(p,dt);if(p.flame>0)p.flame-=dt;}
   for(let i=vehicles.length-1;i>=0;i--){const v=vehicles[i];v.x+=v.d*v.v*dt;if(v.x<-40||v.x>W+40)vehicles.splice(i,1);}
+  for(let i=planes.length-1;i>=0;i--){const p=planes[i];p.x+=p.v*dt;p.y+=p.vy*dt;if(p.x<-4||p.x>W+4)planes.splice(i,1);}
   stepGround(dt);stepShells(dt*AIR);stepParts(dt*AIR);
   // Diyas burn down and go out, slowly, one at a time. Someone will come along for them.
-  for(const list of[near.diyas,flats.diyas,close.diyas,roofDiyas])for(const d of list)if(d.lit){d.fuel-=dt*.0016;if(d.fuel<=0&&chance(.02))d.lit=false;}
+  // Each diya burns out in its own time. One we can't see just carries on, since nobody could ever be seen replacing it.
+  for(const list of[near.diyas,flats.diyas,close.diyas])for(const d of list)if(d.lit&&(d.fuel-=dt)<=0){if(d.B.seen??=inView(d.B))d.lit=false;else d.fuel=burn();}
   stepWho(dt);stepSee();
   if(lastBurst&&lastBurst.r>34*u&&lastBurst.seen!==true){lastBurst.seen=true;whoSees(lastBurst.x,lastBurst.y,lastBurst.r);if(cat&&!cat.bolt&&lastBurst.r>60*u&&chance(.5))cat.bolt=true;}
   if(cat)cat.co.next();
@@ -1607,6 +1607,16 @@ function drawSky(){
   for(const s of stars){const a=s.b*(.75+.25*noise(t*.6+s.ph))*(1-Math.min(1,hazeAmt*.4));dot(s.x,s.y,s.c,a);}
   ctx.globalAlpha=1;
 }
+function drawPlanes(){
+  const k=1-Math.min(1,hazeAmt*.4);
+  for(const p of planes){
+    const s=(t+p.ph)%p.per;
+    dot(p.x,p.y,[214,218,232],p.b*k);
+    if(s<.06||(s>.2&&s<.26))dot(p.x,p.y,[255,255,255],k);
+    if((t+p.ph*.7)%p.beat<.16)dot(p.x-Math.sign(p.v),p.y,[255,70,80],.7*k);
+  }
+  ctx.globalAlpha=1;
+}
 function drawCity(){
   for(const b of beacons)if(((t+b.ph)%b.per)/b.per<.35)dot(b.x,b.y,[255,60,70],.9);
   for(const c of crowns){const a=.6+.4*Math.sin(t*.4+c.ph);for(let x=0;x<c.w;x++)dot(c.x+x,c.y,c.c,a);}
@@ -1620,7 +1630,7 @@ function drawHaze(){
 }
 function draw(){
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-  drawSky();
+  drawSky();drawPlanes();
   drawParts(0);
   ctx.drawImage(farC,0,0);
   drawParts(1);
@@ -1641,16 +1651,15 @@ function draw(){
   drawParts(4);
   drawRow(close);wash(close.albC,3,.6);
   drawParts(5);
-  ctx.drawImage(roofC,0,0);ctx.globalAlpha=clamp(diyaWarm*.9,0,1);ctx.drawImage(roofL,0,0);ctx.globalAlpha=1;
+  ctx.drawImage(roofC,0,0);
   wash(rimC,3,.9);
-  drawRoofDiyas();
   if(cat)drawCat(cat);
   drawWho();
   grade();
 }
 
 /* ---------- start ---------- */
-if(N.DEBUG)window.DW={WORLD,stats,who,get seatX(){return seatX;},shells,parts,flashes,get near(){return near;},get flats(){return flats;},get close(){return close;},street,vehicles,ground,get t(){return t;},get wind(){return wind;},get act(){return act;},get roofDiyas(){return roofDiyas;},get cat(){return cat;},fire,launch,burst,draw:()=>draw(),step:dt=>update(dt),
+if(N.DEBUG)window.DW={WORLD,stats,who,get seatX(){return seatX;},get neonWin(){return neonWin;},shells,planes,parts,flashes,get near(){return near;},get flats(){return flats;},get close(){return close;},street,vehicles,ground,get t(){return t;},get wind(){return wind;},get act(){return act;},get cat(){return cat;},fire,launch,burst,draw:()=>draw(),step:dt=>update(dt),
   run(sec){for(let i=0;i<sec*60;i++)update(1/60);draw();N.refresh();}};
 layout();
 // The scene runs half a minute out of sight first, so it opens on a night already under way.
