@@ -19,5 +19,3 @@ Reduced motion shows a still, empty corner with a static star field and no shoot
 The data file supplies metadata and counters for light flickers, cat visits, passing lights and shooting stars. The templates use the shared layouts, the scene lives in `assets/js/main.js`, the overlay styles in `assets/css/style.css`, and the logo and rendered share preview in `assets/images/`.
 
 With `?debug`, `window.OS` exposes `pause()`, `run()`, `step(seconds)`, `draw()`, `state()` and `fire(event)`. State returns a copy. Events are flicker, mist, rattle, slip, car, cat, breeze, surge, glint, buttons, drip, vent and meteor. Debug pages also expose `render_game_to_text()` and `advanceTime(ms)` for automated recording and checks.
-
-Run `npm run check:one-sock` to check the absence of customers, ambient events, seeded state, reduced motion, clock rollover and a long simulated session. These checks use Node and no extra dependencies.

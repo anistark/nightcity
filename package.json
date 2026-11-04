@@ -11,8 +11,7 @@
   "scripts": {
     "build": "eleventy",
     "serve": "eleventy --serve --port 8765",
-    "check:links": "node scripts/check-links.js",
-    "check:one-sock": "node scripts/check-one-sock.js"
+    "check:links": "node scripts/check-links.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "3.1.7"

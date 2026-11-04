@@ -1,0 +1,38 @@
+{
+  "tags": "scene",
+  "order": 11,
+  "added": "2026-11-04",
+  "author": "pratik-anurag",
+  "title": "Snow Bubble",
+  "description": "A soap bubble drifts onto the snow before ice grows over its shell. Seeded cold, wind, film thinning and leakage shape its crystals until its film ruptures or its shell collapses.",
+  "ogTitle": "Snow Bubble | Night City",
+  "ogImage": "snow-bubble/assets/images/og.jpg",
+  "ogPath": "snow-bubble/",
+  "ogAlt": "Branching ice crystals coating the curved surface of a soap bubble on a snowy night",
+  "canvasLabel": "A soap bubble drifts onto snow beneath Orion, Cassiopeia and the Big Dipper. Seeded conditions drive ice growth on its curved surface and determine whether its liquid film ruptures, its dome deflates or its ice fractures.",
+  "share": "A winter growing on a soap bubble. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "bubbles",
+      "bubbles formed."
+    ],
+    [
+      "crystals",
+      "ice crystals."
+    ],
+    [
+      "bursts",
+      "liquid ruptures."
+    ],
+    [
+      "frozen",
+      "shells frozen before failure."
+    ],
+    [
+      "collapses",
+      "shell collapses."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A soap bubble rests on the snow beneath the stars. Ice grows over its curved surface as changing cold, wind and film conditions shape rupture or collapse at a time and in a form never chosen in advance."
+}
