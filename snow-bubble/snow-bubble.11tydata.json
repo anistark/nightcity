@@ -4,12 +4,12 @@
   "added": "2026-11-04",
   "author": "pratik-anurag",
   "title": "Snow Bubble",
-  "description": "A soap bubble drifts onto the snow before ice grows over its shell. Seeded cold, wind, film thinning and leakage shape its crystals until its film ruptures or its shell collapses.",
+  "description": "A soap bubble comes down close to the lens on a moonlit snowfield, with snow mountains behind it and other bubbles falling far off. Frost spreads over its shell from the snow or from flakes landing on it, layer on layer, until it is white all over. Then it bursts into thin curved flakes that flutter down into the snow.",
   "ogTitle": "Snow Bubble | Night City",
   "ogImage": "snow-bubble/assets/images/og.jpg",
   "ogPath": "snow-bubble/",
-  "ogAlt": "Branching ice crystals coating the curved surface of a soap bubble on a snowy night",
-  "canvasLabel": "A soap bubble drifts onto snow beneath Orion, Cassiopeia and the Big Dipper. Seeded conditions drive ice growth on its curved surface and determine whether its liquid film ruptures, its dome deflates or its ice fractures.",
+  "ogAlt": "A large soap bubble close to the camera on moonlit snow, with frost ferns climbing its film, snow-covered mountains behind it, smaller bubbles falling far off and a faint aurora in the sky",
+  "canvasLabel": "A soap bubble comes down close to the camera onto a snowfield under a quiet night sky, with snow-covered mountains and stands of snow-laden spruce behind it and smaller bubbles falling far off across the field. Frost spreads over its surface from where it touches the snow or from flakes landing on its top and sides, while crystals drift, join and lock together, layer on layer until the shell is white. Then a tear races round it, and the shell becomes thin curved flakes that hang for a moment in the bubble's shape and flutter down. Each night has its own moon, thin or half or full, or none at all. A faint aurora comes and goes, and high on a far ridge a snow leopard now and then crosses the skyline.",
   "share": "A winter growing on a soap bubble. Mine was seeded at {seed}.",
   "stats": [
     [
@@ -21,18 +21,18 @@
       "ice crystals."
     ],
     [
-      "bursts",
-      "liquid ruptures."
-    ],
-    [
       "frozen",
-      "shells frozen before failure."
+      "shells frozen white."
     ],
     [
       "collapses",
-      "shell collapses."
+      "shells burst."
+    ],
+    [
+      "leopards",
+      "snow leopards seen."
     ]
   ],
   "footTail": ". Tap the scene to hide this",
-  "card": "A soap bubble rests on the snow beneath the stars. Ice grows over its curved surface as changing cold, wind and film conditions shape rupture or collapse at a time and in a form never chosen in advance."
+  "card": "A soap bubble settles on the snow close to the lens, below moonlit mountains, while others fall far off across the field. Frost spreads from the snow or from flakes landing on it, layer on layer until the shell turns white, and then it bursts into thin curved flakes that flutter down. High on a far ridge, now and then, a snow leopard crosses the skyline."
 }
