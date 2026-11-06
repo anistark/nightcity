@@ -47,7 +47,8 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
    The wide card swaps sides from group to group: the first card of the first five, the second of the next five.
    With three columns it sits on the left, then across the second and third columns, and its preview stretches to
    the height of the card beside it, so the row stays even.
-   A last group of four cards makes its third card wide as well, so the final row fills too. */
+   A last group of four cards makes its third card wide as well, so the final row fills too. With three columns, a
+   last group of three has no wide card at all, since three cards already fill the row. */
 @media (min-width:768px){
   .scenes{grid-template-columns:repeat(2,1fr);grid-auto-flow:row dense}
   .scenes>li:is(:nth-child(10n+1),:nth-child(10n+7)){grid-column:span 2}
@@ -68,6 +69,11 @@ h2.section{margin:0 0 36px;font-weight:400;font-size:16px;letter-spacing:.16em;t
   .scenes>li:nth-child(10n+6):nth-last-child(2){grid-column:auto}
   .scenes>li:is(:nth-child(10n+2),:nth-child(10n+4),:nth-child(10n+6)):last-child .preview,
   .scenes>li:nth-child(10n+6):nth-last-child(2) .preview{aspect-ratio:1.43/1}
+  /* A last group of three fills one row by itself, so none of its cards runs wide. */
+  .scenes>li:nth-child(10n+1):nth-last-child(3),
+  .scenes>li:nth-child(10n+7):nth-last-child(2){grid-column:auto}
+  .scenes>li:nth-child(10n+1):nth-last-child(3) .preview,
+  .scenes>li:nth-child(10n+7):nth-last-child(2) .preview{aspect-ratio:1.43/1;flex:1 0 auto}
 }
 .preview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 .added{position:absolute;right:8px;bottom:8px;padding:2px 8px;font-size:16px;white-space:nowrap;color:var(--amber);background:rgba(44,22,84,.45);pointer-events:none}

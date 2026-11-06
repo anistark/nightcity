@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 13,
+  "added": "2026-11-06",
+  "author": "anistark",
+  "title": "Sakura Bus Stand",
+  "description": "You sit at a bus stand in Night City under a cherry tree in full bloom. Petals drift down, slowly, while the street gets on with its night in front of you. No two nights go the same way.",
+  "ogTitle": "Sakura Bus Stand | Night City",
+  "ogImage": "sakura-bus-stand/assets/images/og.jpg",
+  "ogPath": "sakura-bus-stand/",
+  "ogAlt": "Sakura Bus Stand: the view from a bench at a night bus stop in a hard-edged neon anime style, across a wet road and up a magenta side street, with people walking past as cherry petals drift down",
+  "canvasLabel": "Animated view from a bench at a night bus stop in a hard-edged neon anime style, with a cherry tree just out of sight overhead: petals drift down while people, vehicles, cats and dogs pass on the wet street in front",
+  "share": "A bench under a cherry tree in Night City, and petals that never stop falling. Mine began at {seed}.",
+  "stats": [
+    [
+      "petals",
+      "petals landed."
+    ],
+    [
+      "cars",
+      "vehicles passed."
+    ],
+    [
+      "visits",
+      "animals came to see you."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "The view from a bench in Night City, under a cherry tree in full bloom. Petals drift down and settle while the street carries on in front of you: people, traffic, a cat that comes over to look at you, and once in a long while a fight."
+}
