@@ -20,6 +20,7 @@ Each scene is a small set of rules fed by one random generator. Nothing is a sto
 | [Bonfire](bonfire/) | A pixel-art bonfire in a clearing deep in the mountains: flames that lick and lean in the wind, sparks drifting into the stars and smoke above them, while far away between the ridges Night City glows and planes come and go from its airport | [@anistark](https://github.com/anistark) |
 | [Diwali Night](diwali-night/) | The moonless night of Diwali in pixel art, from a rooftop in the thick of the city where someone sits on the ledge: blocks of flats all around strung with bulbs and paper lanterns, people drifting out onto their balconies, a man smoking by the rail, and now and then a firework going up between the buildings | [@anistark](https://github.com/anistark) |
 | [Snow Bubble](snow-bubble/) | A soap bubble comes down close to the lens below moonlit snow mountains while others fall far off, frost spreads over it layer on layer until it is white, then it bursts into thin curved flakes that flutter into the snow, under a moon of its own each night or none at all, with a faint aurora and a snow leopard crossing a far ridge | [@pratik-anurag](https://github.com/pratik-anurag) |
+| [Aurora](aurora/) | A small lake in thin snow with Night City and far mountains along the horizon, while curtains of aurora fold, curl, surge and fade across a real night sky and in the water: the curtains are simulated sheets of charge lit by the oxygen and nitrogen they strike, the stars and the Milky Way turn slowly behind them, and the snow takes on their light | [@anistark](https://github.com/anistark) |
 
 ## The approach
 
@@ -51,7 +52,7 @@ Any scene can run as the live background of another site or app. Paste one line 
 <script src="https://anistark.github.io/nightcity/embed.js" data-scene="pixel-city" async></script>
 ```
 
-`data-scene` is `pixel-city`, `basketball-court`, `rain-window`, `shoreline`, `bus-stop`, `one-sock`, `coffee-window`, `tennis-court`, `bonfire`, `diwali-night` or `snow-bubble`. Add `data-target="#hero"` to fill one element instead of the page, `data-dim="0.4"` to darken the scene under your text, or `data-quality="high"` for full resolution. The scene runs in an iframe, ignores clicks, is hidden from screen readers, and pauses while scrolled out of view.
+`data-scene` is `pixel-city`, `basketball-court`, `rain-window`, `shoreline`, `bus-stop`, `one-sock`, `coffee-window`, `tennis-court`, `bonfire`, `diwali-night`, `snow-bubble` or `aurora`. Add `data-target="#hero"` to fill one element instead of the page, `data-dim="0.4"` to darken the scene under your text, or `data-quality="high"` for full resolution. The scene runs in an iframe, ignores clicks, is hidden from screen readers, and pauses while scrolled out of view.
 
 Each scene's share dialog has an **Embed** option with snippets for HTML, a plain iframe, React, Vue, React Native and Flutter, plus the Content Security Policy line a site may need and a note on transparent backgrounds.
 
