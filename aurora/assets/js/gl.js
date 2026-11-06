@@ -8,12 +8,12 @@
    where they fold edge on and thinning toward the horizon all come out of that walk with nothing faked.
    The map keeps a memory, because the atoms do: green lingers for a fraction of a second and red for most of a minute.
 
-   The land is drawn once for each screen size into a set of buffers, then lit every frame by the sky above it. The lake
+   The land is drawn once for each screen size into a set of buffers, then lit every frame by the sky above it. The river
    in it mirrors the last finished frame, so whatever is up there lands in the water.
    Everything is added up in linear light, then bloomed, toned and dithered, since a dark sky bands easily. */
 (()=>{
 'use strict';
-const A=window.AURORA,{NC,NIGHT,VIEW,LAKE,sim,stats,arcs,lights,STARS,starColor,skyMatrix,stream,update,fire,glow,energy,strip,crest,paintCity,paintTrees,paintGrass,beacons,clamp,DEG,TAU}=A;
+const A=window.AURORA,{NC,NIGHT,VIEW,RIVER,riverY,paintBoat,sim,stats,arcs,lights,STARS,starColor,skyMatrix,stream,update,fire,glow,energy,strip,crest,paintCity,paintTrees,paintGrass,beacons,clamp,DEG,TAU}=A;
 const{RM,LOWQ,DEBUG}=NC;
 const QS=new URLSearchParams(location.search);
 const cv=document.getElementById('scene');
@@ -193,18 +193,17 @@ void main(){
   col*=light;
   o=vec4(sqrt(clamp(col*.55,0.,1.)),1);}`;
 
-// The land, once per screen size. Layers from near to far: the snow and the lake in front of the camera, a ray marched
+// The land, once per screen size. Layers from near to far: the snow and the river in front of the camera, a ray marched
 // through their height, then the trees on the ridge, the city and two ranges of mountains. The sky's light is added later, so this only
 // stores what each surface is: colour, facing, how much air lies in front of it, and any light of its own.
 const LAND_FS=LIB+CAM+`
 in vec2 v;layout(location=0) out vec4 o0;layout(location=1) out vec4 o1;layout(location=2) out vec4 o2;
-uniform sampler2D uCrest,uCity,uTrees,uGrass;uniform vec3 uStrip,uLakeS;uniform vec4 uLake;uniform vec2 uShore[4];uniform float uPx,uSeed;
+uniform sampler2D uCrest,uCity,uTrees,uGrass;uniform vec3 uStrip,uBends[3];uniform vec4 uRiver;uniform float uPx,uSeed;
 const float EYE=1.55,D=430.;
 float crestAt(float az){return textureLod(uCrest,vec2(az/(2.*uStrip.x)+.5,.5),0.).r;}
 // The ground, in metres from the eye: down at the feet, rising to the ridge, smooth along the ridge line itself.
-// 1 on the lake's shore, less out on the water. main.js works out the same edge.
-float lakeF(vec2 p){vec2 e=p-uLake.xy,q=vec2(dot(e,uLakeS.xy)/uLake.z,(e.y*uLakeS.x-e.x*uLakeS.y)/uLake.w);float a=atan(q.y,q.x);
-  return length(q)/(1.+uShore[0].x*sin(2.*a+uShore[0].y)+uShore[1].x*sin(3.*a+uShore[1].y)+uShore[2].x*sin(5.*a+uShore[2].y)+uShore[3].x*sin(8.*a+uShore[3].y));}
+// How far across the river a point is from its middle: 1 on the far bank, -1 on the near one. main.js works out the same line.
+float riverU(vec2 p){float c=uRiver.x+uRiver.y*p.x;for(int i=0;i<3;i++)c+=uBends[i].y*sin(uBends[i].x*p.x+uBends[i].z);return (p.y-c)/uRiver.z;}
 float plain(vec2 p){
   float d=length(p),az=atan(p.x,p.y),k=min(d/D,1.);
   float h=mix(-EYE,D*tan(crestAt(az)),k*k*(3.-2.*k)*k);
@@ -212,10 +211,11 @@ float plain(vec2 p){
   h+=amp*(fbm(p*.011+uSeed,3)-.5)*3.+min(d*.03,.8)*(fbm(p*.07+uSeed+4.,3)-.5)*1.5*(1.-smoothstep(.6*D,.95*D,d));
   h+=(fbm(p*.42+uSeed+7.,3)-.5)*.34*smoothstep(1.,6.,d)*(1.-smoothstep(.5*D,.9*D,d));
   return h-max(d-D,0.)*.04;}
-// The open ground with the lake's dip pressed into it.
-float ground(vec2 p){float f=lakeF(p),b=uLakeS.z-.7;if(f<.85)return b;float h=plain(p);if(f>2.4)return h;h=mix(h,b,1.-smoothstep(.85,1.75,f));
-  // The slope down to the water stays under the line of sight to the near shore, so no rise in the snow can hide the lake.
-  return mix(h,min(h,max(-EYE-.31*(length(p)-5.),uLakeS.z+.3)),1.-smoothstep(1.6,2.4,f));}
+// The open ground with the river's bed pressed into it.
+float ground(vec2 p){float u=riverU(p),f=abs(u),b=uRiver.w-.7;if(f<.85)return b;float h=plain(p);if(f>2.4)return h;h=mix(h,b,1.-smoothstep(.85,1.75,f));
+  if(u>0.)return h;
+  // The slope down to the water stays under the line of sight to the near bank, so no rise in the snow can hide the river.
+  return mix(h,min(h,max(-EYE-.31*(length(p)-5.),uRiver.w+.3)),1.-smoothstep(1.6,2.4,f));}
 // How the snow has settled: long wind-cut ridges and fine crust. Scaled away once a pixel is too coarse to hold them.
 float detail(vec2 p,float fw){
   vec2 w=mat2(.86,-.5,.5,.86)*p;
@@ -258,15 +258,15 @@ void main(){
   vec3 alb=vec3(0),nor=vec3(0),em=vec3(0);float cov=0.,haze=0.,gl=0.;
   // The near snow. Rays that only skim the ridge get a part of a pixel, which is what keeps its line smooth.
   float t=1.2,hit=0.,minr=1.;
-  if(d.z<.08){for(int i=0;i<260;i++){vec3 q=d*t;float h=q.z-max(ground(q.xy),uLakeS.z);if(h<.0015*t){hit=1.;break;}minr=min(minr,h/t);t+=clamp(h*.6,.02*t+.03,.05*t+.4);if(t>D*1.4)break;}
-    if(hit>.5){float a=t*.86,b=t;for(int i=0;i<5;i++){float m=(a+b)*.5;vec3 q=d*m;if(q.z-max(ground(q.xy),uLakeS.z)<0.)b=m;else a=m;}t=b;}}
+  if(d.z<.08){for(int i=0;i<260;i++){vec3 q=d*t;float h=q.z-max(ground(q.xy),uRiver.w);if(h<.0015*t){hit=1.;break;}minr=min(minr,h/t);t+=clamp(h*.6,.02*t+.03,.05*t+.4);if(t>D*1.4)break;}
+    if(hit>.5){float a=t*.86,b=t;for(int i=0;i<5;i++){float m=(a+b)*.5;vec3 q=d*m;if(q.z-max(ground(q.xy),uRiver.w)<0.)b=m;else a=m;}t=b;}}
   float c0=hit>.5?1.:1.-smoothstep(0.,uPx*1.4,minr);
-  if(c0>0.){vec2 p=(d*t).xy;float fw=t*uPx/max(-d.z+.012,.012),dep=uLakeS.z-ground(p);vec3 a,n;float g;
+  if(c0>0.){vec2 p=(d*t).xy;float fw=t*uPx/max(-d.z+.012,.012),dep=uRiver.w-ground(p);vec3 a,n;float g;
     if(dep>0.){
       // Water. Its light is worked out each frame, so this keeps how open it is: the shallows have skinned over with ice
       // and a dusting of snow. Glint is negative here to mark it, and the first channel of the emission says where the
       // reflection runs into the bank on the far side instead of going on up to the sky.
-      vec3 r=vec3(d.xy,-d.z),q0=vec3(p,uLakeS.z);float s=.6,mr=1.;
+      vec3 r=vec3(d.xy,-d.z),q0=vec3(p,uRiver.w);float s=.6,mr=1.;
       for(int i=0;i<64;i++){vec3 q=q0+r*s;float h=q.z-ground(q.xy);mr=min(mr,h/s);if(h<0.)break;s+=clamp(h*.7,.3+.02*s,6.);if(s>D*1.3)break;}
       em.r=1.-smoothstep(0.,.012,mr);a=vec3(.72,.78,.86);n=vec3(0,0,1);
       g=-max(smoothstep(.02,.2,dep+(fbm(p*.3+uSeed+41.,4)-.5)*.3),.004);
@@ -317,13 +317,22 @@ void main(){
 
 const SCENE_FS=LIB+CAM+`
 in vec2 v;out vec4 o;
-uniform sampler2D uG0,uG1,uG2,uA,uC,uMW,uB3,uB6,uRef;
+uniform sampler2D uG0,uG1,uG2,uA,uC,uMW,uB3,uB6,uRef,uBoatT;uniform vec4 uBoat;uniform vec3 uBoatS,uLamp,uLampC;uniform float uFlow,uFlowD;
 uniform mat3 uSkyI;uniform vec3 uMoonDir,uMoonCol,uCity,uAmb;uniform float uCityAz,uCityW,uMoon,uMW1,uT,uSeed,uLevel,uRip,uPx;uniform vec3 uMoonP;
-// The lake's slope at a point: three sizes of wind ripple running across it. Each fades out where a pixel is too coarse to hold it.
-vec2 ripple(vec2 p,float fw){vec2 g=vec2(0),sc=vec2(.42,1.05);float a=1.,T=uT*.16;
-  for(int i=0;i<3;i++){float m=1.+float(i)*.7,k=1.-smoothstep(.25,1.,fw*sc.y);vec2 q=p*sc+vec2(T*1.3,T*.5)*m+float(i)*37.;float h=vn(q);
+// The river's slope at a point: three sizes of ripple, long along the current and carried by it, the finer ones a little
+// faster. Each fades out where a pixel is too coarse to hold it.
+vec2 ripple(vec2 p,float fw){vec2 g=vec2(0),sc=vec2(.3,1.05);float a=1.,T=uT*.1;
+  for(int i=0;i<3;i++){float m=1.+float(i)*.22,k=1.-smoothstep(.25,1.,fw*sc.y);vec2 q=(p-vec2(uFlowD*m,0))*sc+vec2(0,T*m)+float(i)*37.;float h=vn(q);
     g+=vec2(vn(q+vec2(.35,0))-h,vn(q+vec2(0,.35))-h)*a*k;sc*=2.7;a*=.62;}
   return g;}
+// Where a line of sight meets the boat, which passes side on, so it's a picture standing on the water. q is the point
+// reached and em what glows there.
+vec4 boatAt(vec3 o,vec3 r,out vec3 q,out vec3 em){em=vec3(0);q=vec3(0);if(uBoat.z<=0.)return vec4(0);
+  float s=(uBoat.y-o.y)/r.y;if(s<=0.)return vec4(0);q=o+r*s;
+  float x=(q.x-uBoat.x)/uBoat.z,y=(q.z-uBoatS.x-x*uBoatS.y*uBoat.z)/uBoat.w;if(abs(x)>.5||y<0.||y>1.)return vec4(0);
+  em=textureLod(uBoatT,vec2(x+.5,y*.495),uBoatS.z).rgb;return textureLod(uBoatT,vec2(x+.5,.505+y*.495),uBoatS.z);}
+// The boat is lit by the same sky as the snow, faintly, since it faces the viewer and not the sky, and by its own lamp.
+vec3 boatLit(vec4 b,vec3 q,vec3 sky){vec3 a=pow(b.rgb/max(b.a,.004),vec3(2.2)),e=q-uLamp;return a*(sky*.34+uAmb*.8+uLampC*1.6/(1.+dot(e,e)*.7));}
 // The glow of the city on the air above it, in the night's neon, with a warm core.
 vec3 dome(float az,float el){float x=(az-uCityAz)/uCityW,w=exp(-x*x*1.5);float e=max(el,0.);
   return uCity*w*(exp(-e/.05)*.2+exp(-e/.17)*.06)+vec3(.022,.01,.006)*w*exp(-e/.035);}
@@ -371,19 +380,28 @@ void main(){
     if(rf>.05&&g1.a<.3){vec2 c=vec2(dot(r,uR)/uTan.x,dot(r,uU)/uTan.y)/rf;vec3 m=textureLod(uB3,clamp(c*.5+.5,0.,1.),0.).rgb;
       lit+=m*.035*pow(1.-max(-d.z,0.),6.)*smoothstep(.25,.7,dot(alb,vec3(.33)));}
     lit+=max(g2.a,0.)*sky*3.2*(.55+.45*sin(uT*1.3+float(px.x)*.7));
-    // The lake is a mirror of everything above it, read from the last frame. Seen from the water everything near sits a
+    // The river is a mirror of everything above it, read from the last frame. Seen from the water everything near sits a
     // little lower than it does from up here, so the mirror starts a little lower too, and the far shore meets its own
     // reflection. It climbs a little faster than a flat mirror, so more of the aurora reaches the water.
     float wet=-min(g2.a,0.);
     if(wet>0.){
-      float tw=uLevel/min(d.z,-.002),fw=tw*uPx/max(-d.z,.012);vec3 wn=normalize(vec3(-ripple(d.xy*tw,fw)*uRip,1.)),r=reflect(d,wn);
-      r=normalize(vec3(r.xy,max(r.z,.004)*1.3-.03));vec2 c=vec2(dot(r,uR)/uTan.x,dot(r,uU)/uTan.y)/max(dot(r,uF),.05);
-      vec3 m=mix(textureLod(uRef,clamp(c*.5+.5,.001,.999),0.).rgb,lit,g2.r);
-      float F=.05+.95*pow(1.-max(dot(-d,wn),0.),5.);
-      lit=mix(lit,m*F+vec3(.0008,.0014,.002)*(1.-F),wet);}
+      float tw=uLevel/min(d.z,-.002),fw=tw*uPx/max(-d.z,.012);vec2 pw=d.xy*tw;
+      // A boat roughs up the water just around it and behind it.
+      vec2 bk=(pw-uBoat.xy)/vec2(max(uBoat.z,1.)*.8,1.5);bk.x+=sign(uFlow)*.5;
+      vec3 wn=normalize(vec3(-ripple(pw,fw)*(uRip+(uBoat.z>0.?.3*exp(-dot(bk,bk)):0.)),1.)),r0=reflect(d,wn),r=normalize(vec3(r0.xy,max(r0.z,.004)*1.3-.03));
+      vec2 c=vec2(dot(r,uR)/uTan.x,dot(r,uU)/uTan.y)/max(dot(r,uF),.05);
+      vec3 m=mix(textureLod(uRef,clamp(c*.5+.5,.001,.999),0.).rgb,lit,g2.r),bq,be;
+      vec4 bb=boatAt(vec3(pw,uLevel),r0,bq,be);m=mix(m,boatLit(bb,bq,sky),bb.a)+be*2.;
+      float F=.05+.95*pow(1.-max(dot(-d,wn),0.),5.);vec3 w=m*F+vec3(.0008,.0014,.002)*(1.-F);
+      // The boat's lamp on the water: a tall streak, since at this low an angle the smallest ripple sends it a long way down.
+      vec3 ld=normalize(uLamp-vec3(pw,uLevel)),le=ld-r0;w+=uLampC*step(0.,ld.y)*exp(-le.x*le.x/.00011-le.z*le.z/.0034)*1.5;
+      // Pans of new ice ride the current, which is what shows it to be moving when the wind drops.
+      vec2 fq=vec2(pw.x-uFlowD,pw.y+2.*sin(pw.x*.04));float pan=smoothstep(.8,.83,vn(fq*vec2(.2,.62)+uSeed)*.72+vn(fq*vec2(.7,1.9)+uSeed+7.)*.28);
+      lit=mix(lit,w,wet*(1.-.92*pan));}
     lit=mix(lit,base(normalize(vec3(d.xy,.012)))*1.05+sky*.1,g1.a);
     col=col*(1.-g0.a)+lit*g0.a;}
   if(g2.a>=0.)col+=g2.rgb*2.3;
+  {vec3 q,em;vec4 b=boatAt(vec3(0),d,q,em);col=mix(col,boatLit(b,q,sky),b.a)+em*3.;}
   o=vec4(col,1);}`;
 
 // Stars and everything else that is a point of light: a small Gaussian each, added straight into the picture.
@@ -530,8 +548,8 @@ function build(){
   W=cv.width=Math.round(CW*DPR);H=cv.height=Math.round(CH*DPR);CAMERA=camera();
   free(hdr,fbH,clo,fbC,ref,fbR,fbG);if(G)free(...G);for(const b of bl)free(b.t,b.f);
   hdr=F16(W,H);fbH=target(hdr);sizeAurora();
-  // Last frame at half size, for the lake to reflect.
-  ref=F16(W>>1,H>>1);fbR=target(ref);
+  // Last frame at half size, for the river to reflect.
+  ref=F16(Math.max(2,W>>1),Math.max(2,H>>1));fbR=target(ref);
   const cw=Math.ceil(W/4),ch=Math.ceil(H/4);clo=F16(cw,ch);fbC=target(clo);
   G=[tex(W,H,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.NEAREST),tex(W,H,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.NEAREST),F16(W,H,gl.NEAREST)];fbG=target(...G);
   bl=[];let w=W,h=H;for(let i=0;i<7;i++){w=Math.max(2,w>>1);h=Math.max(2,h>>1);const t=F16(w,h);bl.push({t,f:target(t),w,h});gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);}
@@ -539,7 +557,7 @@ function build(){
 // The land, in bands, so no single draw runs long enough to stall a small GPU.
 function bakeLandBand(y0,y1){const C=CAMERA,P=LAND;gl.bindFramebuffer(gl.FRAMEBUFFER,fbG);gl.viewport(0,0,W,H);gl.useProgram(P.p);cam(P,C);
   bind(P,'uCrest',0,crestTex);bind(P,'uCity',1,cityTex);bind(P,'uTrees',2,treeTex);bind(P,'uGrass',3,grassTex);gl.uniform3f(P.u.uStrip,strip.az,strip.e0,strip.e1);gl.uniform1f(P.u.uPx,2*C.tanV/H);gl.uniform1f(P.u.uSeed,NIGHT.mwSeed);
-  gl.uniform4f(P.u.uLake,LAKE.x,LAKE.y,LAKE.rx,LAKE.ry);gl.uniform3f(P.u.uLakeS,Math.cos(LAKE.rot),Math.sin(LAKE.rot),LAKE.level);gl.uniform2fv(P.u.uShore,LAKE.shore.flatMap(s=>[s[1],s[2]]));
+  gl.uniform4f(P.u.uRiver,RIVER.y,RIVER.tilt,RIVER.hw,RIVER.level);gl.uniform3fv(P.u.uBends,RIVER.bends.flat());
   gl.enable(gl.SCISSOR_TEST);gl.scissor(0,y0,W,y1-y0);tri();gl.disable(gl.SCISSOR_TEST);}
 // The top of what the land can reach on screen. One elevation sits higher at the sides of a wide view than in the middle,
 // so this is found at the edge of the frame.
@@ -598,6 +616,17 @@ function drawMap(){
   gl.uniform4f(MERGE.u.uK,k(.06),k(.2),k(.36),k(34));gl.uniform2f(MERGE.u.uPx,1/COLS,1/ROWS);gl.uniform1f(MERGE.u.uT,sim.t%1000);tri();mapI=1-mapI;dtAcc=0;
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbD);gl.viewport(0,0,COLS,ROWS/DOWN);gl.useProgram(DWN.p);bind(DWN,'uM',0,mapF[mapI]);gl.uniform1f(DWN.u.uPy,1/ROWS);tri();
 }
+// The boat's picture, repainted when a new one sets off, and where it is this frame: it rides the river's line, and bobs.
+const boatT=tex(1,1,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,gl.LINEAR,0,0,new Uint8Array(4));let boatId=0,lampP=null,lampC=[0,0,0];
+function boatNow(S,C,t){
+  const b=sim.boat;bind(S,'uBoatT',9,boatT);lampP=null;lampC=[0,0,0];
+  if(!b){gl.uniform4f(S.u.uBoat,0,0,0,1);gl.uniform3f(S.u.uLamp,0,0,99);gl.uniform3f(S.u.uLampC,0,0,0);return;}
+  if(b.id!==boatId){boatId=b.id;gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,paintBoat(b));gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);}
+  const y=riverY(b.x)+b.lane,z=RIVER.level+.035*Math.sin(t*.8+b.ph)+.02*Math.sin(t*1.7+b.ph*2),roll=.012*Math.sin(t*.55+b.ph),f=Math.max(y*C.f[1]+RIVER.level*C.f[2],8),px=b.span/f/C.tanH*W/2;
+  gl.uniform4f(S.u.uBoat,b.x,y,b.span,b.span*.3125);gl.uniform3f(S.u.uBoatS,z,roll,Math.max(0,Math.log2(1024/px)-.4));
+  lampP=[b.x+b.lampX*b.face,y,z+b.lampZ];const k=b.lamp?.9+.1*NC.fbm(t*2.4+b.ph):0;lampC=b.lampC.map(v=>v*k);
+  gl.uniform3fv(S.u.uLamp,lampP);gl.uniform3fv(S.u.uLampC,lampC);}
 function dirOf(az,el){const c=Math.cos(el);return[Math.sin(az)*c,Math.cos(az)*c,Math.sin(el)];}
 function toNdc(d){const C=CAMERA,z=d[0]*C.f[0]+d[1]*C.f[1]+d[2]*C.f[2];if(z<=.02)return null;return[(d[0]*C.r[0]+d[1]*C.r[1]+d[2]*C.r[2])/z/C.tanH,(d[0]*C.u[0]+d[1]*C.u[1]+d[2]*C.u[2])/z/C.tanV];}
 let sprN=0;
@@ -605,6 +634,7 @@ function spr(n,size,c,i){if(sprN>=SPRN||!n)return;const o=sprN*6;sprD[o]=n[0];sp
 function buildSprites(){
   sprN=0;const px=Math.max(2.4,H/420),t=sim.t;
   for(const b of beacons){if(b.el<crest(b.az)+.006)continue;const on=Math.pow(.5+.5*Math.cos((t/b.per+b.ph)*TAU),5);if(on>.01)spr(toNdc(dirOf(b.az,b.el)),px*1.4,[1,.06,.05],on*1.1);}
+  if(lampP&&lampC[0]>0){const L=Math.hypot(...lampP),n=toNdc(lampP.map(v=>v/L));spr(n,px*5,lampC,.24);spr(n,px*1.3,lampC,1.5);}
   for(const l of lights){const x=(t-l.t0)/l.life;
     if(l.kind==='meteor'){const n=70,head=Math.min(1,x*1.5),br=l.b*Math.sin(Math.min(1,x)*Math.PI);for(let i=0;i<n;i++){const k=i/n,f=head*(1-.6*k);spr(toNdc(dirOf(l.az+l.dx*f,l.el+l.dy*f)),px*(1.5-k),l.c,br*(1-k)*(1-k)*.9);}}
     else if(l.kind==='sat')spr(toNdc(dirOf(l.az,l.el)),px*.9,[.9,.92,1],l.b*(1-Math.pow(x,6)));
@@ -614,6 +644,8 @@ function buildSprites(){
 function bloomChain(){
   gl.useProgram(BD.p);let src=hdr,sw=W,sh=H;
   for(const b of bl){gl.bindFramebuffer(gl.FRAMEBUFFER,b.f);gl.viewport(0,0,b.w,b.h);bind(BD,'uT',0,src);gl.uniform2f(BD.u.uPx,1/sw,1/sh);tri();src=b.t;sw=b.w;sh=b.h;}
+  // The first level is the frame at half size, properly filtered, which is what the river mirrors next time.
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,bl[0].f);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,fbR);gl.blitFramebuffer(0,0,bl[0].w,bl[0].h,0,0,bl[0].w,bl[0].h,gl.COLOR_BUFFER_BIT,gl.NEAREST);
   gl.useProgram(BU.p);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
   for(let i=bl.length-1;i>0;i--){const s=bl[i],d=bl[i-1];gl.bindFramebuffer(gl.FRAMEBUFFER,d.f);gl.viewport(0,0,d.w,d.h);bind(BU,'uT',0,s.t);gl.uniform2f(BU.u.uPx,1/s.w,1/s.h);gl.uniform1f(BU.u.uW,.62);tri();}
   gl.disable(gl.BLEND);}
@@ -633,8 +665,9 @@ function draw(){
   const lightNow=skyGlow();gl.uniform1f(CLOUD.u.uCov,A.cloud());gl.uniform1f(CLOUD.u.uT,t);gl.uniform2f(CLOUD.u.uWind,t*.0035*windX,t*.0015);gl.uniform3fv(CLOUD.u.uLight,lightNow);gl.uniform3fv(CLOUD.u.uCity,city);gl.uniform3fv(CLOUD.u.uMoonDir,md);gl.uniform3fv(CLOUD.u.uMoonCol,moonCol);gl.uniform1f(CLOUD.u.uSeed,NIGHT.mwSeed);tri();mark('cloud');
   const S=SCENE;gl.useProgram(S.p);gl.bindFramebuffer(gl.FRAMEBUFFER,fbH);gl.viewport(0,0,W,H);cam(S,C);
   bind(S,'uG0',0,G[0]);bind(S,'uG1',1,G[1]);bind(S,'uG2',2,G[2]);bind(S,'uA',3,aur);bind(S,'uC',4,clo);bind(S,'uMW',5,mwTex);bind(S,'uB3',6,bl[4].t);bind(S,'uB6',7,bl[bl.length-1].t);bind(S,'uRef',8,ref);
-  // The wind comes and goes, and when it drops the lake turns to glass.
-  {const w=A.sstep(.38,.72,NC.fbm(t*.02+NIGHT.gapO+31));gl.uniform1f(S.u.uRip,.02+.3*w*w);gl.uniform1f(S.u.uLevel,LAKE.level);gl.uniform1f(S.u.uPx,2*C.tanV/H);}
+  // The wind comes and goes, and when it drops the river runs smooth as glass.
+  {const w=A.sstep(.38,.72,NC.fbm(t*.02+NIGHT.gapO+31));gl.uniform1f(S.u.uRip,.03+.17*w*w);gl.uniform1f(S.u.uLevel,RIVER.level);gl.uniform1f(S.u.uPx,2*C.tanV/H);gl.uniform1f(S.u.uFlow,RIVER.flow);gl.uniform1f(S.u.uFlowD,RIVER.flow*(t/A.TIME)%65536);}
+  boatNow(S,C,t);
   gl.uniformMatrix3fv(S.u.uSkyI,false,Mi);gl.uniform3fv(S.u.uMoonDir,md);gl.uniform3fv(S.u.uMoonCol,moonCol);gl.uniform3fv(S.u.uCity,city);gl.uniform3f(S.u.uAmb,.0105,.0135,.0205);gl.uniform1f(S.u.uCityAz,NIGHT.cityAz);gl.uniform1f(S.u.uCityW,NIGHT.cityW);{const n=toNdc(md);gl.uniform3f(S.u.uMoonP,n?n[0]:0,n?n[1]:0,n&&md[2]>-.02?.0084:0);}gl.uniform1f(S.u.uMoon,NIGHT.moon);
   gl.uniform1f(S.u.uMW1,.1*(1-.82*Math.min(1,NIGHT.moon*up*1.5)));gl.uniform1f(S.u.uT,t%65536);gl.uniform1f(S.u.uSeed,NIGHT.mwSeed);tri();mark('scene');
   gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
@@ -642,7 +675,6 @@ function draw(){
   gl.bindVertexArray(stars.vao);gl.drawArrays(gl.POINTS,0,stars.n);
   buildSprites();if(sprN){gl.useProgram(SPR.p);gl.bindVertexArray(sprVao);gl.bindBuffer(gl.ARRAY_BUFFER,sprVb);gl.bufferSubData(gl.ARRAY_BUFFER,0,sprD,0,sprN*6);gl.drawArrays(gl.POINTS,0,sprN);}
   gl.disable(gl.BLEND);mark('stars');
-  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,fbH);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,fbR);gl.blitFramebuffer(0,0,W,H,0,0,W>>1,H>>1,gl.COLOR_BUFFER_BIT,gl.LINEAR);mark('copy');
   bloomChain();mark('bloom');
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);gl.useProgram(FINAL.p);bind(FINAL,'uH',0,hdr);bind(FINAL,'uB',1,bl[0].t);gl.uniform1f(FINAL.u.uT,t%512);gl.uniform1f(FINAL.u.uFade,fade*fade*(3-2*fade));tri();mark('final');
 }
@@ -659,7 +691,7 @@ function step(dt){update(dt);dtAcc+=dt*A.TIME;fade=Math.min(1,fade+dt/2.2);}
 function start(){
   if(DEBUG)window.AU={gl:true,sim,arcs,NIGHT,stats,fire,pause(){NC.paused=true;},resume(){NC.paused=false;},draw,step(s=1/60){for(let d=s;d>1e-9;d-=.05)step(Math.min(d,.05));},
     run(sec){for(let i=0,n=sec*20;i<n;i++)step(.05);dtAcc=4;draw();NC.refresh();},
-    state(){return{t:sim.t,phase:sim.phase,act:sim.act,arcs:arcs.length,nodes:arcs.reduce((s,a)=>s+a.n,0),vortices:A.vortices.length,verts:vN,size:[W,H],aurora:[AW,AH],aq,dyn,stars:stars.n};},
+    state(){return{boat:sim.boat?{x:+sim.boat.x.toFixed(1),lamp:sim.boat.lamp,cabin:sim.boat.cabin}:null,t:sim.t,phase:sim.phase,act:sim.act,arcs:arcs.length,nodes:arcs.reduce((s,a)=>s+a.n,0),vortices:A.vortices.length,verts:vN,size:[W,H],aurora:[AW,AH],aq,dyn,stars:stars.n};},
     set aq(v){aq=v;sizeAurora();},
     // The share of the sky in view that the aurora lights above this level.
     cover(th=.02){const f=new Float32Array(AW*AH*4),C=CAMERA;gl.bindFramebuffer(gl.FRAMEBUFFER,fbA);gl.readPixels(0,0,AW,AH,gl.RGBA,gl.FLOAT,f);let n=0,c=0;

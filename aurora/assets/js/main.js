@@ -1,4 +1,4 @@
-/* Aurora: a low rise of thin snow above a small lake, looking up. Night City and far mountains sit along the horizon, and
+/* Aurora: a low rise of thin snow above a wide river, looking up. Night City and far mountains sit along the horizon, and
    about seventy percent of the view is sky.
    This file holds the night itself, which both renderers share: the seeded choices, the simulation of the aurora, the
    real bright stars, and the painting of the city and the trees. gl.js is the renderer, in WebGL 2, and the bottom of this
@@ -66,14 +66,14 @@ function starColor(bv){const t=4600*(1/(.92*bv+1.7)+1/(.92*bv+.62)),k=t/100;
 // looking toward +y. Each field line is one point on this map, so a curtain is a line on it.
 const TIME=1.5,REACH=2800;
 const sim={t:0,phase:'quiet',until:0,act:.3,actTo:.34,hard:.05,rays:.7,flame:0,lst:NIGHT.lst,gapX:0,gapY:1,gapD:.3};
-const stats={storms:0,curtains:0,coronas:0,meteors:0,satellites:0};
+const stats={storms:0,curtains:0,coronas:0,boats:0,meteors:0,satellites:0};
 const arcs=[],vortices=[];
 let arcId=0;
 // Slow shear across the whole map. Each wave's strength wanders, so together they never settle into a pattern.
 const FLOW=[];for(let i=0;i<6;i++){const a=rr(0,TAU),l=rr(160,1100);FLOW.push({kx:Math.cos(a)*TAU/l,ky:Math.sin(a)*TAU/l,dx:-Math.sin(a),dy:Math.cos(a),w:rr(.01,.05)*(chance(.5)?1:-1),p:rr(0,TAU),o:rr(0,900),s:rr(.5,1.5),a:0});}
 const refY=(a,x)=>a.y0+a.tilt*x+a.bow*x*x;
 // The aurora takes part of the sky and leaves the rest to the stars. The boundary is a line across the frame that wanders
-// round the top and the sides, never the bottom, so there is always something low enough for the lake to reflect.
+// round the top and the sides, never the bottom, so there is always something low enough for the river to reflect.
 // Curtains fade out as they near it, which reads as a curtain ending. VIEW is the renderer's frame.
 const VIEW={tanH:1.39,tanV:.78,cp:.955,sp:.297};
 function shown(x,y){
@@ -123,7 +123,7 @@ function surge(a){a=a||visibleArc();if(!a)return;const dir=chance(.7)?1:-1,sp=rr
   a.pulses=a.pulses||[];a.pulses.push({c:a.m[i],v:dir*sp*rr(.8,1.3),w:rr(120,340),a:rr(.8,2.2),t0:sim.t,life:rr(16,36)});}
 function say(...t){NC.log(pick(t));}
 
-const SCHED={curl:{m:7,f:2},train:{m:22,f:6},arc:{m:34,f:10},pulse:{m:16,f:5},flame:{m:30,f:20},meteor:{m:55,f:18},satellite:{m:110,f:30},plane:{m:170,f:40},car:{m:20,f:4},cloud:{m:260,f:60},patch:{m:3,f:1}};
+const SCHED={curl:{m:7,f:2},train:{m:22,f:6},arc:{m:34,f:10},pulse:{m:16,f:5},flame:{m:30,f:20},meteor:{m:55,f:18},satellite:{m:110,f:30},plane:{m:170,f:40},boat:{m:130,f:24},car:{m:20,f:4},cloud:{m:260,f:60},patch:{m:3,f:1}};
 const nextEv={};for(const k in SCHED)nextEv[k]=expo(SCHED[k].f);
 const lights=[];let cloudTo=rr(0,.3),cloud=cloudTo;
 function fire(k){
@@ -147,6 +147,7 @@ function fire(k){
   else if(k==='plane'){const dir=chance(.5)?1:-1;lights.push({kind:'plane',t0:sim.t,life:rr(70,130),az:-dir*1.25,el:rr(.05,.22),v:dir*rr(.018,.032),d:rr(-.0006,.0006),ph:rr(0,1)});
     say('A plane climbs out of the city, its strobes blinking','A plane crosses far off, heading away from the city');}
   else if(k==='car'){const dir=chance(.5)?1:-1,az=NIGHT.cityAz+rr(-.5,.5)*NIGHT.cityW;lights.push({kind:'car',t0:sim.t,life:rr(14,34),az,el:rr(.018,.075),v:dir*rr(.004,.012),c:chance(.6)?[1,.86,.62]:NIGHT.neonB.map(v=>v/255)});}
+  else if(k==='boat')boat();
   else if(k==='cloud'){cloudTo=wpick([[rr(0,.15),4],[rr(.3,.55),3],[rr(.6,.85),1]]);if(cloudTo>.5)say('High cloud drifts in and softens the stars','A veil of cloud slides over the sky, glowing faintly');}
 }
 function setPhase(p,log=true){
@@ -229,8 +230,9 @@ function update(dtReal){
     if(doMesh&&!a.patch)remesh(a);}
   // At least one curtain is always somewhere in the sky.
   if(!arcs.some(a=>!a.patch&&!a.dying&&shown(0,a.y0)>.3))newArc({y0:place(160,620)});
-  // And one sits low enough for the lake, which only sees the lower part of the sky.
+  // And one sits low enough for the river, which only sees the lower part of the sky.
   if(!arcs.some(a=>!a.patch&&!a.dying&&a.y0>400))newArc({y0:rr(440,720),flux:rr(.7,1)});
+  if(sim.boat){const b=sim.boat;b.x+=b.v*dtReal;if((b.x-b.end)*b.face>0)sim.boat=null;}
   for(let i=lights.length-1;i>=0;i--){const l=lights[i],x=t-l.t0;if(x>l.life){lights.splice(i,1);continue;}if(l.v){l.az+=l.v*dtReal;if(l.d)l.el+=l.d*dtReal;}}
 }
 // How bright a curtain burns at one point along it: its own patches, fading out toward its ends, plus anything running along it.
@@ -256,18 +258,18 @@ const landO=[landR()*400,landR()*400,landR()*400];
 function crest(az){const x=az/DEG;return(.62+.9*(landNoise(x/34+landO[0])-.5)+.44*(landNoise(x/9+landO[1])-.5)+.1*(landNoise(x/2.2+landO[2])-.5)+Math.pow(Math.abs(az)/1.15,3)*1.3)*DEG;}
 const azX=az=>(az+SA)/(2*SA)*strip.w,elY=el=>strip.h*(1-(el-E0)/(E1-E0));
 
-/* ---------- the lake ---------- */
-// A small lake in a dip below the viewer, in metres, early in the winter before it has frozen over. Its shore is a circle
-// pushed in and out by a few waves, simple enough for this file and the renderer to work out the same edge.
-const lakeR=stream('lake'),lr=(a,b)=>a+(b-a)*lakeR();
-const LAKE={x:lr(-20,20),y:62,rx:lr(38,48),ry:38,rot:lr(-.14,.14),level:-7,shore:[2,3,5,8].map((k,i)=>[k,lr(.4,1)*[.1,.09,.05,.03][i],lr(0,TAU)])};
-const shoreAt=a=>{let r=1;for(const[k,w,p]of LAKE.shore)r+=w*Math.sin(k*a+p);return r;};
-// The near shore always sits the same way from the viewer, however the rest of it wanders, so the water never hides behind the bank.
-{const k=shoreAt(-Math.PI/2);LAKE.rx/=k;LAKE.ry/=k;}
-// 1 on the shore, less out on the water, more on the land.
-function lakeF(x,y){const dx=x-LAKE.x,dy=y-LAKE.y,c=Math.cos(LAKE.rot),s=Math.sin(LAKE.rot),u=(dx*c+dy*s)/LAKE.rx,v=(dy*c-dx*s)/LAKE.ry;return Math.hypot(u,v)/shoreAt(Math.atan2(v,u));}
+/* ---------- the river ---------- */
+// A wide river across the view, in metres, early in the winter before it has frozen over, running below the viewer's low rise.
+// Its line is a few long bends, simple enough for this file and the renderer to work out the same banks.
+const riverR=stream('river'),lr=(a,b)=>a+(b-a)*riverR();
+const RIVER={y:0,tilt:lr(-.1,.1),hw:lr(31,38),level:-7,flow:lr(1.1,2)*(lr(0,1)<.5?-1:1),bends:[[TAU/lr(420,640),lr(8,16),lr(0,TAU)],[TAU/lr(190,300),lr(3,7),lr(0,TAU)],[TAU/lr(80,130),lr(.8,2),lr(0,TAU)]]};
+const riverY=x=>{let y=RIVER.y+RIVER.tilt*x;for(const[k,a,p]of RIVER.bends)y+=a*Math.sin(k*x+p);return y;};
+// The near bank always sits the same way from the viewer, however the rest of it wanders, so the water never hides behind it.
+RIVER.y=24+RIVER.hw-riverY(0);
+// 1 on a bank, less out on the water, more on the land.
+const riverF=(x,y)=>Math.abs(y-riverY(x))/RIVER.hw;
 // The ground around it, roughly, for what stands on it.
-const lakeZ=(x,y)=>{const f=lakeF(x,y),h=lerp(-1.55,LAKE.level-.7,1-sstep(.85,1.75,f));return lerp(h,Math.min(h,Math.max(-1.55-.31*(Math.hypot(x,y)-5),LAKE.level+.3)),1-sstep(1.6,2.4,f));};
+const riverZ=(x,y)=>{const f=riverF(x,y),h=lerp(-1.55,RIVER.level-.7,1-sstep(.85,1.75,f));return y>riverY(x)?h:lerp(h,Math.min(h,Math.max(-1.55-.31*(Math.hypot(x,y)-5),RIVER.level+.3)),1-sstep(1.6,2.4,f));};
 
 function canvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return[c,c.getContext('2d')];}
 const css=(c,a=1)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
@@ -352,6 +354,42 @@ function paintTrees(){
     spruce(azX(az),elY(crest(az)-.5*DEG),rrr(3,6.6)*px,[4,6,8],.62);}
   return c;}
 
+/* ---------- the boat ---------- */
+// One at a time, carried down the river by the current. Each is drawn fresh from its own stream as a side view, since it
+// passes side on: what it looks like in the top half of the canvas, what glows on it in the bottom half, waterline along
+// the bottom of each. It's small on screen, so what matters is the outline.
+function boat(o={}){
+  if(sim.boat)return;
+  const face=Math.sign(RIVER.flow),L=rr(4.6,7.4),lane=RIVER.hw*rr(-.5,.35),edge=VIEW.tanH*(riverY(0)+lane)*1.25+L*1.5,cabin=chance(.28),lamp=chance(.85);
+  sim.boat={id:(sim.boatId=(sim.boatId||0)+1),x:o.mid?rr(-.7,.7)*edge:-face*edge,end:face*edge,v:RIVER.flow*rr(.85,1.25),face,lane,L,span:L*1.25,cabin,person:!cabin&&chance(.75),neon:chance(.35),
+    lamp,lampX:rr(-.42,.42)*L,lampZ:rr(1.4,1.8),lampC:pick([[1,.62,.26],[1,.74,.4],[1,.52,.2]]),ph:rr(0,TAU)};
+  stats.boats++;
+  if(lamp)say('A boat comes past on the current, its lamp low on the water','A small boat drifts down the river with a light at its stern');
+  else say('A dark boat slides past with the current','A boat drifts by without a light');}
+function paintBoat(b){
+  const r=stream('boat'+b.id),rrr=(x,y)=>x+(y-x)*r(),[c,g]=canvas(1024,640),s=1024/b.span,half=b.L/2;
+  // Metres from amidships to the canvas, with the bow toward where it's going.
+  const X=m=>512+m*s*b.face,Y=m=>320-m*s;
+  const free=rrr(.46,.62),bow=rrr(.2,.5),stern=rrr(.06,.22),wood=pick2(r,[[58,41,30],[44,47,54],[68,32,27],[36,50,52]]),line=mix3(wood,[150,132,110],.3);
+  const cx=b.L*rrr(-.3,-.16),cw=b.L*rrr(.3,.4),ch=rrr(.85,1.15),box=(x,z,w,h)=>g.fillRect(Math.min(X(x),X(x+w)),Y(z+h),w*s,h*s);
+  const sheer=(lift=0)=>{g.moveTo(X(-half),Y(free+stern+lift));g.quadraticCurveTo(X(0),Y(free*.84+lift),X(half),Y(free+bow+lift));};
+  // The far side of the hull first, which shows over the near one because the viewer looks a little down on it.
+  g.fillStyle=css(mix3(wood,[0,0,0],.45));g.beginPath();sheer(.09);g.lineTo(X(half*.9),Y(0));g.lineTo(X(-half*.94),Y(0));g.fill();
+  if(b.person){const x=b.L*rrr(-.26,-.08);g.fillStyle='rgb(30,31,38)';g.beginPath();g.ellipse(X(x),Y(free+.34),.21*s,.42*s,0,0,TAU);g.fill();g.beginPath();g.arc(X(x+.03*b.face),Y(free+.8),.13*s,0,TAU);g.fill();}
+  if(b.cabin){g.fillStyle=css(mix3(wood,[120,120,126],.3));box(cx,free-.05,cw,ch+.05);g.fillStyle='rgba(214,224,234,.85)';box(cx-.05,free+ch-.02,cw+.1,.08);}
+  // The near side: a dark shell, a few strakes following the sheer, and a paler rail with a little snow on it.
+  g.fillStyle=css(wood);g.beginPath();sheer();g.lineTo(X(half*.88),Y(0));g.lineTo(X(-half*.96),Y(0));g.fill();
+  g.strokeStyle=css(mix3(wood,[0,0,0],.3),.9);g.lineWidth=.02*s;for(const k of[.3,.55,.78]){g.beginPath();sheer(-free*k);g.stroke();}
+  g.strokeStyle=css(line);g.lineWidth=.06*s;g.beginPath();sheer();g.stroke();
+  g.strokeStyle='rgba(216,226,236,.8)';g.lineWidth=.03*s;for(let i=0,n=3+Math.floor(r()*4);i<n;i++){const k=r(),x=-half+k*b.L,w=rrr(.2,.6);g.beginPath();g.moveTo(X(x),Y(free*.86+Math.pow(k*2-1,2)*(k>.5?bow:stern)+.05));g.lineTo(X(Math.min(half,x+w)),Y(free*.86+Math.pow(k*2-1,2)*(k>.5?bow:stern)+.05));g.stroke();}
+  if(b.lamp){g.strokeStyle='rgb(24,24,30)';g.lineWidth=.035*s;g.beginPath();g.moveTo(X(b.lampX),Y(free));g.lineTo(X(b.lampX),Y(b.lampZ));g.stroke();}
+  // What glows goes in the lower half, at the same place.
+  g.translate(0,320);
+  if(b.cabin){g.fillStyle='rgb(255,186,110)';const n=cw>2?3:2,w=cw/(n*1.6+.6);for(let i=0;i<n;i++)if(r()<.8)box(cx+w*(.6+i*1.6),free+ch*.5,w,ch*.26);}
+  if(b.neon){const col=r()<.5?NIGHT.neonA:NIGHT.neonB;g.strokeStyle=css(col);g.lineWidth=.035*s;g.beginPath();sheer(-free*.42);g.stroke();}
+  return c;}
+const pick2=(r,a)=>a[Math.floor(r()*a.length)];
+
 // Dry grass poking through the snow near the camera. Blades stand upright, which a height map can't do, so they are painted
 // straight into the view for each screen size: placed on the ground, then sized by distance.
 function paintGrass(W,H,tanH,tanV){
@@ -361,16 +399,16 @@ function paintGrass(W,H,tanH,tanV){
   for(let i=0,n=LOWQ?900:3000;i<n;i++){
     // Tufts gather in clumps, thinning with distance. Far ones are too small to bother with.
     const y=2.4+Math.pow(r(),2.3)*60,x=(r()*2-1)*(y*1.7+2);
-    if(lakeF(x,y)<1.12||landNoise(x*.085+landO[0]+y*.06)*landNoise(y*.11+x*.04+landO[1])<.16+r()*.2)continue;
+    if(riverF(x,y)<1.12||landNoise(x*.085+landO[0]+y*.06)*landNoise(y*.11+x*.04+landO[1])<.16+r()*.2)continue;
     tufts.push([x,y]);}
   // Sedge along the water's edge, thicker in some stretches than others.
   for(let i=0,n=LOWQ?260:700;i<n;i++){
-    const a=r()*TAU,k=shoreAt(a)*(1.05+Math.pow(r(),2)*.2),u=Math.cos(a)*k*LAKE.rx,v=Math.sin(a)*k*LAKE.ry,c=Math.cos(LAKE.rot),s=Math.sin(LAKE.rot),x=LAKE.x+u*c-v*s,y=LAKE.y+u*s+v*c;
-    if(y>2.4&&landNoise(a*2.6+landO[2])>.42)tufts.push([x,y]);}
+    const near=r()<.7,x=(r()*2-1)*(near?75:160),y=riverY(x)+(near?-1:1)*RIVER.hw*(1.05+Math.pow(r(),2)*.2);
+    if(y>2.4&&landNoise(x*.045+landO[2])>.42)tufts.push([x,y]);}
   tufts.sort((a,b)=>b[1]-a[1]);
   g.lineCap='round';
   for(const[x,y]of tufts){
-    const b=put(x,y,lakeZ(x,y)+rrr(-.01,.03));if(!b)continue;
+    const b=put(x,y,riverZ(x,y)+rrr(-.01,.03));if(!b)continue;
     const s=H/tanV*.5/b[2],hgt=rrr(.09,.3),blades=Math.floor(rrr(10,44)*clamp(s/70,.35,1.2)),lean=rrr(-.5,.5),w=rrr(.04,.16);
     for(let i=0;i<blades;i++){
       const ox=(r()+r()-1)*w*s,len=hgt*s*rrr(.45,1.05),bend=(lean+rrr(-.55,.55))*len*.62,tone=r();
@@ -379,13 +417,14 @@ function paintGrass(W,H,tanH,tanV){
   return c;}
 
 /* ---------- share with the renderers ---------- */
-const A=window.AURORA={NC,NIGHT,VIEW,LAKE,sim,stats,arcs,vortices,lights,STARS,starColor,skyMatrix,stream,update,fire,glow,energy,strip,crest,paintCity,paintTrees,paintGrass,beacons,TIME,
+const A=window.AURORA={NC,NIGHT,VIEW,RIVER,riverY,paintBoat,sim,stats,arcs,vortices,lights,STARS,starColor,skyMatrix,stream,update,fire,glow,energy,strip,crest,paintCity,paintTrees,paintGrass,beacons,TIME,
   cloud:()=>cloud,setCloud:v=>{cloud=cloudTo=v;},clamp,lerp,sstep,ease,DEG,TAU,fallback};
 // The arcs a night starts with, already moving, so the first frame is already a sky in motion.
 function warm(){
   setPhase(wpick([['quiet',3],['growth',4]]),false);sim.until=sim.t+rr(8,40);
   newArc({y0:rr(170,420),flux:rr(.7,1)});if(chance(.7))newArc({y0:rr(280,700)});
   for(let i=0;i<40*10;i++)update(.1/TIME);
+  if(chance(.6))boat({mid:true});
   for(const k in stats)stats[k]=0;NC.entries.length=0;
   NC.log(NIGHT.moon?(NIGHT.moon>.5?'A bright moon tonight, and the aurora is already out':'A thin moon tonight, and the aurora is already out'):'No moon tonight, and the aurora is already out');
 }
@@ -397,7 +436,7 @@ function fallback(){
   const old=document.getElementById('scene');let cv=old;
   // A canvas that has had a WebGL context can't take a 2D one.
   if(A.triedGL){cv=old.cloneNode();old.replaceWith(cv);cv.addEventListener('click',()=>{const h=document.getElementById('hud');if(h)h.classList.toggle('off');});}
-  const g=cv.getContext('2d',{alpha:false});let W=0,H=0,hor=0,sky=null,land=null,water=null;
+  const g=cv.getContext('2d',{alpha:false});let W=0,H=0,hor=0,sky=null,land=null,water=null,boatPic=null,boatId=0;
   const city=paintCity(),trees=paintTrees(),S=stream('stars2d');
   const dots=[];for(const s of STARS)dots.push(s);for(let i=0;i<650;i++)dots.push([S()*24,Math.asin(S()*2-1)/DEG,3.6+S()*2.4,S()*1.4]);
   function cam(){const a=W/H,tanV=clamp(1.04/Math.sqrt(a),.62,1.2),p=Math.atan(.4*tanV),C={tanV,tanH:tanV*a,cp:Math.cos(p),sp:Math.sin(p)};Object.assign(VIEW,C);return C;}
@@ -416,9 +455,9 @@ function fallback(){
       q.drawImage(city,sx,0,Math.max(1,strip.w/W*step),strip.h,x,y0,step,y1-y0);q.drawImage(trees,sx,0,Math.max(1,strip.w/W*step),strip.h,x,y0,step,y1-y0);}
     q.globalCompositeOperation='source-over';const sn=q.createLinearGradient(0,hor,0,H);sn.addColorStop(0,'#1b2230');sn.addColorStop(1,'#0c1018');q.fillStyle=sn;
     q.beginPath();q.moveTo(0,H);for(let x=0;x<=W;x+=8){const az=Math.atan(((x+.5)/W*2-1)*C.tanH/C.cp);q.lineTo(x,hor-crest(az)/DEG*H*.0125);}q.lineTo(W,H);q.fill();
-    // The lake's shore, in the picture.
-    water=new Path2D();const c=Math.cos(LAKE.rot),s=Math.sin(LAKE.rot);
-    for(let i=0;i<=72;i++){const a=i/72*TAU,k=shoreAt(a),u=Math.cos(a)*k*LAKE.rx,v=Math.sin(a)*k*LAKE.ry,p=proj(C,LAKE.x+u*c-v*s,LAKE.y+u*s+v*c,LAKE.level);if(p)water.lineTo(p[0],p[1]);}
+    // The river's banks, in the picture.
+    water=new Path2D();const X=C.tanH*130,bank=(x,s)=>{const p=proj(C,x,riverY(x)+s*RIVER.hw,RIVER.level);if(p)water.lineTo(p[0],p[1]);};
+    for(let i=0;i<=80;i++)bank(-X+i/40*X,-1);for(let i=80;i>=0;i--)bank(-X+i/40*X,1);
     water.closePath();}
   function draw(){
     const C=cam();g.globalCompositeOperation='source-over';g.drawImage(sky,0,0);
@@ -437,8 +476,14 @@ function fallback(){
         gr.addColorStop(0,`rgba(${hd*255|0},${90+hd*30|0},${90+hd*60|0},${k*.4})`);gr.addColorStop(.1,`rgba(70,255,150,${k})`);gr.addColorStop(.6,`rgba(60,220,140,${k*.34})`);gr.addColorStop(1,`rgba(170,40,110,${k*.16*NIGHT.red})`);
         g.strokeStyle=gr;g.lineWidth=lw*(9+e*12);g.beginPath();g.moveTo(p0[0],p0[1]);g.lineTo(p1[0],p1[1]);g.stroke();}}
     g.globalCompositeOperation='source-over';g.drawImage(land,0,0);
-    // The lake holds the whole sky, turned over at the horizon.
+    // The river holds the whole sky, turned over at the horizon.
     g.save();g.clip(water);g.fillStyle='#05070d';g.fillRect(0,0,W,H);g.translate(0,2*hor);g.scale(1,-1);g.globalAlpha=.62;g.drawImage(cv,0,0);g.restore();
+    const b=sim.boat;
+    if(b){if(b.id!==boatId){boatPic=paintBoat(b);boatId=b.id;}
+      const y=riverY(b.x)+b.lane,p=proj(C,b.x,y,RIVER.level);
+      if(p){const w=b.span*W/(2*C.tanH*(y*C.cp+RIVER.level*C.sp)),h=w*.3125;
+        // The boat, what glows on it, and the two of them upside down in the water.
+        for(const f of[1,-1]){g.save();g.globalAlpha=f>0?1:.4;g.translate(p[0],p[1]);g.scale(1,f);g.drawImage(boatPic,0,0,1024,320,-w/2,-h,w,h);g.globalCompositeOperation='lighter';g.drawImage(boatPic,0,320,1024,320,-w/2,-h,w,h);g.restore();}}}
     // The snow takes on the sky's light.
     g.globalCompositeOperation='lighter';g.fillStyle=`rgba(40,120,80,${clamp(sim.act*.16,0,.2)})`;g.fillRect(0,H*.72,W,H*.28);g.globalCompositeOperation='source-over';}
   layout();
