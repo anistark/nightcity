@@ -1,0 +1,38 @@
+{
+  "tags": "scene",
+  "order": 12,
+  "added": "2026-11-06",
+  "author": "anistark",
+  "title": "Aurora",
+  "description": "Looking up from a thin cover of snow above a small lake, with Night City and far mountains along the horizon. Curtains of aurora fold, curl, surge and fade across a real night sky and in the water, and no two minutes of the dance ever match.",
+  "ogTitle": "Aurora | Night City",
+  "ogImage": "aurora/assets/images/og.jpg",
+  "ogPath": "aurora/",
+  "ogAlt": "Green and red curtains of aurora across a starry night sky, reflected in a small lake in thin snow, with the lights of Night City and far mountains on the horizon",
+  "canvasLabel": "Looking up from snowy ground above a small lake at a night sky full of stars and the Milky Way. Curtains of green aurora with red tops and pink lower edges fold, curl, brighten and fade across part of the sky, lighting the snow and shining in the water. Night City glows along the horizon below far mountains, and spruce trees stand on the ridge.",
+  "share": "An aurora that never dances the same way twice. Mine was seeded at {seed}.",
+  "stats": [
+    [
+      "storms",
+      "substorms."
+    ],
+    [
+      "curtains",
+      "curtains."
+    ],
+    [
+      "coronas",
+      "coronas."
+    ],
+    [
+      "meteors",
+      "meteors."
+    ],
+    [
+      "satellites",
+      "satellites"
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A low rise of thin snow above a small lake, with Night City and far mountains along the horizon. Curtains of aurora fold, curl, surge and fade across a real night sky, while the stars turn slowly behind them and the water holds their light."
+}
