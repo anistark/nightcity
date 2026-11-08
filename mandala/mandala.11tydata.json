@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 14,
+  "added": "2026-11-08",
+  "author": "anistark",
+  "title": "Mandala",
+  "description": "A sand mandala made grain by grain on a board at night, by lamplight or candlelight, on wood, marble, stone, sand or grass. Chalk lines mark it out, coloured sand fills it from the centre outward, and when it is finished it is swept away into water and a new one begins. No two are the same.",
+  "ogTitle": "Mandala | Night City",
+  "ogImage": "mandala/assets/images/og.jpg",
+  "ogPath": "mandala/",
+  "ogAlt": "Mandala: a pixel-art sand mandala seen from above on a dark board, a palace with four gates inside rings of lotus petals and fire, lit by butter lamps beside a bowl of water",
+  "canvasLabel": "Animated pixel-art sand mandala seen from above on a board at night, with lamps or candles, incense and a bowl of water around it: chalk guidelines are drawn, coloured sand is laid line by line from the centre outward, and the finished mandala is swept into a heap and poured into the water",
+  "share": "A sand mandala made grain by grain, then swept away into water, and never the same one twice. Mine began at {seed}.",
+  "stats": [
+    [
+      "grains",
+      "grains of sand laid."
+    ],
+    [
+      "lines",
+      "lines drawn."
+    ],
+    [
+      "mandalas",
+      "mandalas swept away."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A sand mandala made grain by grain on a board at night, on a floor and among lamps, incense and offerings that change every night. Chalk lines mark it out, then coloured sand goes down from the centre outward, every line traced and every section filled. Finished, it rests for 42 seconds before it is cut, swept into a heap and poured into a bowl of water, and a new one begins."
+}
