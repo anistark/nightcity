@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 15,
+  "added": "2026-11-13",
+  "author": "anistark",
+  "title": "Starry Nights",
+  "description": "Van Gogh's The Starry Night, repainted stroke by stroke over the Night City skyline. The swirls turn, the stars swell in their halos and the cypresses sway like dark flames, and the paint never dries the same way twice.",
+  "ogTitle": "Starry Nights | Night City",
+  "ogImage": "starry-nights/assets/images/og.jpg",
+  "ogPath": "starry-nights/",
+  "ogAlt": "Starry Nights: a night sky of swirling blue brush strokes with haloed yellow stars and an orange crescent moon, dark cypresses on the left, rolling hills, and the low towers of a city with lit windows below",
+  "canvasLabel": "Animated painting in thick brush strokes after Van Gogh's The Starry Night: a swirling blue night sky with haloed stars and a crescent moon, one or more dark cypresses swaying at the edges, rolling hills, and a low city skyline with lit windows and neon signs, repainted stroke by stroke without end",
+  "share": "Van Gogh's Starry Night, repainted stroke by stroke over the Night City skyline, and never the same way twice. Mine was begun at {seed}.",
+  "stats": [
+    [
+      "strokes",
+      "brush strokes."
+    ],
+    [
+      "swirls",
+      "new swirls."
+    ],
+    [
+      "events",
+      "events."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "Van Gogh's The Starry Night over the Night City skyline, painted without end. Short brush strokes follow the swirls of the sky and cover the ones before them, so the great curls turn, the stars swell in their halos, the cypresses sway like dark flames, one some nights and several on others, and low under the hills the towers keep their windows and neon lit."
+}
