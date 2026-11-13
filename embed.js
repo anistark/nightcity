@@ -2,7 +2,7 @@
 
    <script src="https://anistark.github.io/nightcity/embed.js" data-scene="pixel-city" async></script>
 
-   data-scene    pixel-city (default), basketball-court, rain-window, shoreline, bus-stop, one-sock, coffee-window, tennis-court, bonfire, diwali-night, snow-bubble, aurora, sakura-bus-stand, mandala or starry-nights
+   data-scene    pixel-city (default), basketball-court, rain-window, shoreline, bus-stop, one-sock, coffee-window, tennis-court, bonfire, diwali-night, snow-bubble, aurora, sakura-bus-stand, mandala, starry-nights or windy-hill
    data-target   a CSS selector: fill that element instead of the whole page
    data-dim      0 to 1: darken the scene so text on top stays readable
    data-quality  low (default) or high. Low draws at a lower resolution and about 30 frames a second
@@ -12,7 +12,7 @@
 (()=>{
   const me=document.currentScript;if(!me)return;
   const root=new URL('.',me.src).href;
-  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/','rain-window':'rain-window/','shoreline':'shoreline/','bus-stop':'bus-stop/','one-sock':'one-sock/','coffee-window':'coffee-window/','tennis-court':'tennis-court/','bonfire':'bonfire/','diwali-night':'diwali-night/','snow-bubble':'snow-bubble/','aurora':'aurora/','sakura-bus-stand':'sakura-bus-stand/','mandala':'mandala/','starry-nights':'starry-nights/'};
+  const SCENES={'pixel-city':'pixel-city/','basketball-court':'basketball-court/','half-court':'basketball-court/','rain-window':'rain-window/','shoreline':'shoreline/','bus-stop':'bus-stop/','one-sock':'one-sock/','coffee-window':'coffee-window/','tennis-court':'tennis-court/','bonfire':'bonfire/','diwali-night':'diwali-night/','snow-bubble':'snow-bubble/','aurora':'aurora/','sakura-bus-stand':'sakura-bus-stand/','mandala':'mandala/','starry-nights':'starry-nights/','windy-hill':'windy-hill/'};
   const d=me.dataset,scene=SCENES[d.scene]||SCENES['pixel-city'];
   const dim=Math.min(1,Math.max(0,parseFloat(d.dim)||0));
   const start=()=>{

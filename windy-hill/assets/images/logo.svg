@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Windy Hill">
+  <title>Windy Hill</title>
+  <path fill="#16224e" d="M0 0h5v1h-5zM0 1h1v1h-1zM3 1h3v1h-3zM0 2h1v1h-1zM3 2h4v1h-4zM0 3h4v1h-4zM5 3h3v1h-3zM9 3h1v1h-1zM11 3h2v1h-2zM0 4h2v1h-2zM3 4h1v1h-1zM6 4h7v1h-7zM15 4h1v1h-1zM0 5h1v1h-1zM3 5h1v1h-1zM7 5h1v1h-1zM9 5h4v1h-4zM15 5h1v1h-1zM0 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM15 6h1v1h-1zM12 7h1v1h-1zM15 7h1v1h-1z"/>
+  <path fill="#f4e9b8" d="M1 1h2v1h-2zM1 2h2v1h-2z"/>
+  <path fill="#2c3c7c" d="M4 3h1v1h-1zM2 4h1v1h-1zM4 4h2v1h-2zM1 5h2v1h-2zM4 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM1 6h1v1h-1zM3 6h7v1h-7zM11 6h1v1h-1zM0 7h4v1h-4zM5 7h1v1h-1zM7 7h5v1h-5z"/>
+  <path fill="#ffcf7a" d="M5 5h1v1h-1zM2 6h1v1h-1zM6 7h1v1h-1z"/>
+  <path fill="#5fe8e0" d="M4 7h1v1h-1z"/>
+  <path fill="#3d6aa8" d="M0 8h13v1h-13zM15 8h1v1h-1zM0 9h2v1h-2zM3 9h8v1h-8zM0 10h6v1h-6z"/>
+  <path fill="#8fb6d8" d="M2 9h1v1h-1z"/>
+  <path fill="#9fd45c" d="M11 9h2v1h-2zM15 9h1v1h-1zM6 10h5v1h-5zM0 11h6v1h-6zM1 12h1v1h-1zM4 12h1v1h-1zM9 12h1v1h-1zM3 13h1v1h-1zM9 13h1v1h-1zM13 13h1v1h-1zM7 14h1v1h-1z"/>
+  <path fill="#3f8f4a" d="M11 10h2v1h-2zM15 10h1v1h-1zM6 11h7v1h-7zM15 11h1v1h-1zM0 12h1v1h-1zM2 12h2v1h-2zM5 12h4v1h-4zM10 12h3v1h-3zM15 12h1v1h-1zM0 13h3v1h-3zM4 13h5v1h-5zM10 13h3v1h-3zM14 13h2v1h-2zM1 14h1v1h-1zM3 14h2v1h-2zM6 14h1v1h-1zM8 14h2v1h-2zM11 14h3v1h-3zM15 14h1v1h-1zM2 15h1v1h-1zM5 15h1v1h-1zM8 15h1v1h-1zM11 15h1v1h-1zM14 15h1v1h-1z"/>
+  <path fill="#1f5a36" d="M0 14h1v1h-1zM2 14h1v1h-1zM5 14h1v1h-1zM10 14h1v1h-1zM14 14h1v1h-1zM0 15h2v1h-2zM3 15h2v1h-2zM6 15h2v1h-2zM9 15h2v1h-2zM12 15h2v1h-2zM15 15h1v1h-1z"/>
+  <path fill="#5a3a2a" d="M13 2h1v1h-1zM13 3h2v1h-2zM13 4h2v1h-2zM13 5h2v1h-2zM13 6h2v1h-2zM13 7h2v1h-2zM13 8h2v1h-2zM13 9h2v1h-2zM13 10h2v1h-2zM13 11h2v1h-2zM13 12h2v1h-2z"/>
+  <path fill="#2f7a44" d="M5 0h2v1h-2zM8 0h3v1h-3zM12 0h4v1h-4zM6 1h3v1h-3zM10 1h2v1h-2zM13 1h3v1h-3zM7 2h1v1h-1zM9 2h4v1h-4zM14 2h2v1h-2zM8 3h1v1h-1zM10 3h1v1h-1zM15 3h1v1h-1z"/>
+  <path fill="#86c45c" d="M7 0h1v1h-1zM11 0h1v1h-1zM9 1h1v1h-1zM12 1h1v1h-1zM8 2h1v1h-1z"/>
+</svg>

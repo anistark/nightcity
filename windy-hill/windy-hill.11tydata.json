@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 16,
+  "added": "2026-11-13",
+  "author": "anistark",
+  "title": "Windy Hill",
+  "description": "A hilltop of long grass under a tree, above a wide river. The breeze runs through the meadow in slow waves, the river slides past below, and Night City stands on the far bank under the stars. No gust ever bends the grass the same way twice.",
+  "ogTitle": "Windy Hill | Night City",
+  "ogImage": "windy-hill/assets/images/og.jpg",
+  "ogPath": "windy-hill/",
+  "ogAlt": "Windy Hill: tall grass on a hilltop under a tree, with a wide river below and the towers of a city across the water under a starry sky",
+  "canvasLabel": "Animated anime-style scene: tall grass on a hilltop under a tree at the edge of the view. Wind moves through the grass in waves. Below the hill a wide river reflects the sky, and the towers of a city stand on the far bank under a clear sky full of stars",
+  "share": "Long grass on a hill above the river, with Night City across the water and a breeze that never blows the same way twice. Mine began at {seed}.",
+  "stats": [
+    [
+      "gusts",
+      "gusts."
+    ],
+    [
+      "leaves",
+      "leaves fallen."
+    ],
+    [
+      "events",
+      "events."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A hilltop of long grass under a tree, above the river, with Night City on the far bank. The breeze runs through the meadow in slow waves and a gust now and then lays the whole hill flat and silver, under a clear sky of stars. The hour is different every time, from dusk to full night."
+}
