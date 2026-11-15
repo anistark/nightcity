@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 17,
+  "added": "2026-11-15",
+  "author": "anistark",
+  "title": "Afterglow",
+  "description": "A flat beach at low tide in the red light left after sunset. Small waves break far out, thin sheets of water slide up the mirror-wet sand and drain away, and the same evening can be seen as a photograph, a painted film or pixel art. No wave ever reaches the same line twice.",
+  "ogTitle": "Afterglow | Night City",
+  "ogImage": "afterglow/assets/images/og.jpg",
+  "ogPath": "afterglow/",
+  "ogAlt": "Afterglow: a deep orange sky after sunset over a flat beach, with small waves breaking far out and wet sand that mirrors the glow",
+  "canvasLabel": "Animated scene: a wide flat beach at low tide just after sunset. The sky glows deep orange above a dusky band of haze, with a low island on the horizon. Small waves break far out, thin sheets of water slide up the wet sand, which mirrors the sky, and drain away, and rippled sand lies in the foreground",
+  "share": "A beach at low tide in the afterglow, where no wave ever reaches the same line on the sand twice. Mine began at {seed}.",
+  "stats": [
+    [
+      "waves",
+      "waves ashore."
+    ],
+    [
+      "long",
+      "long runs up the sand."
+    ],
+    [
+      "events",
+      "events."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A flat beach at low tide in the red light left after sunset. Small waves break far out and thin sheets of water slide up the mirror-wet sand, rest and drain away, each to a line of its own. The same evening can be seen as a photograph, a painted film or pixel art."
+}
