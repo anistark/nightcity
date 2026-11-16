@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Violet Hour">
+  <title>Violet Hour</title>
+  <path fill="#2d0386" d="M0 0h16v1h-16zM0 1h3v1h-3zM4 1h12v1h-12zM0 2h12v1h-12zM13 2h3v1h-3z"/>
+  <path fill="#030e25" d="M0 5h1v1h-1zM15 5h1v1h-1zM0 6h2v1h-2zM14 6h2v1h-2zM0 7h3v1h-3zM13 7h3v1h-3zM0 8h5v1h-5zM11 8h5v1h-5z"/>
+  <path fill="#6d00db" d="M0 3h16v1h-16zM0 4h6v1h-6zM10 4h6v1h-6zM1 5h4v1h-4zM11 5h4v1h-4z"/>
+  <path fill="#d000ff" d="M2 6h3v1h-3zM11 6h3v1h-3zM3 7h3v1h-3zM10 7h3v1h-3zM5 8h6v1h-6zM6 9h1v1h-1zM9 9h1v1h-1zM5 10h2v1h-2zM9 10h2v1h-2zM6 11h1v1h-1zM9 11h1v1h-1zM5 12h1v1h-1zM10 12h1v1h-1z"/>
+  <path fill="#fc5cff" d="M3 1h1v1h-1zM12 2h1v1h-1zM6 4h1v1h-1zM9 4h1v1h-1zM5 5h1v1h-1zM10 5h1v1h-1zM5 6h1v1h-1zM10 6h1v1h-1zM6 7h1v1h-1zM9 7h1v1h-1zM7 9h2v1h-2zM7 11h2v1h-2zM7 13h2v1h-2z"/>
+  <path fill="#ffffff" d="M7 4h2v1h-2zM6 5h4v1h-4zM6 6h4v1h-4zM7 7h2v1h-2zM7 10h2v1h-2zM6 12h4v1h-4z"/>
+  <path fill="#46096f" d="M0 9h6v1h-6zM10 9h6v1h-6zM0 10h2v1h-2zM3 10h2v1h-2zM11 10h2v1h-2zM14 10h2v1h-2zM0 11h1v1h-1zM4 11h2v1h-2zM10 11h2v1h-2zM15 11h1v1h-1zM0 12h2v1h-2zM3 12h2v1h-2zM11 12h2v1h-2zM14 12h2v1h-2zM0 13h1v1h-1zM4 13h3v1h-3zM9 13h3v1h-3zM15 13h1v1h-1zM5 14h6v1h-6z"/>
+  <path fill="#020a1b" d="M2 10h1v1h-1zM13 10h1v1h-1zM1 11h3v1h-3zM12 11h3v1h-3zM2 12h1v1h-1zM13 12h1v1h-1zM1 13h3v1h-3zM12 13h3v1h-3zM0 14h5v1h-5zM11 14h5v1h-5zM0 15h16v1h-16z"/>
+</svg>

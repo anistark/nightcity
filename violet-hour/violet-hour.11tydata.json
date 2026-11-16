@@ -1,0 +1,30 @@
+{
+  "tags": "scene",
+  "order": 18,
+  "added": "2026-11-16",
+  "author": "anistark",
+  "title": "Violet Hour",
+  "description": "A pixel-art dusk over a mountain lake. The moon stands low between the peaks, clouds drift across a violet sky and light up from below, the lake mirrors all of it in broken dashes, and pines sway along the near shore. No evening is ever the same.",
+  "ogTitle": "Violet Hour | Night City",
+  "ogImage": "violet-hour/assets/images/og.jpg",
+  "ogPath": "violet-hour/",
+  "ogAlt": "Violet Hour: a pixel-art mountain lake at dusk in violet and magenta, the moon low between the peaks and its light on the water, with dark pines in front",
+  "canvasLabel": "Animated pixel-art scene: a mountain lake at dusk in violet and magenta. The moon stands low in the gap between two walls of mountains, clouds drift across the sky lit from below, the lake mirrors them with a path of moonlight down its middle, and dark pines sway along the near shore",
+  "share": "Dusk over a mountain lake, the moon low between the peaks. No evening is ever the same. Mine began at {seed}.",
+  "stats": [
+    [
+      "rises",
+      "fish risen."
+    ],
+    [
+      "birds",
+      "birds over."
+    ],
+    [
+      "events",
+      "events."
+    ]
+  ],
+  "footTail": ". Tap the scene to hide this",
+  "card": "A mountain lake at dusk in violet and magenta pixels. The moon stands low between the peaks, clouds drift over and light up from below, the lake mirrors it all in broken dashes, and pines sway along the near shore while fish rise and geese cross the valley."
+}
