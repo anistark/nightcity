@@ -30,6 +30,11 @@
 .share-embed:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 @media (max-width:640px){.share-dlg{padding:20px}.share-grid{gap:12px}.share-opt{width:64px;height:64px}}
 
+/* Fullscreen tip, shown where a page can't go fullscreen: the steps to add Night City to the Home Screen. */
+.tip-steps{margin:16px 0 0;padding:0 0 0 32px;display:grid;gap:8px}
+.tip-steps li::marker{color:var(--amber)}
+.tip-hint{margin:24px 0 0;color:var(--dim)}
+
 /* Embed dialog: platform tabs, code with a copy button, and setup notes. */
 .embed-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .embed-tab{background:transparent;color:var(--dim);border:1px solid var(--edge);padding:8px 16px;font-family:var(--font,var(--f-pixel,monospace));font-size:var(--share-opt-size,16px);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:0}

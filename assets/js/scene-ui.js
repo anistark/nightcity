@@ -2,7 +2,7 @@
    This wires it to the scene through window.NightCity: the clock, whose colon blinks once a second, the log list and
    counters, the log toggle (L) and hiding the overlay (H, or a click on the scene).
    Then it adds a back link to Night City (bottom left), and in the top-right corner a share button that opens
-   a dialog of share options, beside a fullscreen toggle (F).
+   a dialog of share options, beside a fullscreen toggle (F). On an iPhone, that button explains the Home Screen instead.
    Load it after the scene, with data-text set to the share message. {seed} in the message becomes the scene's seed. */
 (()=>{
   const me=document.currentScript,hud=document.getElementById('hud'),logBtn=document.getElementById('logBtn'),NC=window.NightCity;
@@ -75,8 +75,23 @@
     by.append(img,tip);hud.append(by);
   }
 
-  // Top-right corner: share, then fullscreen where the browser allows it.
+  // Top-right corner: share, then fullscreen. No iPhone browser lets a page go fullscreen, so there the button opens
+  // a tip on adding Night City to the Home Screen instead. navigator.standalone only exists on iOS: false in a browser,
+  // true when opened from the Home Screen, where there are no browser bars left to hide and so no button.
   const top=el('div',{class:'ctl-top'});hud.append(top);
+  if(!document.fullscreenEnabled&&navigator.standalone===false){
+    const fs=el('button',{type:'button',class:'ctl','aria-label':'Fullscreen','aria-haspopup':'dialog',title:'Fullscreen'},ICON.full);
+    const tip=el('dialog',{class:'share-dlg','aria-labelledby':'tip-h'});
+    tip.innerHTML=`<div class="share-head"><h2 id="tip-h">Fullscreen</h2><button type="button" class="ctl share-close" aria-label="Close">${ICON.close}</button></div>
+    <p class="share-text">This browser can't go fullscreen. Add Night City to your Home Screen and it opens with no browser bars.</p>
+    <ol class="tip-steps"><li>Open the Share menu.</li><li>Choose Add to Home Screen.</li><li>Open Night City from there.</li></ol>
+    <p class="tip-hint">Not in the list? Open this page in Safari first.</p>`;
+    document.body.append(tip);
+    fs.addEventListener('click',e=>{e.stopPropagation();tip.showModal();});
+    tip.querySelector('.share-close').addEventListener('click',()=>tip.close());
+    tip.addEventListener('click',e=>{if(e.target===tip)tip.close();});
+    top.append(fs);
+  }
   if(document.fullscreenEnabled){
     const fs=el('button',{type:'button',class:'ctl','aria-label':'Enter fullscreen',title:'Fullscreen (F)'},ICON.full);
     const toggle=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});};
